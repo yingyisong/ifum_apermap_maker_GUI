@@ -286,7 +286,7 @@ class IFUM_AperMap_Maker:
         #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")        
         #lbl_edge.grid(row=19, column=1, sticky="w", columnspan=2)
 
-        #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mc, state='disabled')
+        #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mono, state='disabled')
         #self.btn_edge_mc_select.grid(row=19, column=2, sticky="e", pady=5)
 
         #self.btn_edge_mc_make = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_apermap, state='disabled')
@@ -469,7 +469,7 @@ class IFUM_AperMap_Maker:
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
 
-    def pick_edges_mc(self):
+    def pick_edges_mono(self):
         return 0
 
     def open_folder(self):
@@ -677,6 +677,18 @@ class IFUM_AperMap_Maker:
         self.disable_others()
         self.btn_select_curve['state'] = 'active'
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_curve)
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+
+    def key_press(self, event):
+        if event.key == 'escape':
+            #### enable other functions 
+            self.enable_others()
+            self.btn_select_curve['state'] = 'disabled'
+            self.btn_select_edges['state'] = 'disabled'
+
+            #### break the mpl connection
+            self.break_mpl_connect()
+            self.fig.canvas.mpl_disconnect(self.cidexit)
 
     def pick_edges(self):
         self.disable_others()
@@ -685,6 +697,7 @@ class IFUM_AperMap_Maker:
         self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
         self.update_image()
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_edges)
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def on_click_curve(self, event):
         if event.button is MouseButton.RIGHT:
