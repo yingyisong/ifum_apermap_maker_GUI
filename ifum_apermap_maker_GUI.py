@@ -83,7 +83,8 @@ class IFUM_AperMap_Maker:
         self.create_widgets_edges()  # step 2
         self.create_widgets_trace()  # step 3
         self.create_widgets_pypeit() # step 4
-        self.create_widgets_mono()   # step 5
+        self.create_widgets_add_slits()   # step 5
+        #self.create_widgets_mono()   # step 6
         self.bind_widgets()
 
         #### initialize widgets 
@@ -232,7 +233,7 @@ class IFUM_AperMap_Maker:
         self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace")
         self.lbl_file_pypeit.grid(row=13, column=6, sticky="e")
 
-        self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits, state='normal')
+        self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal')
         self.btn_load_pypeit.grid(row=13, column=7, sticky="e", padx=5, pady=5)
 
         #### step 4a make a PypeIt file
@@ -269,31 +270,44 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap, state='disabled')
         self.btn_make_apermap.grid(row=16, column=7, sticky='e', padx=5, pady=5)
 
-    def create_widgets_mono(self):
-        """ step 5 make monochromatic apermap """
+    def create_widgets_add_slits(self):
+        """ step 5 add bad/missing slits """
         lbl_step5 = tk.Label(self.frame1, text="Step 5:")
         lbl_step5.grid(row=17, column=0, sticky="w")
-        lbl_step5 = tk.Label(self.frame1, text="(optional) make a monochromatic AperMap file")
+        lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap")
         lbl_step5.grid(row=17, column=1, columnspan=5, sticky="w")    
 
-        self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_full")
+        self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000")
         self.lbl_file_apermap.grid(row=17, column=6, sticky="e")
 
-        self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits, state='normal')
-        self.btn_load_apermap.grid(row=17, column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap, state='normal')
+        self.btn_load_apermap.grid(row=17, column=7, sticky="e", padx=5, pady=5)     
 
-        #### pick edges for the monochromatic spec span
-        #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")        
-        #lbl_edge.grid(row=19, column=1, sticky="w", columnspan=2)
+    #def create_widgets_mono(self):
+    #    """ step 6 make monochromatic apermap """
+    #    lbl_step6 = tk.Label(self.frame1, text="Step 6:")
+    #    lbl_step6.grid(row=17, column=0, sticky="w")
+    #    lbl_step6 = tk.Label(self.frame1, text="(optional) make a monochromatic AperMap file")
+    #    lbl_step6.grid(row=17, column=1, columnspan=5, sticky="w")    
 
-        #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mono, state='disabled')
-        #self.btn_edge_mc_select.grid(row=19, column=2, sticky="e", pady=5)
+    #    self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_full")
+    #    self.lbl_file_apermap.grid(row=17, column=6, sticky="e")
 
-        #self.btn_edge_mc_make = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_apermap, state='disabled')
-        #self.btn_edge_mc_make.grid(row=19, column=3, sticky="e", padx=5, pady=5)
+    #    self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits, state='normal')
+    #    self.btn_load_apermap.grid(row=17, column=7, sticky="e", padx=5, pady=5)
 
-        #self.lbl_edge_mc_param = tk.Label(self.frame1, relief=tk.SUNKEN, text="(x1, x2, dx) =")
-        #self.lbl_edge_mc_param.grid(row=19, column=1, columnspan=3, sticky="w") 
+    #    #### pick edges for the monochromatic spec span
+    #    #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")        
+    #    #lbl_edge.grid(row=19, column=1, sticky="w", columnspan=2)
+
+    #    #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mono, state='disabled')
+    #    #self.btn_edge_mc_select.grid(row=19, column=2, sticky="e", pady=5)
+
+    #    #self.btn_edge_mc_make = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_apermap, state='disabled')
+    #    #self.btn_edge_mc_make.grid(row=19, column=3, sticky="e", padx=5, pady=5)
+
+    #    #self.lbl_edge_mc_param = tk.Label(self.frame1, relief=tk.SUNKEN, text="(x1, x2, dx) =")
+    #    #self.lbl_edge_mc_param.grid(row=19, column=1, columnspan=3, sticky="w") 
 
     def bind_widgets(self):
         """ event bindings """
@@ -595,22 +609,24 @@ class IFUM_AperMap_Maker:
             self.disable_dependent_btns()
             self.btn_make_trace['state'] = 'normal'
 
-    def open_fits(self):
+    def open_fits_trace(self):
         self.folder_trace = self.ent_folder_trace.get()
         filename = filedialog.askopenfilename(initialdir=self.folder_trace)
         if os.path.isfile(filename) and filename.endswith("_trace.fits"):
             hdul_temp = fits.open(filename)
             self.data_full = np.float32(hdul_temp[0].data)
 
-            self.folder_trace = filename[0:-17]
+            #self.folder_trace = filename[0:-17]
+            self.folder_trace = os.path.dirname(filename)
             self.ent_folder_trace.delete(0, tk.END)
             self.ent_folder_trace.insert(tk.END, self.folder_trace)
             
-            self.filename_trace = filename.split('/')[-1] 
+            #self.filename_trace = filename.split('/')[-1] 
+            self.filename_trace = os.path.basename(filename)
             file_temp = self.filename_trace.split('.')[0]
             self.lbl_file_pypeit['text'] = file_temp
             self.file_current = file_temp
-
+            self.shoe.set(file_temp[0])
 
             self.gray_all_lbl_file()
             self.lbl_file_pypeit.config(bg='yellow')
@@ -626,6 +642,42 @@ class IFUM_AperMap_Maker:
             self.file_current = "x0000" 
             self.lbl_file_pypeit['text'] = self.filename_trace.split('.')[0]
             self.disable_make_apermap()
+            self.gray_all_lbl_file()
+            self.fig.clf()
+            self.canvas.draw_idle()
+
+    def open_fits_apermap(self):
+        self.folder_trace = self.ent_folder_trace.get()
+        filename = filedialog.askopenfilename(initialdir=self.folder_trace)
+        if os.path.isfile(filename) and os.path.basename(filename).startswith("ap") and filename.endswith(".fits"):
+            hdul_temp = fits.open(filename)
+            self.data_full = np.float32(hdul_temp[0].data)
+
+            self.folder_trace = os.path.dirname(filename)
+            self.ent_folder_trace.delete(0, tk.END)
+            self.ent_folder_trace.insert(tk.END, self.folder_trace)
+            
+            self.filename_trace = os.path.basename(filename)
+            str_temp = self.filename_trace.split('_')
+            file_temp = "ap%s_%s"%(str_temp[2], str_temp[4].split('.')[0])
+            self.lbl_file_apermap['text'] = file_temp
+            self.file_current = file_temp
+            self.shoe.set(file_temp[2])
+
+            self.gray_all_lbl_file()
+            self.lbl_file_apermap.config(bg='yellow')
+            self.disable_dependent_btns()
+            #self.btn_make_apermap['state'] = 'normal'
+
+            #### show the fits image
+            self.clear_image()
+            self.update_image(uniform=True)
+        else:
+            self.data_full = np.ones((4048, 4048), dtype=np.int32)
+            self.filename_trace = "apx0000_0000.fits" 
+            self.file_current = "0000" 
+            self.lbl_file_apermap['text'] = self.filename_trace.split('.')[0]
+            #self.disable_add_slit()
             self.gray_all_lbl_file()
             self.fig.clf()
             self.canvas.draw_idle()
@@ -654,8 +706,11 @@ class IFUM_AperMap_Maker:
         self.fig.clf()
         self.ax = self.fig.add_subplot(111)
 
-    def update_image(self):
-        self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, 85.9))
+    def update_image(self, percent=85.9, uniform=False):
+        if uniform:
+            self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
+        else:
+            self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
         self.ax.set_title(self.file_current)
         self.canvas.draw_idle()
 
