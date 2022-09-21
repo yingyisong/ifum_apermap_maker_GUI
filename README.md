@@ -18,5 +18,4 @@ pip install -e ".[dev,pyqt5]"
 ```
 
 Usage:
-1) Edit `input_sample.txt`
-2) Run as `python make_aperMap.py input_sample.txt`
+  Run as `python ifum_apermap_maker_GUI.py`
