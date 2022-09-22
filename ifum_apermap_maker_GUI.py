@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -53,8 +54,8 @@ class IFUM_AperMap_Maker:
         self.data_full = np.ones((4048, 4048), dtype=np.int32)
         self.file_current = "x0000"
 
-        self.folder_default = "/Users/yysong/git2/ifum_aperMap_example/data_raw/ut20220512"
-        self.folder_trace   = "/Users/yysong/git2/ifum_aperMap_example/data_packed_test/"
+        self.folder_default = "./data_raw/"
+        self.folder_trace   = "./data_trace/"
         self.path_MasterSlits = ' '
 
         self.points = []
