@@ -12,7 +12,7 @@ from datetime import datetime
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, write_pypeit_file
+from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file
 
 def main():
     #### Create the entire GUI program
@@ -447,12 +447,18 @@ class IFUM_AperMap_Maker:
         print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
 
         #### load missing slits file
-
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_slits = self.filename_trace.split('_')[2]+'_slits.txt'
+        path_slits = os.path.join(dirname_slits, filename_slits)
+        if os.path.isfile(path_slits):
+            spat_id_missing = np.int32(readFloat_space(path_slits, 0))
+        else:
+            spat_id_missing = np.array([])
 
         #### add missing slits and make new AperMap
-        print('Note: %d fiber(s) are added manually.'%(len(add_badfiber_spat_id)))
+        print('Note: %d fiber(s) are added manually.'%(len(spat_id_missing)))
         spat_id_raw = data['spat_id']
-        spat_id_new = np.append(spat_id_raw, add_badfiber_spat_id)
+        spat_id_new = np.append(spat_id_raw, spat_id_missing)
         spat_id_new = np.sort(spat_id_new)
         N_new = len(spat_id_new)
 
@@ -469,8 +475,8 @@ class IFUM_AperMap_Maker:
             if len(temp_index)==1:
                 i_temp = temp_index[0]
                 for x_temp in range(nspec):
-                    ap_y1 = int(np.round(data[i_temp]['left_init'][x_temp]-1))
-                    ap_y2 = int(np.round(data[i_temp]['right_init'][x_temp]))
+                    ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                    ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
                     map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
             else:
                 #map_ap[spat_id_temp-2:spat_id_temp+1, int(nspec/2)-2:int(nspec/2)+1] = np.int32(ap_num)
@@ -484,17 +490,18 @@ class IFUM_AperMap_Maker:
                     if len(temp_index)==1:
                         i_temp = temp_index[0]
                         for x_temp in range(nspec):
-                            ap_y1 = int(np.round(data[i_temp]['left_init'][x_temp]-1))
-                            ap_y2 = int(np.round(data[i_temp]['right_init'][x_temp]))
+                            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
                             map_ap[ap_y1-d2_spat_id:ap_y2-d2_spat_id, x_temp] = np.int32(ap_num)
                 else:
                     temp_index = np.where(spat_id_raw==spat_id_new[i_ap-1])[0]
                     if len(temp_index)==1:
                         i_temp = temp_index[0]
                         for x_temp in range(nspec):
-                            ap_y1 = int(np.round(data[i_temp]['left_init'][x_temp]-1))
-                            ap_y2 = int(np.round(data[i_temp]['right_init'][x_temp]))
+                            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
                             map_ap[ap_y1+d1_spat_id:ap_y2+d1_spat_id, x_temp] = np.int32(ap_num)
+                            map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
 
         #### cut data
         map_ap = self.cut_data_by_edges(map_ap)
@@ -520,10 +527,10 @@ class IFUM_AperMap_Maker:
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
         today_temp = datetime.today().strftime('%y%m%d_%H%M')
-        dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+        dir_aperMap = self.ent_folder_trace.get()
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][0:5],today_temp))
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][2:7],today_temp))
         hdu_map.writeto(path_aperMap,overwrite=True)
 
         info_temp = 'Saved as %s'%path_aperMap
@@ -782,7 +789,7 @@ class IFUM_AperMap_Maker:
                 self.filename_trace = filename 
                 file_temp = "ap%s_%s"%(str_temp[2], str_temp[4].split('.')[0])
                 self.lbl_file_apermap['text'] = file_temp
-                self.file_current = file_temp+"(Nslits=%s)"%N_slits
+                self.file_current = file_temp+" (Nslits=%s)"%N_slits
                 self.shoe.set(file_temp[2])
 
                 #### handle other widegts 
@@ -883,7 +890,8 @@ class IFUM_AperMap_Maker:
         if event.key == 'escape':
             #### enable other functions 
             self.enable_others()
-            self.btn_select_slits['state'] = 'disabled'
+            self.btn_select_slits['state'] = 'normal'
+            self.btn_make_apermap_slits['state'] = 'normal'
 
             #### save the y positions into a file  
             dirname = os.path.join(self.folder_trace, 'slits_file')
