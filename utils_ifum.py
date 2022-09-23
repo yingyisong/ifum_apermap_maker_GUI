@@ -21,6 +21,17 @@ from astropy.stats import biweight
 #from scipy.interpolate import UnivariateSpline
 #import scipy.integrate as integrate
 
+_cache = {}
+
+def cached_fits_open(f):
+    global _cache
+    try:
+        x = _cache[f]
+    except KeyError:
+        x = _cache[f] = fits.open(f)
+    import copy
+    return copy.deepcopy(x)
+
 class IFUM_UNIT:
     def __init__(self, label):
         if label=='LSB':
@@ -100,7 +111,7 @@ def pack_4fits_simple(name_file, dir_input, shoe): #,dir_output,flag_img_mask,pa
     flag_egain = False
     for i_temp in range(4):
         name_file_temp = dir_input+'/'+shoe+name_file+'c%d.fits'%(i_temp+1)
-        hdul_temp = fits.open(name_file_temp)
+        hdul_temp = cached_fits_open(name_file_temp)
         hdr_temp  = hdul_temp[0].header
         data_temp = np.float32(hdul_temp[0].data)
 
@@ -186,7 +197,7 @@ def pack_4fits(name_file,dir_input,dir_output,flag_img_mask,path_img_mask,config
     flag_egain = False
     for i_temp in range(4):
         name_file_temp = dir_input+'/'+name_file+'c%d.fits'%(i_temp+1)
-        hdul_temp = fits.open(name_file_temp)
+        hdul_temp = cached_fits_open(name_file_temp)
         hdr_temp  = hdul_temp[0].header
         data_temp = np.float32(hdul_temp[0].data)
 
@@ -322,7 +333,7 @@ def pack_4fits(name_file,dir_input,dir_output,flag_img_mask,path_img_mask,config
 def write_aperMap(path_MasterSlits, IFU_type, Channel, file_name, file_date, N_xx, N_yy, img_mask_flag,img_mask_path,img_mask_config, add_badfiber_flag, add_badfiber_spat_id):
     N_ap = int(N_xx*N_yy/2)
 
-    hdul = fits.open(path_MasterSlits)
+    hdul = cached_fits_open(path_MasterSlits)
     hdr = hdul[1].header
     data = hdul[1].data
 
