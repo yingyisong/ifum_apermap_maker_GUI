@@ -56,6 +56,8 @@ class IFUM_AperMap_Maker:
 
         self.folder_default = "./data_raw/"
         self.folder_trace   = "./data_trace/"
+        #self.folder_default = "/Users/yysong/git2/ifum_aperMap_example/data_raw/ut20220512"
+        #self.folder_trace   = "/Users/yysong/git2/ifum_aperMap_example/data_packed_test"
         self.path_MasterSlits = ' '
 
         self.points = []
@@ -523,16 +525,21 @@ class IFUM_AperMap_Maker:
         #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
         hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
         hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_new, 'number of slits')
         hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
         hdr_map['BINNING'] = ('1x1', 'binning')
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-        today_temp = datetime.today().strftime('%y%m%d_%H%M')
+        today_temp = datetime.today().strftime('%y%m%d')
+        today_backup = datetime.today().strftime('%y%m%d_%H%M')
         dir_aperMap = self.ent_folder_trace.get()
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][2:7],today_temp))
-        hdu_map.writeto(path_aperMap,overwrite=True)
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+        path_backup = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        if os.path.exists(path_aperMap):
+            os.system('mv %s %s'%(path_aperMap, path_backup))
+        hdu_map.writeto(path_aperMap,overwrite=False)
 
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
@@ -588,16 +595,23 @@ class IFUM_AperMap_Maker:
         #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
         hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
         hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_sl, 'number of slits')
         hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
         hdr_map['BINNING'] = ('1x1', 'binning')
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-        today_temp = datetime.today().strftime('%y%m%d_%H%M')
+        today_temp = datetime.today().strftime("%y%m%d")
+        today_backup = datetime.today().strftime("%y%m%d_%H%M")
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][0:5],today_temp))
-        hdu_map.writeto(path_aperMap,overwrite=True)
+        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_temp)
+        file_backup = 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_backup)
+        path_aperMap = os.path.join(dir_aperMap, file_aperMap)
+        path_backup = os.path.join(dir_aperMap, file_backup)
+        if os.path.exists(path_aperMap):
+            os.system("mv %s %s"%(path_aperMap, path_backup))
+        hdu_map.writeto(path_aperMap,overwrite=False)
 
         info_temp = 'Saved as %s'%path_aperMap
         self.popup_showinfo('aperMap', info_temp)
@@ -695,6 +709,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
+        self.lbl_slitnum['text'] = 'N_slits = 000'
 
     def gray_all_lbl_file(self):
         _dummy_lbl = tk.Label(self.frame1)
@@ -779,19 +794,25 @@ class IFUM_AperMap_Maker:
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
             #### first check if the corresponding MasterSlits file exists
             str_temp = filename.split('_')
-            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%str_temp[2])
+            fnum_temp = str_temp[0][2]+str_temp[2]
+            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%fnum_temp)
 
             if os.path.isfile(path_MasterSlits_temp):
                 #### update paths and file names
                 self.path_MasterSlits = path_MasterSlits_temp 
                 N_slits = self.check_file_MasterSlits()
 
+                ####
+                hdul_temp = cached_fits_open(pathname)
+                #N_slits_file = hdul_temp[0].header['NSLITS'] 
+
+                #if N_slits==N_slits_file:
                 self.folder_trace = dirname 
                 self.ent_folder_trace.delete(0, tk.END)
                 self.ent_folder_trace.insert(tk.END, self.folder_trace)
             
                 self.filename_trace = filename 
-                file_temp = "ap%s_%s"%(str_temp[2], str_temp[4].split('.')[0])
+                file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
                 self.lbl_file_apermap['text'] = file_temp
                 self.file_current = file_temp+" (Nslits=%s)"%N_slits
                 self.shoe.set(file_temp[2])
