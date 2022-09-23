@@ -533,6 +533,9 @@ class IFUM_AperMap_Maker:
         path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][2:7],today_temp))
         hdu_map.writeto(path_aperMap,overwrite=True)
 
+        #self.btn_select_slits['state'] = 'disabled'
+        #self.btn_select_slits['state'] = 'disabled'
+
         info_temp = 'Saved as %s'%path_aperMap
         self.popup_showinfo('aperMap', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
