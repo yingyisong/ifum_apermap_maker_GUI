@@ -15,12 +15,32 @@ from scipy.optimize import curve_fit
 
 from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, cached_fits_open
 
+import subprocess
+
+
 def main():
     #### Create the entire GUI program
     program = IFUM_AperMap_Maker()
 
     #### Start the GUI event loop
     program.window.mainloop()
+
+
+def check_appearance():
+    """Checks DARK/LIGHT mode of macos."""
+    """True=DARK, False=LIGHT"""
+    cmd = 'defaults read -g AppleInterfaceStyle'
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, shell=True)
+    return bool(p.communicate()[0])
+
+#print(check_appearance())
+if check_appearance():
+    LABEL_COLOR = 'limegreen'
+    BG_COLOR = 'black'
+else:
+    LABEL_COLOR = 'black'
+    BG_COLOR='white'
 
 class IFUM_AperMap_Maker:
 
@@ -39,7 +59,7 @@ class IFUM_AperMap_Maker:
         self.ifu_type = self.UNKNOWN
 
         #### frames
-        self.frame1 = tk.Frame(self.window, relief=tk.RAISED, bd=2)
+        self.frame1 = tk.Frame(self.window, relief=tk.RAISED, bd=2, bg=BG_COLOR)
         self.frame1.grid(row=0, column=0, sticky="ns")
 
         self.frame2 = tk.Frame(self.window)
@@ -56,8 +76,6 @@ class IFUM_AperMap_Maker:
 
         self.folder_default = "./data_raw/"
         self.folder_trace   = "./data_trace/"
-        #self.folder_default = "/Users/yysong/git2/ifum_aperMap_example/data_raw/ut20220512"
-        #self.folder_trace   = "/Users/yysong/git2/ifum_aperMap_example/data_packed_test"
         self.path_MasterSlits = ' '
 
         self.points = []
@@ -90,127 +108,127 @@ class IFUM_AperMap_Maker:
         #self.create_widgets_mono()   # step 6
         self.bind_widgets()
 
-        #### initialize widgets 
+        #### initialize widgets
         self.shoe.set('b')
         self.refresh_folder()
         self.init_image()
 
     def create_widgets_files(self):
         #### folder
-        lbl_folder = tk.Label(self.frame1, text="Folder")
+        lbl_folder = tk.Label(self.frame1, text="Folder", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_folder.grid(row=0, column=0, sticky="w")
 
-        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder)
+        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, bg=BG_COLOR)
         self.btn_folder.grid(row=0, column=7, sticky="e", padx=5, pady=5)
 
         self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_default]))
         self.ent_folder.grid(row=1, column=0, columnspan=8, sticky="ew")
 
         #### file list
-        lbl_files = tk.Label(self.frame1, text="Files:")
+        lbl_files = tk.Label(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_files.grid(row=2, column=0, sticky="w")
 
-        self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder)
+        self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, bg=BG_COLOR)
         self.btn_refresh.grid(row=2, column=7, sticky="e", padx=5, pady=5)
 
         self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files)
         self.box_files.grid(row=3, column=0, columnspan=8, sticky="nsew")
 
         #### select shoe side
-        lbl_shoe = tk.Label(self.frame1, text="Shoe:")
+        lbl_shoe = tk.Label(self.frame1, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_shoe.grid(row=4, column=0, sticky="w")
 
-        self.shoe1 = tk.Radiobutton(self.frame1, text='b', variable=self.shoe, value='b')
+        self.shoe1 = tk.Radiobutton(self.frame1, text='b', variable=self.shoe, value='b', fg="cyan", bg=BG_COLOR)
         self.shoe1.grid(row=4, column=6, sticky='w')
-        self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r')
+        self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
         self.shoe2.grid(row=4, column=6, sticky='e')
 
     def create_widgets_curve(self):
-        """ step 1 fit curvature using an arc or twilight file """ 
-        lbl_step1 = tk.Label(self.frame1, text="Step 1:")
+        """ step 1 fit curvature using an arc or twilight file """
+        lbl_step1 = tk.Label(self.frame1, text="Step 1:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=5, column=0, sticky="w")
-        lbl_step1 = tk.Label(self.frame1, text="fit curvature using an ARC/TWI file")
+        lbl_step1 = tk.Label(self.frame1, text="fit curvature using an ARC/TWI file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=5, column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000")
+        self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_curve.grid(row=5, column=6, sticky="e")
 
-        self.btn_load_curve = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_curve)
+        self.btn_load_curve = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_curve, bg=BG_COLOR)
         self.btn_load_curve.grid(row=5, column=7, sticky="e", padx=5, pady=5)
 
         #### pick points
-        lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points")        
+        lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=6, column=1, columnspan=5, sticky="w")
 
         self.btn_select_curve = tk.Button(self.frame1, width=6, text="Select", command=self.pick_points, state='disabled')
         self.btn_select_curve.grid(row=6, column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters
-        lbl_param_curve_A = tk.Label(self.frame1, text="A =")
-        lbl_param_curve_A.grid(row=7, column=1, sticky="e") 
+        lbl_param_curve_A = tk.Label(self.frame1, text="A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A.grid(row=7, column=1, sticky="e")
         self.ent_param_curve_A = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A)
-        self.ent_param_curve_A.grid(row=7, column=2, sticky="ew") 
+        self.ent_param_curve_A.grid(row=7, column=2, sticky="ew")
 
-        lbl_param_curve_B = tk.Label(self.frame1, text="B =")
-        lbl_param_curve_B.grid(row=7, column=3, sticky="e") 
+        lbl_param_curve_B = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_B.grid(row=7, column=3, sticky="e")
         self.ent_param_curve_B = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B)
-        self.ent_param_curve_B.grid(row=7, column=4, sticky="ew") 
+        self.ent_param_curve_B.grid(row=7, column=4, sticky="ew")
 
-        lbl_param_curve_C = tk.Label(self.frame1, text="C =")
-        lbl_param_curve_C.grid(row=7, column=5, sticky="e") 
+        lbl_param_curve_C = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_C.grid(row=7, column=5, sticky="e")
         self.ent_param_curve_C = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C)
-        self.ent_param_curve_C.grid(row=7, column=6, sticky="ew") 
-        
+        self.ent_param_curve_C.grid(row=7, column=6, sticky="ew")
+
         self.btn_update_curve = tk.Button(self.frame1, width=6, text='Plot', command=self.update_curve)
         self.btn_update_curve.grid(row=7, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_edges(self):
         """ step 2 select edges using a science or twilight file """
-        lbl_step2 = tk.Label(self.frame1, text="Step 2:")
+        lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=8, column=0, sticky="w")
-        lbl_step2 = tk.Label(self.frame1, text="select full spectral span using a SCI/TWI file")
+        lbl_step2 = tk.Label(self.frame1, text="select full spectral span using a SCI/TWI file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=8, column=1, columnspan=5, sticky="w")
-        
-        self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000")
+
+        self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_edges.grid(row=8, column=6, sticky="e")
 
         self.btn_load_edges = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_edges, state='normal')
         self.btn_load_edges.grid(row=8, column=7, sticky="e", padx=5, pady=5)
 
         #### pick edges
-        lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")        
+        lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=9, column=1, columnspan=5, sticky="w")
 
         self.btn_select_edges = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges, state='disabled')
         self.btn_select_edges.grid(row=9, column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters
-        lbl_param_edges_X1 = tk.Label(self.frame1, text="X1 =")
-        lbl_param_edges_X1.grid(row=10, column=1, sticky="e") 
+        lbl_param_edges_X1 = tk.Label(self.frame1, text="X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1.grid(row=10, column=1, sticky="e")
         self.ent_param_edges_X1 = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1)
-        self.ent_param_edges_X1.grid(row=10, column=2, sticky="ew") 
+        self.ent_param_edges_X1.grid(row=10, column=2, sticky="ew")
 
-        lbl_param_edges_X2 = tk.Label(self.frame1, text="X2 =")
-        lbl_param_edges_X2.grid(row=10, column=3, sticky="e") 
+        lbl_param_edges_X2 = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X2.grid(row=10, column=3, sticky="e")
         self.ent_param_edges_X2 = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2, state='disable')
-        self.ent_param_edges_X2.grid(row=10, column=4, sticky="ew") 
+        self.ent_param_edges_X2.grid(row=10, column=4, sticky="ew")
 
-        lbl_param_edges_dX = tk.Label(self.frame1, text="dX =")
-        lbl_param_edges_dX.grid(row=10, column=5, sticky="e") 
+        lbl_param_edges_dX = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_dX.grid(row=10, column=5, sticky="e")
         self.ent_param_edges_dX = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX)
-        self.ent_param_edges_dX.grid(row=10, column=6, sticky="ew") 
+        self.ent_param_edges_dX.grid(row=10, column=6, sticky="ew")
 
         self.btn_update_edges = tk.Button(self.frame1, width=6, text='Plot', command=self.update_edges)
         self.btn_update_edges.grid(row=10, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self):
         """ step 3 check and make a masked LED fits file for tracing """
-        lbl_step3 = tk.Label(self.frame1, text="Step 3:")
+        lbl_step3 = tk.Label(self.frame1, text="Step 3:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=11, column=0, sticky="w")
-        lbl_step3 = tk.Label(self.frame1, text="make a TRACE file using an LED file")
+        lbl_step3 = tk.Label(self.frame1, text="make a TRACE file using an LED file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=11, column=1, columnspan=5, sticky="w")
-        
-        self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000")
+
+        self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_trace.grid(row=11, column=6, sticky="e")
 
         self.btn_load_trace = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_trace, state='normal')
@@ -228,21 +246,21 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_pypeit(self):
         """ step 4 run pypeit for tracing and making the AperMap """
-        lbl_step4 = tk.Label(self.frame1, text="Step 4:")
+        lbl_step4 = tk.Label(self.frame1, text="Step 4:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=13, column=0, sticky="w")
-        lbl_step4 = tk.Label(self.frame1, text="make an AperMap file using a TRACE file")
-        lbl_step4.grid(row=13, column=1, columnspan=4, sticky="w")    
+        lbl_step4 = tk.Label(self.frame1, text="make an AperMap file using a TRACE file", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4.grid(row=13, column=1, columnspan=4, sticky="w")
 
-        self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace")
+        self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace", fg=LABEL_COLOR)
         self.lbl_file_pypeit.grid(row=13, column=5, columnspan=2, sticky="e")
 
         self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal')
         self.btn_load_pypeit.grid(row=13, column=7, sticky="e", padx=5, pady=5)
 
         #### step 4a make a PypeIt file
-        lbl_step4a = tk.Label(self.frame1, text="4a. Make a PypeIt file")
+        lbl_step4a = tk.Label(self.frame1, text="4a. Make a PypeIt file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4a.grid(row=14, column=1, columnspan=3, sticky="w")
-        lbl_smash = tk.Label(self.frame1, text="smash range =")
+        lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_smash.grid(row=14, column=4, columnspan=2, sticky="e")
 
         self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range)
@@ -252,10 +270,10 @@ class IFUM_AperMap_Maker:
         self.btn_make_pypeit.grid(row=14, column=7, sticky='e', padx=5, pady=5)
 
         #### step 4b run PypeIt
-        lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits")
+        lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4b.grid(row=15, column=1, columnspan=3, sticky="w")
 
-        self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000")
+        self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         self.lbl_slitnum.grid(row=15, column=4, columnspan=2, sticky="e")
 
         self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled')
@@ -270,19 +288,19 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_add_slits(self):
         """ step 5 add bad/missing slits """
-        lbl_step5 = tk.Label(self.frame1, text="Step 5:")
+        lbl_step5 = tk.Label(self.frame1, text="Step 5:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=16, column=0, sticky="w")
-        lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap")
-        lbl_step5.grid(row=16, column=1, columnspan=4, sticky="w")    
+        lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap",fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step5.grid(row=16, column=1, columnspan=4, sticky="w")
 
-        self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000")
+        self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
         self.lbl_file_apermap.grid(row=16, column=5, columnspan=2, sticky="e")
 
         self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap, state='normal')
-        self.btn_load_apermap.grid(row=16, column=7, sticky="e", padx=5, pady=5)     
+        self.btn_load_apermap.grid(row=16, column=7, sticky="e", padx=5, pady=5)
 
         #### select y positions of all missing slits
-        lbl_slits_note = tk.Label(self.frame1, text='Note: Select along x-axis middle line; ESC to finish') 
+        lbl_slits_note = tk.Label(self.frame1, text='Note: Select along x-axis middle line; ESC to finish', fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_slits_note.grid(row=17, column=1, columnspan=5, sticky='w')
 
         self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled')
