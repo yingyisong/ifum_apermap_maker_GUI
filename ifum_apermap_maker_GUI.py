@@ -13,7 +13,7 @@ from datetime import datetime
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file
+from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, cached_fits_open
 
 def main():
     #### Create the entire GUI program
@@ -407,7 +407,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap['state'] = 'normal'
 
     def check_file_MasterSlits(self):
-        hdul = fits.open(self.path_MasterSlits)
+        hdul = cached_fits_open(self.path_MasterSlits)
         hdr = hdul[1].header
         N_slits = np.int32(hdr['NSLITS'])
         self.ifu_type = self.get_ifu_type(N_slits, 20)
@@ -435,7 +435,7 @@ class IFUM_AperMap_Maker:
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
 
-        hdul = fits.open(self.path_MasterSlits)
+        hdul = cached_fits_open(self.path_MasterSlits)
         hdr = hdul[1].header
         data = hdul[1].data
 
@@ -541,7 +541,7 @@ class IFUM_AperMap_Maker:
     def make_file_apermap(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
 
-        hdul = fits.open(self.path_MasterSlits)
+        hdul = cached_fits_open(self.path_MasterSlits)
         hdr = hdul[1].header
         data = hdul[1].data
 
@@ -735,7 +735,7 @@ class IFUM_AperMap_Maker:
         self.folder_trace = self.ent_folder_trace.get()
         filename = filedialog.askopenfilename(initialdir=self.folder_trace)
         if os.path.isfile(filename) and filename.endswith("_trace.fits"):
-            hdul_temp = fits.open(filename)
+            hdul_temp = cached_fits_open(filename)
             self.data_full = np.float32(hdul_temp[0].data)
 
             #self.folder_trace = filename[0:-17]
@@ -801,7 +801,7 @@ class IFUM_AperMap_Maker:
                 self.btn_make_apermap_slits['state'] = 'normal'
 
                 #### load Apermap
-                hdul_temp = fits.open(pathname)
+                hdul_temp = cached_fits_open(pathname)
                 self.data_full = np.float32(hdul_temp[0].data)
 
                 #### show the fits image
