@@ -442,6 +442,7 @@ def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
     file.write("[calibrations]\n")
     file.write("    [[slitedges]]\n")
     file.write("        smash_range = %s\n"%smash_range)
+    file.write("        auto_pca = False")
     file.write("\n")
     file.write("# Setup\n")
     file.write("setup read\n")
