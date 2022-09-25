@@ -559,8 +559,8 @@ class IFUM_AperMap_Maker:
             os.mkdir(dir_aperMap)
         if not os.path.exists(dir_backup):
             os.mkdir(dir_backup)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
         hdu_map.writeto(path_aperMap,overwrite=True)
         os.system('cp %s %s'%(path_aperMap, path_backup))
 
@@ -632,8 +632,8 @@ class IFUM_AperMap_Maker:
             os.mkdir(dir_aperMap)
         if not os.path.exists(dir_backup):
             os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_backup)
+        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_pypeit['text'][0], self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_temp)
+        file_backup = 'ap%s_%s_%s_%s.fits'%(self.lbl_file_pypeit['text'][0], self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_backup)
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
         path_backup = os.path.join(dir_backup, file_backup)
         hdu_map.writeto(path_aperMap,overwrite=True)
