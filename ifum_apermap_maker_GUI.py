@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from genericpath import exists
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -427,7 +428,8 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap['state'] = 'normal'
 
     def check_file_MasterSlits(self):
-        hdul = cached_fits_open(self.path_MasterSlits)
+        #hdul = cached_fits_open(self.path_MasterSlits)
+        hdul = fits.open(self.path_MasterSlits)
         hdr = hdul[1].header
         N_slits = np.int32(hdr['NSLITS'])
         self.ifu_type = self.get_ifu_type(N_slits, 20)
@@ -455,7 +457,8 @@ class IFUM_AperMap_Maker:
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
 
-        hdul = cached_fits_open(self.path_MasterSlits)
+        #hdul = cached_fits_open(self.path_MasterSlits)
+        hdul = fits.open(self.path_MasterSlits)
         hdr = hdul[1].header
         data = hdul[1].data
 
@@ -551,13 +554,15 @@ class IFUM_AperMap_Maker:
         today_temp = datetime.today().strftime('%y%m%d')
         today_backup = datetime.today().strftime('%y%m%d_%H%M')
         dir_aperMap = self.ent_folder_trace.get()
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
         path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
-        if os.path.exists(path_aperMap):
-            os.system('mv %s %s'%(path_aperMap, path_backup))
-        hdu_map.writeto(path_aperMap,overwrite=False)
+        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
@@ -569,7 +574,8 @@ class IFUM_AperMap_Maker:
     def make_file_apermap(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
 
-        hdul = cached_fits_open(self.path_MasterSlits)
+        #hdul = cached_fits_open(self.path_MasterSlits)
+        hdul = fits.open(self.path_MasterSlits)
         hdr = hdul[1].header
         data = hdul[1].data
 
@@ -621,15 +627,17 @@ class IFUM_AperMap_Maker:
         today_temp = datetime.today().strftime("%y%m%d")
         today_backup = datetime.today().strftime("%y%m%d_%H%M")
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
         file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_temp)
         file_backup = 'ap%s_%s_%s_%s.fits'%(self.shoe.get(), self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_backup)
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
-        path_backup = os.path.join(dir_aperMap, file_backup)
-        if os.path.exists(path_aperMap):
-            os.system("mv %s %s"%(path_aperMap, path_backup))
-        hdu_map.writeto(path_aperMap,overwrite=False)
+        path_backup = os.path.join(dir_backup, file_backup)
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         info_temp = 'Saved as %s'%path_aperMap
         self.popup_showinfo('aperMap', info_temp)
@@ -771,7 +779,8 @@ class IFUM_AperMap_Maker:
         self.folder_trace = self.ent_folder_trace.get()
         filename = filedialog.askopenfilename(initialdir=self.folder_trace)
         if os.path.isfile(filename) and filename.endswith("_trace.fits"):
-            hdul_temp = cached_fits_open(filename)
+            #hdul_temp = cached_fits_open(filename)
+            hdul_temp = fits.open(filename)
             self.data_full = np.float32(hdul_temp[0].data)
 
             #self.folder_trace = filename[0:-17]
@@ -821,7 +830,8 @@ class IFUM_AperMap_Maker:
                 N_slits = self.check_file_MasterSlits()
 
                 ####
-                hdul_temp = cached_fits_open(pathname)
+                #hdul_temp = cached_fits_open(pathname)
+                hdul_temp = fits.open(pathname)
                 #N_slits_file = hdul_temp[0].header['NSLITS']
 
                 #if N_slits==N_slits_file:
@@ -843,7 +853,8 @@ class IFUM_AperMap_Maker:
                 self.btn_make_apermap_slits['state'] = 'normal'
 
                 #### load Apermap
-                hdul_temp = cached_fits_open(pathname)
+                #hdul_temp = cached_fits_open(pathname)
+                hdul_temp = fits.open(pathname)
                 self.data_full = np.float32(hdul_temp[0].data)
 
                 #### show the fits image
@@ -1142,8 +1153,19 @@ class IFUM_AperMap_Maker:
         hdr_full['CCDSEC'] = '[1:%d,1:%d]'%(X2*2,Y2*2)
         hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
 
+        #### save trace file
         self.folder_trace = self.ent_folder_trace.get()
-        hdul_full.writeto(self.folder_trace+'/'+self.filename_trace+'.fits',overwrite=True)
+        path_trace = os.path.join(self.folder_trace, self.filename_trace+'.fits')
+        hdul_full.writeto(path_trace,overwrite=True)
+
+        #### save backup file
+        dir_backup = os.path.join(self.folder_trace, "backup_trace")
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
+        path_backup = os.path.join(dir_backup, "%s_%s_trace.fits"%(self.filename_trace[0:5], datetime.today().strftime('%y%m%d_%H%M')))
+        hdul_full.writeto(path_backup,overwrite=False)
+
+        #### control widgets
         self.btn_make_trace['state'] = 'disabled'
 
     def popup_showinfo(self, title, message):
