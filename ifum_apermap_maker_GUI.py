@@ -118,7 +118,7 @@ class IFUM_AperMap_Maker:
         lbl_folder = tk.Label(self.frame1, text="Folder", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_folder.grid(row=0, column=0, sticky="w")
 
-        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, bg=BG_COLOR)
+        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
         self.btn_folder.grid(row=0, column=7, sticky="e", padx=5, pady=5)
 
         self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_default]))
@@ -128,7 +128,7 @@ class IFUM_AperMap_Maker:
         lbl_files = tk.Label(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_files.grid(row=2, column=0, sticky="w")
 
-        self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, bg=BG_COLOR)
+        self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, highlightbackground=BG_COLOR)
         self.btn_refresh.grid(row=2, column=7, sticky="e", padx=5, pady=5)
 
         self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files)
@@ -153,14 +153,14 @@ class IFUM_AperMap_Maker:
         self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_curve.grid(row=5, column=6, sticky="e")
 
-        self.btn_load_curve = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_curve, bg=BG_COLOR)
+        self.btn_load_curve = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_curve, highlightbackground=BG_COLOR)
         self.btn_load_curve.grid(row=5, column=7, sticky="e", padx=5, pady=5)
 
         #### pick points
         lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=6, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_curve = tk.Button(self.frame1, width=6, text="Select", command=self.pick_points, state='disabled')
+        self.btn_select_curve = tk.Button(self.frame1, width=6, text="Select", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_curve.grid(row=6, column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters
@@ -179,7 +179,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C)
         self.ent_param_curve_C.grid(row=7, column=6, sticky="ew")
 
-        self.btn_update_curve = tk.Button(self.frame1, width=6, text='Plot', command=self.update_curve)
+        self.btn_update_curve = tk.Button(self.frame1, width=6, text='Plot', command=self.update_curve, highlightbackground=BG_COLOR)
         self.btn_update_curve.grid(row=7, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_edges(self):
@@ -192,14 +192,14 @@ class IFUM_AperMap_Maker:
         self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_edges.grid(row=8, column=6, sticky="e")
 
-        self.btn_load_edges = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_edges, state='normal')
+        self.btn_load_edges = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_edges, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_edges.grid(row=8, column=7, sticky="e", padx=5, pady=5)
 
         #### pick edges
         lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=9, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_edges = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges, state='disabled')
+        self.btn_select_edges = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_edges.grid(row=9, column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters
@@ -218,7 +218,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX)
         self.ent_param_edges_dX.grid(row=10, column=6, sticky="ew")
 
-        self.btn_update_edges = tk.Button(self.frame1, width=6, text='Plot', command=self.update_edges)
+        self.btn_update_edges = tk.Button(self.frame1, width=6, text='Plot', command=self.update_edges, highlightbackground=BG_COLOR)
         self.btn_update_edges.grid(row=10, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self):
@@ -231,17 +231,17 @@ class IFUM_AperMap_Maker:
         self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
         self.lbl_file_trace.grid(row=11, column=6, sticky="e")
 
-        self.btn_load_trace = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_trace, state='normal')
+        self.btn_load_trace = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_trace.grid(row=11, column=7, sticky="e", padx=5, pady=5)
 
         ####
         self.ent_folder_trace = tk.Entry(self.frame1, textvariable=self.txt_folder_trace, state='normal')
         self.ent_folder_trace.grid(row=12, column=1, columnspan=5, sticky="ew")
 
-        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder_trace, state='normal')
+        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_folder_trace.grid(row=12, column=6, sticky="ew", pady=5)
 
-        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Make", command=self.make_file_trace, state='disabled')
+        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Make", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_trace.grid(row=12, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_pypeit(self):
@@ -254,7 +254,7 @@ class IFUM_AperMap_Maker:
         self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace", fg=LABEL_COLOR)
         self.lbl_file_pypeit.grid(row=13, column=5, columnspan=2, sticky="e")
 
-        self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal')
+        self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_pypeit.grid(row=13, column=7, sticky="e", padx=5, pady=5)
 
         #### step 4a make a PypeIt file
@@ -266,7 +266,7 @@ class IFUM_AperMap_Maker:
         self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range)
         self.ent_smash_range.grid(row=14, column=6, sticky="ew")
 
-        self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled')
+        self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_pypeit.grid(row=14, column=7, sticky='e', padx=5, pady=5)
 
         #### step 4b run PypeIt
@@ -276,14 +276,14 @@ class IFUM_AperMap_Maker:
         self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         self.lbl_slitnum.grid(row=15, column=4, columnspan=2, sticky="e")
 
-        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled')
+        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled', highlightbackground=BG_COLOR)
         self.btn_run_pypeit.grid(row=15, column=6, sticky='e', padx=5, pady=5)
 
         #### step 4c save the AperMap
         #lbl_save = tk.Label(self.frame1, text="4c. Save the AperMap file")
         #lbl_save.grid(row=16, column=1, columnspan=4, sticky="w")
 
-        self.btn_make_apermap = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap, state='disabled')
+        self.btn_make_apermap = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap.grid(row=15, column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_add_slits(self):
@@ -296,17 +296,17 @@ class IFUM_AperMap_Maker:
         self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
         self.lbl_file_apermap.grid(row=16, column=5, columnspan=2, sticky="e")
 
-        self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap, state='normal')
+        self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_apermap.grid(row=16, column=7, sticky="e", padx=5, pady=5)
 
         #### select y positions of all missing slits
         lbl_slits_note = tk.Label(self.frame1, text='Note: Select along x-axis middle line; ESC to finish', fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_slits_note.grid(row=17, column=1, columnspan=5, sticky='w')
 
-        self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled')
+        self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_slits.grid(row=17, column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap_slits, state='disabled')
+        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap_slits, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_slits.grid(row=17, column=7, sticky='e', padx=5, pady=5)
 
     #def create_widgets_mono(self):
@@ -314,7 +314,7 @@ class IFUM_AperMap_Maker:
     #    lbl_step6 = tk.Label(self.frame1, text="Step 6:")
     #    lbl_step6.grid(row=17, column=0, sticky="w")
     #    lbl_step6 = tk.Label(self.frame1, text="(optional) make a monochromatic AperMap file")
-    #    lbl_step6.grid(row=17, column=1, columnspan=5, sticky="w")    
+    #    lbl_step6.grid(row=17, column=1, columnspan=5, sticky="w")
 
     #    self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_full")
     #    self.lbl_file_apermap.grid(row=17, column=6, sticky="e")
@@ -323,7 +323,7 @@ class IFUM_AperMap_Maker:
     #    self.btn_load_apermap.grid(row=17, column=7, sticky="e", padx=5, pady=5)
 
     #    #### pick edges for the monochromatic spec span
-    #    #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")        
+    #    #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")
     #    #lbl_edge.grid(row=19, column=1, sticky="w", columnspan=2)
 
     #    #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mono, state='disabled')
@@ -333,7 +333,7 @@ class IFUM_AperMap_Maker:
     #    #self.btn_edge_mc_make.grid(row=19, column=3, sticky="e", padx=5, pady=5)
 
     #    #self.lbl_edge_mc_param = tk.Label(self.frame1, relief=tk.SUNKEN, text="(x1, x2, dx) =")
-    #    #self.lbl_edge_mc_param.grid(row=19, column=1, columnspan=3, sticky="w") 
+    #    #self.lbl_edge_mc_param.grid(row=19, column=1, columnspan=3, sticky="w")
 
     def bind_widgets(self):
         """ event bindings """
@@ -354,7 +354,7 @@ class IFUM_AperMap_Maker:
 
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
-    
+
         self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
         self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
 
@@ -379,7 +379,7 @@ class IFUM_AperMap_Maker:
         self.param_curve[0] = np.float32(self.ent_param_curve_A.get())
         self.param_curve[1] = np.float32(self.ent_param_curve_B.get())
         self.param_curve[2] = np.float32(self.ent_param_curve_C.get())
-    
+
     def refresh_param_edges(self, *args):
         self.param_edges[0] = np.float32(self.ent_param_edges_X1.get())
         self.param_edges[1] = np.float32(self.ent_param_edges_X1.get())+np.float32(self.ent_param_edges_dX.get())
@@ -435,7 +435,7 @@ class IFUM_AperMap_Maker:
         #### show messages
         info_temp = 'PypeIt found %s slits, close to %d (%s)'%(N_slits,self.ifu_type.Ntotal/2,self.ifu_type.label)
         self.popup_showinfo('PypeIt', info_temp)
-        print('\n++++\n++++ %s\n++++\n'%(info_temp))      
+        print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
         return N_slits
 
@@ -708,9 +708,9 @@ class IFUM_AperMap_Maker:
             if os.path.isfile(fname):
                 self.data_full = None
                 self.hdr_c1 = None
-                self.data_full, self.hdr_c1 = pack_4fits_simple(fnum, dirname, shoe_i) 
+                self.data_full, self.hdr_c1 = pack_4fits_simple(fnum, dirname, shoe_i)
                 self.file_current = shoe_i+fnum
-                
+
                 #### show the fits image
                 self.clear_image()
                 self.update_image()
@@ -738,11 +738,11 @@ class IFUM_AperMap_Maker:
         self.lbl_file_pypeit.config(bg=bg_color)
         self.lbl_file_apermap.config(bg=bg_color)
         _dummy_lbl.destroy()
-        
+
     def load_4fits_curve(self):
         label = self.load_4fits()
         if label!='x0000':
-            self.lbl_file_curve["text"] = label 
+            self.lbl_file_curve["text"] = label
             self.gray_all_lbl_file()
             self.lbl_file_curve.config(bg='yellow')
             self.disable_dependent_btns()
@@ -751,7 +751,7 @@ class IFUM_AperMap_Maker:
     def load_4fits_edges(self):
         label = self.load_4fits()
         if label!='x0000':
-            self.lbl_file_edges["text"] = label 
+            self.lbl_file_edges["text"] = label
             self.gray_all_lbl_file()
             self.lbl_file_edges.config(bg='yellow')
             self.disable_dependent_btns()
@@ -761,7 +761,7 @@ class IFUM_AperMap_Maker:
         label = self.load_4fits()
         if label!='x0000':
             self.filename_trace = label+'_trace'
-            self.lbl_file_trace["text"] = label 
+            self.lbl_file_trace["text"] = label
             self.gray_all_lbl_file()
             self.lbl_file_trace.config(bg='yellow')
             self.disable_dependent_btns()
@@ -778,8 +778,8 @@ class IFUM_AperMap_Maker:
             self.folder_trace = os.path.dirname(filename)
             self.ent_folder_trace.delete(0, tk.END)
             self.ent_folder_trace.insert(tk.END, self.folder_trace)
-            
-            #self.filename_trace = filename.split('/')[-1] 
+
+            #self.filename_trace = filename.split('/')[-1]
             self.filename_trace = os.path.basename(filename)
             file_temp = self.filename_trace.split('.')[0]
             self.lbl_file_pypeit['text'] = file_temp
@@ -796,8 +796,8 @@ class IFUM_AperMap_Maker:
             self.update_image()
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
-            self.filename_trace = "x0000_trace.fits" 
-            self.file_current = "x0000" 
+            self.filename_trace = "x0000_trace.fits"
+            self.file_current = "x0000"
             self.lbl_file_pypeit['text'] = self.filename_trace.split('.')[0]
             self.disable_make_apermap()
             self.gray_all_lbl_file()
@@ -807,7 +807,7 @@ class IFUM_AperMap_Maker:
     def open_fits_apermap(self):
         self.folder_trace = self.ent_folder_trace.get()
         pathname = filedialog.askopenfilename(initialdir=self.folder_trace)
-        dirname, filename = os.path.split(pathname)        
+        dirname, filename = os.path.split(pathname)
 
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
             #### first check if the corresponding MasterSlits file exists
@@ -817,25 +817,25 @@ class IFUM_AperMap_Maker:
 
             if os.path.isfile(path_MasterSlits_temp):
                 #### update paths and file names
-                self.path_MasterSlits = path_MasterSlits_temp 
+                self.path_MasterSlits = path_MasterSlits_temp
                 N_slits = self.check_file_MasterSlits()
 
                 ####
                 hdul_temp = cached_fits_open(pathname)
-                #N_slits_file = hdul_temp[0].header['NSLITS'] 
+                #N_slits_file = hdul_temp[0].header['NSLITS']
 
                 #if N_slits==N_slits_file:
-                self.folder_trace = dirname 
+                self.folder_trace = dirname
                 self.ent_folder_trace.delete(0, tk.END)
                 self.ent_folder_trace.insert(tk.END, self.folder_trace)
-            
-                self.filename_trace = filename 
+
+                self.filename_trace = filename
                 file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
                 self.lbl_file_apermap['text'] = file_temp
                 self.file_current = file_temp+" (Nslits=%s)"%N_slits
                 self.shoe.set(file_temp[2])
 
-                #### handle other widegts 
+                #### handle other widegts
                 self.gray_all_lbl_file()
                 self.lbl_file_apermap.config(bg='yellow')
                 self.disable_dependent_btns()
@@ -851,8 +851,8 @@ class IFUM_AperMap_Maker:
                 self.update_image(uniform=True)
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
-            self.filename_trace = "apx0000_0000.fits" 
-            self.file_current = "0000" 
+            self.filename_trace = "apx0000_0000.fits"
+            self.file_current = "0000"
             self.lbl_file_apermap['text'] = self.filename_trace.split('.')[0]
             #self.disable_add_slit()
             self.gray_all_lbl_file()
@@ -931,19 +931,19 @@ class IFUM_AperMap_Maker:
 
     def key_press_slits(self, event):
         if event.key == 'escape':
-            #### enable other functions 
+            #### enable other functions
             self.enable_others()
             self.btn_select_slits['state'] = 'normal'
             self.btn_make_apermap_slits['state'] = 'normal'
 
-            #### save the y positions into a file  
+            #### save the y positions into a file
             dirname = os.path.join(self.folder_trace, 'slits_file')
             filename = self.filename_trace.split('_')[2]+'_slits.txt'
 
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
 
-            file = open(os.path.join(dirname, filename), 'w')            
+            file = open(os.path.join(dirname, filename), 'w')
             for point in self.points:
                 file.write("%d\n"%point[1])
             file.close()
@@ -953,14 +953,14 @@ class IFUM_AperMap_Maker:
 
     def key_press(self, event):
         if event.key == 'escape':
-            #### enable other functions 
+            #### enable other functions
             self.enable_others()
             self.btn_select_curve['state'] = 'disabled'
             self.btn_select_edges['state'] = 'disabled'
 
             #### break the mpl connection
             self.break_mpl_connect()
-    
+
     def on_click_slits(self, event):
         if event.button is MouseButton.RIGHT:
             if np.abs(self.y_last-event.ydata)>2:
@@ -968,7 +968,7 @@ class IFUM_AperMap_Maker:
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
                 self.ax.scatter(len(self.data_full[0])/2, event.ydata, c='r', marker='x', zorder=10)
-                self.update_image(uniform=True)        
+                self.update_image(uniform=True)
 
     def on_click_curve(self, event):
         if event.button is MouseButton.RIGHT:
@@ -976,7 +976,7 @@ class IFUM_AperMap_Maker:
                 self.points.append([event.xdata, event.ydata])
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
-                
+
                 self.ax.scatter(event.xdata, event.ydata, c='r', marker='x', zorder=10)
                 self.update_image()
 
@@ -997,7 +997,7 @@ class IFUM_AperMap_Maker:
                 #### plot the fitted curve
                 self.plot_curve()
 
-                #### enable other functions 
+                #### enable other functions
                 self.enable_others()
                 self.btn_select_curve['state'] = 'disabled'
 
@@ -1011,7 +1011,7 @@ class IFUM_AperMap_Maker:
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
                 self.ax.scatter(event.xdata, len(self.data_full)/2, c='r', marker='x', zorder=10)
-                self.update_image()        
+                self.update_image()
 
             if len(self.points) == 2:
                 self.param_edges = np.array([self.points[0][0], self.points[1][0]])
@@ -1030,7 +1030,7 @@ class IFUM_AperMap_Maker:
                 self.btn_select_edges['state'] = 'disabled'
 
                 #### break the mpl connection
-                self.break_mpl_connect()                
+                self.break_mpl_connect()
 
     def enable_others(self):
         self.btn_folder['state'] = 'normal'
@@ -1098,16 +1098,16 @@ class IFUM_AperMap_Maker:
         self.x_last, self.y_last = -1., -1.
         self.fig.canvas.mpl_disconnect(self.cidpick)
         self.fig.canvas.mpl_disconnect(self.cidexit)
-    
+
     def cut_data_by_edges(self, data_raw):
         data_mask = np.zeros_like(data_raw)
         yy = np.arange(len(data_raw))
         x1 = np.int32(np.round(func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[0])))
         x2 = np.int32(np.round(func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[1])))
-        
+
         for iy in range(len(yy)):
             data_mask[iy, x1[iy-1]:x2[iy]] = data_raw[iy, x1[iy-1]:x2[iy]]
-        
+
         return data_mask
 
     def make_file_trace(self):
