@@ -49,7 +49,8 @@ class IFUM_AperMap_Maker:
         self.window = tk.Tk()
         self.window.title("IFUM AperMap Maker")
         self.window.rowconfigure(0, minsize=800, weight=1)
-        self.window.columnconfigure(1, minsize=800, weight=1)
+        self.window.columnconfigure(1, minsize=600, weight=1)
+        self.window.columnconfigure(2, minsize=600, weight=1)
 
         #### IFUM units
         self.LSB = IFUM_UNIT('LSB')
@@ -66,6 +67,9 @@ class IFUM_AperMap_Maker:
         self.frame2 = tk.Frame(self.window)
         self.frame2.grid(row=0, column=1, sticky="nsew")
 
+        self.frame3 = tk.Frame(self.window)
+        self.frame3.grid(row=0, column=2, sticky="nsew")
+
         #### global widgets
         self.ent_folder = None
         self.box_files = None
@@ -73,7 +77,8 @@ class IFUM_AperMap_Maker:
 
         #### global values
         self.data_full = np.ones((4048, 4048), dtype=np.int32)
-        self.file_current = "x0000"
+        self.data_full2 = np.ones((4048, 4048), dtype=np.int32)
+        self.file_current = "0000"
 
         self.folder_default = "./data_raw/"
         self.folder_trace   = "./data_trace/"
@@ -82,19 +87,27 @@ class IFUM_AperMap_Maker:
         self.points = []
         self.x_last, self.y_last = -1., -1.
         self.curve_points = np.array([])
-        self.param_curve = np.array([1.22771242e-05, 2.28414233e+03, 7.87506089e+02]) #np.zeros(3)
-        self.param_edges = np.array([416., 1304., 1304.-416.])#np.zeros(2)
+        self.param_curve_b = np.array([1.22771242e-05, 2.28414233e+03, 7.87506089e+02]) #np.zeros(3)
+        self.param_curve_r = np.array([1.22771242e-05, 2.28414233e+03, 7.87506089e+02]) #np.zeros(3)
+        self.param_edges_b = np.array([416., 1304., 1304.-416.])#np.zeros(2)
+        self.param_edges_r = np.array([416., 1304., 1304.-416.])#np.zeros(2)
         self.param_smash_range = '0.4,0.6'
 
         #### initialize string variables
         self.fit_files = tk.StringVar()
         self.shoe = tk.StringVar()
-        self.txt_param_curve_A = tk.StringVar(value=['%.3e'%self.param_curve[0]])
-        self.txt_param_curve_B = tk.StringVar(value=['%.1f'%self.param_curve[1]])
-        self.txt_param_curve_C = tk.StringVar(value=['%.1f'%self.param_curve[2]])
-        self.txt_param_edges_X1 = tk.StringVar(value=['%.0f'%self.param_edges[0]])
-        self.txt_param_edges_X2 = tk.StringVar(value=['%.0f'%self.param_edges[1]])
-        self.txt_param_edges_dX = tk.StringVar(value=['%.0f'%self.param_edges[2]])
+        self.txt_param_curve_A_b = tk.StringVar(value=['%.3e'%self.param_curve_b[0]])
+        self.txt_param_curve_B_b = tk.StringVar(value=['%.1f'%self.param_curve_b[1]])
+        self.txt_param_curve_C_b = tk.StringVar(value=['%.1f'%self.param_curve_b[2]])
+        self.txt_param_curve_A_r = tk.StringVar(value=['%.3e'%self.param_curve_r[0]])
+        self.txt_param_curve_B_r = tk.StringVar(value=['%.1f'%self.param_curve_r[1]])
+        self.txt_param_curve_C_r = tk.StringVar(value=['%.1f'%self.param_curve_r[2]])
+        self.txt_param_edges_X1_b = tk.StringVar(value=['%.0f'%self.param_edges_b[0]])
+        self.txt_param_edges_X2_b = tk.StringVar(value=['%.0f'%self.param_edges_b[1]])
+        self.txt_param_edges_dX_b = tk.StringVar(value=['%.0f'%self.param_edges_b[2]])
+        self.txt_param_edges_X1_r = tk.StringVar(value=['%.0f'%self.param_edges_r[0]])
+        self.txt_param_edges_X2_r = tk.StringVar(value=['%.0f'%self.param_edges_r[1]])
+        self.txt_param_edges_dX_r = tk.StringVar(value=['%.0f'%self.param_edges_r[2]])
         self.txt_folder_trace = tk.StringVar(value=[self.folder_trace])
         self.txt_smash_range = tk.StringVar(value=[self.param_smash_range])
 
@@ -112,7 +125,8 @@ class IFUM_AperMap_Maker:
         #### initialize widgets
         self.shoe.set('b')
         self.refresh_folder()
-        self.init_image()
+        self.init_image1()
+        self.init_image2()
 
     def create_widgets_files(self):
         #### folder
@@ -151,7 +165,7 @@ class IFUM_AperMap_Maker:
         lbl_step1 = tk.Label(self.frame1, text="fit curvature using an ARC/TWI file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=5, column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
+        self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
         self.lbl_file_curve.grid(row=5, column=6, sticky="e")
 
         self.btn_load_curve = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_curve, highlightbackground=BG_COLOR)
@@ -161,154 +175,198 @@ class IFUM_AperMap_Maker:
         lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=6, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_curve = tk.Button(self.frame1, width=6, text="Select", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_curve.grid(row=6, column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_b.grid(row=6, column=6, sticky="e", padx=5, pady=5)
 
-        #### curve parameters
-        lbl_param_curve_A = tk.Label(self.frame1, text="A =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_A.grid(row=7, column=1, sticky="e")
-        self.ent_param_curve_A = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A)
-        self.ent_param_curve_A.grid(row=7, column=2, sticky="ew")
+        self.btn_select_curve_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_r.grid(row=6, column=7, sticky="e", padx=5, pady=5)
 
-        lbl_param_curve_B = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_B.grid(row=7, column=3, sticky="e")
-        self.ent_param_curve_B = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B)
-        self.ent_param_curve_B.grid(row=7, column=4, sticky="ew")
+        #### curve parameters (b-side)
+        lbl_param_curve_A_b = tk.Label(self.frame1, text="b:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A_b.grid(row=7, column=1, sticky="e")
+        self.ent_param_curve_A_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_b)
+        self.ent_param_curve_A_b.grid(row=7, column=2, sticky="ew")
 
-        lbl_param_curve_C = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_C.grid(row=7, column=5, sticky="e")
-        self.ent_param_curve_C = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C)
-        self.ent_param_curve_C.grid(row=7, column=6, sticky="ew")
+        lbl_param_curve_B_b = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_B_b.grid(row=7, column=3, sticky="e")
+        self.ent_param_curve_B_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B_b)
+        self.ent_param_curve_B_b.grid(row=7, column=4, sticky="ew")
 
-        self.btn_update_curve = tk.Button(self.frame1, width=6, text='Plot', command=self.update_curve, highlightbackground=BG_COLOR)
-        self.btn_update_curve.grid(row=7, column=7, sticky="e", padx=5, pady=5)
+        lbl_param_curve_C_b = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_C_b.grid(row=7, column=5, sticky="e")
+        self.ent_param_curve_C_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_b)
+        self.ent_param_curve_C_b.grid(row=7, column=6, sticky="ew")
+
+        self.btn_update_curve_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_curve_b, highlightbackground=BG_COLOR)
+        self.btn_update_curve_b.grid(row=7, column=7, sticky="e", padx=5, pady=5)
+
+        #### curve parameters (r-side)
+        lbl_param_curve_A_r = tk.Label(self.frame1, text="r:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A_r.grid(row=8, column=1, sticky="e")
+        self.ent_param_curve_A_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_r)
+        self.ent_param_curve_A_r.grid(row=8, column=2, sticky="ew")
+
+        lbl_param_curve_B_r = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_B_r.grid(row=8, column=3, sticky="e")
+        self.ent_param_curve_B_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B_r)
+        self.ent_param_curve_B_r.grid(row=8, column=4, sticky="ew")
+
+        lbl_param_curve_C_r = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_C_r.grid(row=8, column=5, sticky="e")
+        self.ent_param_curve_C_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_r)
+        self.ent_param_curve_C_r.grid(row=8, column=6, sticky="ew")
+
+        self.btn_update_curve_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_curve_r, highlightbackground=BG_COLOR)
+        self.btn_update_curve_r.grid(row=8, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_edges(self):
         """ step 2 select edges using a science or twilight file """
         lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step2.grid(row=8, column=0, sticky="w")
+        lbl_step2.grid(row=9, column=0, sticky="w")
         lbl_step2 = tk.Label(self.frame1, text="select full spectral span using a SCI/TWI file", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step2.grid(row=8, column=1, columnspan=5, sticky="w")
+        lbl_step2.grid(row=9, column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
-        self.lbl_file_edges.grid(row=8, column=6, sticky="e")
+        self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
+        self.lbl_file_edges.grid(row=9, column=6, sticky="e")
 
         self.btn_load_edges = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_edges, state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_edges.grid(row=8, column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_edges.grid(row=9, column=7, sticky="e", padx=5, pady=5)
 
         #### pick edges
         lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_note_edges.grid(row=9, column=1, columnspan=5, sticky="w")
+        lbl_note_edges.grid(row=10, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_edges = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_edges.grid(row=9, column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_b.grid(row=10, column=6, sticky="e", padx=5, pady=5)
 
-        #### edge parameters
-        lbl_param_edges_X1 = tk.Label(self.frame1, text="X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X1.grid(row=10, column=1, sticky="e")
-        self.ent_param_edges_X1 = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1)
-        self.ent_param_edges_X1.grid(row=10, column=2, sticky="ew")
+        self.btn_select_edges_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_r.grid(row=10, column=7, sticky="e", padx=5, pady=5)
 
-        lbl_param_edges_X2 = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X2.grid(row=10, column=3, sticky="e")
-        self.ent_param_edges_X2 = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2, state='disable')
-        self.ent_param_edges_X2.grid(row=10, column=4, sticky="ew")
+        #### edge parameters (b-side)
+        lbl_param_edges_X1_b = tk.Label(self.frame1, text="b: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1_b.grid(row=11, column=1, sticky="e")
+        self.ent_param_edges_X1_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_b)
+        self.ent_param_edges_X1_b.grid(row=11, column=2, sticky="ew")
 
-        lbl_param_edges_dX = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_dX.grid(row=10, column=5, sticky="e")
-        self.ent_param_edges_dX = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX)
-        self.ent_param_edges_dX.grid(row=10, column=6, sticky="ew")
+        lbl_param_edges_X2_b = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X2_b.grid(row=11, column=3, sticky="e")
+        self.ent_param_edges_X2_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2_b, state='disable')
+        self.ent_param_edges_X2_b.grid(row=11, column=4, sticky="ew")
 
-        self.btn_update_edges = tk.Button(self.frame1, width=6, text='Plot', command=self.update_edges, highlightbackground=BG_COLOR)
-        self.btn_update_edges.grid(row=10, column=7, sticky="e", padx=5, pady=5)
+        lbl_param_edges_dX_b = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_dX_b.grid(row=11, column=5, sticky="e")
+        self.ent_param_edges_dX_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_b)
+        self.ent_param_edges_dX_b.grid(row=11, column=6, sticky="ew")
+
+        self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
+        self.btn_update_edges_b.grid(row=11, column=7, sticky="e", padx=5, pady=5)
+
+        #### edge parameters (r-side)
+        lbl_param_edges_X1_r = tk.Label(self.frame1, text="r: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1_r.grid(row=12, column=1, sticky="e")
+        self.ent_param_edges_X1_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_r)
+        self.ent_param_edges_X1_r.grid(row=12, column=2, sticky="ew")
+
+        lbl_param_edges_X2_r = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X2_r.grid(row=12, column=3, sticky="e")
+        self.ent_param_edges_X2_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2_r, state='disable')
+        self.ent_param_edges_X2_r.grid(row=12, column=4, sticky="ew")
+
+        lbl_param_edges_dX_r = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_dX_r.grid(row=12, column=5, sticky="e")
+        self.ent_param_edges_dX_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_r)
+        self.ent_param_edges_dX_r.grid(row=12, column=6, sticky="ew")
+
+        self.btn_update_edges_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_edges_r, highlightbackground=BG_COLOR)
+        self.btn_update_edges_r.grid(row=12, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self):
         """ step 3 check and make a masked LED fits file for tracing """
         lbl_step3 = tk.Label(self.frame1, text="Step 3:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step3.grid(row=11, column=0, sticky="w")
+        lbl_step3.grid(row=13, column=0, sticky="w")
         lbl_step3 = tk.Label(self.frame1, text="make a TRACE file using an LED file", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step3.grid(row=11, column=1, columnspan=5, sticky="w")
+        lbl_step3.grid(row=13, column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000", fg=LABEL_COLOR)
-        self.lbl_file_trace.grid(row=11, column=6, sticky="e")
+        self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
+        self.lbl_file_trace.grid(row=13, column=6, sticky="e")
 
         self.btn_load_trace = tk.Button(self.frame1, width=6, text="Load", command=self.load_4fits_trace, state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_trace.grid(row=11, column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_trace.grid(row=13, column=7, sticky="e", padx=5, pady=5)
 
         ####
         self.ent_folder_trace = tk.Entry(self.frame1, textvariable=self.txt_folder_trace, state='normal')
-        self.ent_folder_trace.grid(row=12, column=1, columnspan=5, sticky="ew")
+        self.ent_folder_trace.grid(row=14, column=1, columnspan=5, sticky="ew")
 
         self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
-        self.btn_folder_trace.grid(row=12, column=6, sticky="ew", pady=5)
+        self.btn_folder_trace.grid(row=14, column=6, sticky="ew", pady=5)
 
         self.btn_make_trace = tk.Button(self.frame1, width=6, text="Make", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_trace.grid(row=12, column=7, sticky="e", padx=5, pady=5)
+        self.btn_make_trace.grid(row=14, column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_pypeit(self):
         """ step 4 run pypeit for tracing and making the AperMap """
         lbl_step4 = tk.Label(self.frame1, text="Step 4:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4.grid(row=13, column=0, sticky="w")
+        lbl_step4.grid(row=15, column=0, sticky="w")
         lbl_step4 = tk.Label(self.frame1, text="make an AperMap file using a TRACE file", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4.grid(row=13, column=1, columnspan=4, sticky="w")
+        lbl_step4.grid(row=15, column=1, columnspan=4, sticky="w")
 
         self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace", fg=LABEL_COLOR)
-        self.lbl_file_pypeit.grid(row=13, column=5, columnspan=2, sticky="e")
+        self.lbl_file_pypeit.grid(row=15, column=5, columnspan=2, sticky="e")
 
         self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_pypeit.grid(row=13, column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_pypeit.grid(row=15, column=7, sticky="e", padx=5, pady=5)
 
         #### step 4a make a PypeIt file
         lbl_step4a = tk.Label(self.frame1, text="4a. Make a PypeIt file", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4a.grid(row=14, column=1, columnspan=3, sticky="w")
+        lbl_step4a.grid(row=16, column=1, columnspan=3, sticky="w")
         lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_smash.grid(row=14, column=4, columnspan=2, sticky="e")
+        lbl_smash.grid(row=16, column=4, columnspan=2, sticky="e")
 
         self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range)
-        self.ent_smash_range.grid(row=14, column=6, sticky="ew")
+        self.ent_smash_range.grid(row=16, column=6, sticky="ew")
 
         self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_pypeit.grid(row=14, column=7, sticky='e', padx=5, pady=5)
+        self.btn_make_pypeit.grid(row=16, column=7, sticky='e', padx=5, pady=5)
 
         #### step 4b run PypeIt
         lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4b.grid(row=15, column=1, columnspan=3, sticky="w")
+        lbl_step4b.grid(row=17, column=1, columnspan=3, sticky="w")
 
         self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
-        self.lbl_slitnum.grid(row=15, column=4, columnspan=2, sticky="e")
+        self.lbl_slitnum.grid(row=17, column=4, columnspan=2, sticky="e")
 
         self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_run_pypeit.grid(row=15, column=6, sticky='e', padx=5, pady=5)
+        self.btn_run_pypeit.grid(row=17, column=6, sticky='e', padx=5, pady=5)
 
         #### step 4c save the AperMap
         #lbl_save = tk.Label(self.frame1, text="4c. Save the AperMap file")
         #lbl_save.grid(row=16, column=1, columnspan=4, sticky="w")
 
         self.btn_make_apermap = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_apermap.grid(row=15, column=7, sticky='e', padx=5, pady=5)
+        self.btn_make_apermap.grid(row=17, column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_add_slits(self):
         """ step 5 add bad/missing slits """
         lbl_step5 = tk.Label(self.frame1, text="Step 5:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step5.grid(row=16, column=0, sticky="w")
+        lbl_step5.grid(row=18, column=0, sticky="w")
         lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap",fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step5.grid(row=16, column=1, columnspan=4, sticky="w")
+        lbl_step5.grid(row=18, column=1, columnspan=4, sticky="w")
 
         self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
-        self.lbl_file_apermap.grid(row=16, column=5, columnspan=2, sticky="e")
+        self.lbl_file_apermap.grid(row=18, column=5, columnspan=2, sticky="e")
 
         self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap, state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_apermap.grid(row=16, column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_apermap.grid(row=18, column=7, sticky="e", padx=5, pady=5)
 
         #### select y positions of all missing slits
         lbl_slits_note = tk.Label(self.frame1, text='Note: Select along x-axis middle line; ESC to finish', fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_slits_note.grid(row=17, column=1, columnspan=5, sticky='w')
+        lbl_slits_note.grid(row=19, column=1, columnspan=5, sticky='w')
 
         self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_slits.grid(row=17, column=6, sticky="e", padx=5, pady=5)
+        self.btn_select_slits.grid(row=19, column=6, sticky="e", padx=5, pady=5)
 
         self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap_slits, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_apermap_slits.grid(row=17, column=7, sticky='e', padx=5, pady=5)
+        self.btn_make_apermap_slits.grid(row=19, column=7, sticky='e', padx=5, pady=5)
 
     #def create_widgets_mono(self):
     #    """ step 6 make monochromatic apermap """
@@ -341,17 +399,27 @@ class IFUM_AperMap_Maker:
         self.ent_folder.bind('<Return>', self.refresh_folder)
         self.ent_folder.bind('<KP_Enter>', self.refresh_folder) # unique for macOS
 
-        self.ent_param_curve_A.bind('<Return>', self.update_curve)
-        self.ent_param_curve_A.bind('<KP_Enter>', self.update_curve) # unique for macOS
-        self.ent_param_curve_B.bind('<Return>', self.update_curve)
-        self.ent_param_curve_B.bind('<KP_Enter>', self.update_curve) # unique for macOS
-        self.ent_param_curve_C.bind('<Return>', self.update_curve)
-        self.ent_param_curve_C.bind('<KP_Enter>', self.update_curve) # unique for macOS
+        self.ent_param_curve_A_b.bind('<Return>', self.update_curve_b)
+        self.ent_param_curve_A_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
+        self.ent_param_curve_B_b.bind('<Return>', self.update_curve_b)
+        self.ent_param_curve_B_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
+        self.ent_param_curve_C_b.bind('<Return>', self.update_curve_b)
+        self.ent_param_curve_C_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
+        self.ent_param_curve_A_r.bind('<Return>', self.update_curve_r)
+        self.ent_param_curve_A_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
+        self.ent_param_curve_B_r.bind('<Return>', self.update_curve_r)
+        self.ent_param_curve_B_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
+        self.ent_param_curve_C_r.bind('<Return>', self.update_curve_r)
+        self.ent_param_curve_C_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
 
-        self.ent_param_edges_X1.bind('<Return>', self.update_edges)
-        self.ent_param_edges_X1.bind('<KP_Enter>', self.update_edges) # unique for macOS
-        self.ent_param_edges_dX.bind('<Return>', self.update_edges)
-        self.ent_param_edges_dX.bind('<KP_Enter>', self.update_edges) # unique for macOS
+        self.ent_param_edges_X1_b.bind('<Return>', self.update_edges_b)
+        self.ent_param_edges_X1_b.bind('<KP_Enter>', self.update_edges_b) # unique for macOS
+        self.ent_param_edges_dX_b.bind('<Return>', self.update_edges_b)
+        self.ent_param_edges_dX_b.bind('<KP_Enter>', self.update_edges_b) # unique for macOS
+        self.ent_param_edges_X1_r.bind('<Return>', self.update_edges_r)
+        self.ent_param_edges_X1_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
+        self.ent_param_edges_dX_r.bind('<Return>', self.update_edges_r)
+        self.ent_param_edges_dX_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
 
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
@@ -364,28 +432,55 @@ class IFUM_AperMap_Maker:
     def refresh_smash_range(self, *args):
         self.window.focus_set()
 
-    def update_curve(self, *agrs):
-        self.refresh_param_curve()
-        self.clear_image()
-        self.plot_curve()
+    def update_curve_b(self, *agrs):
+        shoe = 'b'
+        self.refresh_param_curve(shoe)
+        self.clear_image(shoe=shoe)
+        self.plot_curve(shoe=shoe)
         self.window.focus_set()
 
-    def update_edges(self, *args):
-        self.refresh_param_edges()
-        self.clear_image()
-        self.plot_edges()
+    def update_curve_r(self, *agrs):
+        shoe = 'r'
+        self.refresh_param_curve(shoe)
+        self.clear_image(shoe=shoe)
+        self.plot_curve(shoe=shoe)
         self.window.focus_set()
 
-    def refresh_param_curve(self, *args):
-        self.param_curve[0] = np.float32(self.ent_param_curve_A.get())
-        self.param_curve[1] = np.float32(self.ent_param_curve_B.get())
-        self.param_curve[2] = np.float32(self.ent_param_curve_C.get())
+    def update_edges_b(self, *args):
+        shoe = 'b'
+        self.refresh_param_edges(shoe)
+        self.clear_image(shoe=shoe)
+        self.plot_edges(shoe=shoe)
+        self.window.focus_set()
 
-    def refresh_param_edges(self, *args):
-        self.param_edges[0] = np.float32(self.ent_param_edges_X1.get())
-        self.param_edges[1] = np.float32(self.ent_param_edges_X1.get())+np.float32(self.ent_param_edges_dX.get())
-        self.param_edges[2] = np.float32(self.ent_param_edges_dX.get())
-        self.ent_param_edges_X2['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges[1])
+    def update_edges_r(self, *args):
+        shoe = 'r'
+        self.refresh_param_edges(shoe)
+        self.clear_image(shoe=shoe)
+        self.plot_edges(shoe=shoe)
+        self.window.focus_set()
+
+    def refresh_param_curve(self, shoe, *args):
+        if shoe=='b':
+            self.param_curve_b[0] = np.float32(self.ent_param_curve_A_b.get())
+            self.param_curve_b[1] = np.float32(self.ent_param_curve_B_b.get())
+            self.param_curve_b[2] = np.float32(self.ent_param_curve_C_b.get())
+        elif shoe=='r':
+            self.param_curve_r[0] = np.float32(self.ent_param_curve_A_r.get())
+            self.param_curve_r[1] = np.float32(self.ent_param_curve_B_r.get())
+            self.param_curve_r[2] = np.float32(self.ent_param_curve_C_r.get())
+
+    def refresh_param_edges(self, shoe, *args):
+        if shoe=='b':
+            self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
+            self.param_edges_b[1] = np.float32(self.ent_param_edges_X1_b.get())+np.float32(self.ent_param_edges_dX_b.get())
+            self.param_edges_b[2] = np.float32(self.ent_param_edges_dX_b.get())
+            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
+        elif shoe=='r':
+            self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
+            self.param_edges_r[1] = np.float32(self.ent_param_edges_X1_r.get())+np.float32(self.ent_param_edges_dX_r.get())
+            self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
+            self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
     def make_file_pypeit(self):
         dirname = self.ent_folder_trace.get()
@@ -705,6 +800,32 @@ class IFUM_AperMap_Maker:
 
     def load_4fits(self):
         """Load the selected fits file."""
+        #shoe_i = self.shoe.get()
+        dirname = self.ent_folder.get()
+        idxs = self.box_files.curselection()
+
+        if len(idxs)==1:
+            idx = int(idxs[0])
+            fnum = self.box_files.get(idx)
+            fname = os.path.join(dirname, "b%sc1.fits"%(fnum))
+            if os.path.isfile(fname):
+                self.data_full = None
+                self.hdr_c1 = None
+                self.data_full, self.hdr_c1 = pack_4fits_simple(fnum, dirname, 'b')
+                self.file_current = fnum
+
+                self.data_full2 = None
+                self.data_full2, hdr_temp = pack_4fits_simple(fnum, dirname, 'r')
+
+                #### show the fits image
+                self.clear_image()
+                self.update_image()
+                return fnum #shoe_i+fnum
+        else:
+            return '0000'
+
+    def load_4fits_old(self):
+        """Load the selected fits file."""
         shoe_i = self.shoe.get()
         dirname = self.ent_folder.get()
         idxs = self.box_files.curselection()
@@ -727,8 +848,8 @@ class IFUM_AperMap_Maker:
             return 'x0000'
 
     def disable_dependent_btns(self):
-        self.btn_select_curve['state'] = 'disabled'
-        self.btn_select_edges['state'] = 'disabled'
+        self.btn_select_curve_b['state'] = 'disabled'
+        self.btn_select_edges_b['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
@@ -749,25 +870,25 @@ class IFUM_AperMap_Maker:
 
     def load_4fits_curve(self):
         label = self.load_4fits()
-        if label!='x0000':
+        if label!='0000':
             self.lbl_file_curve["text"] = label
             self.gray_all_lbl_file()
             self.lbl_file_curve.config(bg='yellow')
             self.disable_dependent_btns()
-            self.btn_select_curve['state'] = 'normal'
+            self.btn_select_curve_b['state'] = 'normal'
 
     def load_4fits_edges(self):
         label = self.load_4fits()
-        if label!='x0000':
+        if label!='0000':
             self.lbl_file_edges["text"] = label
             self.gray_all_lbl_file()
             self.lbl_file_edges.config(bg='yellow')
             self.disable_dependent_btns()
-            self.btn_select_edges['state'] = 'normal'
+            self.btn_select_edges_b['state'] = 'normal'
 
     def load_4fits_trace(self):
         label = self.load_4fits()
-        if label!='x0000':
+        if label!='0000':
             self.filename_trace = label+'_trace'
             self.lbl_file_trace["text"] = label
             self.gray_all_lbl_file()
@@ -805,8 +926,8 @@ class IFUM_AperMap_Maker:
             self.update_image()
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
-            self.filename_trace = "x0000_trace.fits"
-            self.file_current = "x0000"
+            self.filename_trace = "0000_trace.fits"
+            self.file_current = "0000"
             self.lbl_file_pypeit['text'] = self.filename_trace.split('.')[0]
             self.disable_make_apermap()
             self.gray_all_lbl_file()
@@ -842,7 +963,7 @@ class IFUM_AperMap_Maker:
                 self.filename_trace = filename
                 file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
                 self.lbl_file_apermap['text'] = file_temp
-                self.file_current = file_temp+" (Nslits=%s)"%N_slits
+                self.file_current = file_temp+" (Nslits=%s)"%N_slits ### check if this is correct
                 self.shoe.set(file_temp[2])
 
                 #### handle other widegts
@@ -870,9 +991,9 @@ class IFUM_AperMap_Maker:
             self.fig.clf()
             self.canvas.draw_idle()
 
-    def init_image(self):
+    def init_image1(self):
         # the figure that will contain the plot
-        self.fig = Figure(figsize = (8, 8))
+        self.fig = Figure(figsize = (6, 8))
         self.fig.clf()
 
         # creating the Tkinter canvas
@@ -890,41 +1011,103 @@ class IFUM_AperMap_Maker:
         # placing the toolbar on the Tkinter window
         self.canvas.get_tk_widget().pack() #grid(row=1, column=0)
 
-    def clear_image(self):
-        self.fig.clf()
-        self.ax = self.fig.add_subplot(111)
+    def init_image2(self):
+        # the figure that will contain the plot
+        self.fig2 = Figure(figsize = (6, 8))
+        self.fig2.clf()
 
-    def update_image(self, percent=85.9, uniform=False):
-        if uniform:
-            self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
+        # creating the Tkinter canvas
+        # containing the Matplotlib figure
+        self.canvas2 = FigureCanvasTkAgg(self.fig2, master=self.frame3)  # A tk.DrawingArea.
+        self.canvas2.draw()
+
+        # placing the canvas on the Tkinter window
+        self.canvas2.get_tk_widget().pack() #grid(row=0, column=0)
+
+        # creating the Matplotlib toolbar
+        self.toolbar2 = NavigationToolbar2Tk(self.canvas2, self.frame3)
+        self.toolbar2.update()
+
+        # placing the toolbar on the Tkinter window
+        self.canvas2.get_tk_widget().pack() #grid(row=1, column=0)
+
+    def clear_image(self, shoe='both'):
+        if shoe=='b':
+            self.fig.clf()
+            self.ax = self.fig.add_subplot(111)
+        elif shoe=='r':
+            self.fig2.clf()
+            self.ax2 = self.fig2.add_subplot(111)
         else:
-            self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
-        self.ax.set_title(self.file_current)
-        self.canvas.draw_idle()
+            self.fig.clf()
+            self.ax = self.fig.add_subplot(111)
+            self.fig2.clf()
+            self.ax2 = self.fig2.add_subplot(111)
 
-    def plot_curve(self):
-        yy = np.arange(len(self.data_full))
-        xx = func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_curve[2])
-        self.ax.plot(xx, yy, 'r--')
-        self.update_image()
+    def update_image(self, shoe='both', percent=85.9, uniform=False):
+        if shoe=='b':
+            if uniform:
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
+            else:
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
+            self.ax.set_title("b%s"%self.file_current)
+            self.canvas.draw_idle()
+        elif shoe=='r':
+            if uniform:
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
+            else:
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
+            self.ax2.set_title("r%s"%self.file_current)
+            self.canvas2.draw_idle()
+        else:
+            if uniform:
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
+            else:
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
+            self.ax.set_title("b%s"%self.file_current)
+            self.ax2.set_title("r%s"%self.file_current)
+            self.canvas.draw_idle()
+            self.canvas2.draw_idle()
 
-    def plot_edges(self):
-        yy = np.arange(len(self.data_full))
-        x1 = func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[0])
-        self.ax.plot(x1, yy, 'r--')
-        x2 = func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[1])
-        self.ax.plot(x2, yy, 'r--')
-        self.update_image()
+    def plot_curve(self, shoe):
+        if shoe=='b':
+            yy = np.arange(len(self.data_full))
+            xx = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2])
+            self.ax.plot(xx, yy, 'r--')
+            self.update_image(shoe=shoe)
+        elif shoe=='r':
+            yy = np.arange(len(self.data_full2))
+            xx = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2])
+            self.ax2.plot(xx, yy, 'r--')
+            self.update_image(shoe=shoe)
+
+    def plot_edges(self, shoe):
+        if shoe=='b':
+            yy = np.arange(len(self.data_full))
+            x1 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[0])
+            self.ax.plot(x1, yy, 'r--')
+            x2 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])
+            self.ax.plot(x2, yy, 'r--')
+            self.update_image()
+        elif shoe=='r':
+            yy = np.arange(len(self.data_full2))
+            x1 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[0])
+            self.ax2.plot(x1, yy, 'r--')
+            x2 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[1])
+            self.ax2.plot(x2, yy, 'r--')
+            self.update_image()
 
     def pick_points(self):
         self.disable_others()
-        self.btn_select_curve['state'] = 'active'
+        self.btn_select_curve_b['state'] = 'active'
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_curve)
         self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def pick_edges(self):
         self.disable_others()
-        self.btn_select_edges['state'] = 'active'
+        self.btn_select_edges_b['state'] = 'active'
 
         self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
         self.update_image()
@@ -966,8 +1149,8 @@ class IFUM_AperMap_Maker:
         if event.key == 'escape':
             #### enable other functions
             self.enable_others()
-            self.btn_select_curve['state'] = 'disabled'
-            self.btn_select_edges['state'] = 'disabled'
+            self.btn_select_curve_b['state'] = 'disabled'
+            self.btn_select_edges_b['state'] = 'disabled'
 
             #### break the mpl connection
             self.break_mpl_connect()
@@ -1000,17 +1183,17 @@ class IFUM_AperMap_Maker:
                 popt, pcov = curve_fit(func_parabola, pts[:, 1], pts[:, 0])
                 print(popt)
 
-                self.txt_param_curve_A.set("%.3e"%(popt[0]))
-                self.txt_param_curve_B.set("%.1f"%(popt[1]))
-                self.txt_param_curve_C.set("%.1f"%(popt[2]))
-                self.param_curve = popt
+                self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
+                self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
+                self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
+                self.param_curve_b = popt
 
                 #### plot the fitted curve
                 self.plot_curve()
 
                 #### enable other functions
                 self.enable_others()
-                self.btn_select_curve['state'] = 'disabled'
+                self.btn_select_curve_b['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
@@ -1025,20 +1208,20 @@ class IFUM_AperMap_Maker:
                 self.update_image()
 
             if len(self.points) == 2:
-                self.param_edges = np.array([self.points[0][0], self.points[1][0]])
-                self.param_edges = np.sort(self.param_edges)
-                self.param_edges = np.append(self.param_edges, self.param_edges[1]-self.param_edges[0])
+                self.param_edges_b = np.array([self.points[0][0], self.points[1][0]])
+                self.param_edges_b = np.sort(self.param_edges_b)
+                self.param_edges_b = np.append(self.param_edges_b, self.param_edges_b[1]-self.param_edges_b[0])
 
-                self.txt_param_edges_X1.set("%.0f"%(self.param_edges[0]))
-                self.txt_param_edges_X2.set("%.0f"%(self.param_edges[1]))
-                self.txt_param_edges_dX.set("%.0f"%(self.param_edges[2]))
+                self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
+                self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
+                self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
 
                 #### plot the edges
                 self.plot_edges()
 
                 #### enable other functions
                 self.enable_others()
-                self.btn_select_edges['state'] = 'disabled'
+                self.btn_select_edges_b['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
@@ -1056,14 +1239,23 @@ class IFUM_AperMap_Maker:
         self.btn_load_trace['state'] = 'normal'
         self.btn_load_pypeit['state'] = 'normal'
         self.btn_load_apermap['state'] = 'normal'
-        self.btn_update_curve['state'] = 'normal'
-        self.btn_update_edges['state'] = 'normal'
+        
+        self.btn_update_curve_b['state'] = 'normal'
+        self.btn_update_edges_b['state'] = 'normal'
+        self.ent_param_curve_A_b['state'] = 'normal'
+        self.ent_param_curve_B_b['state'] = 'normal'
+        self.ent_param_curve_C_b['state'] = 'normal'
+        self.ent_param_edges_X1_b['state'] = 'normal'
+        self.ent_param_edges_dX_b['state'] = 'normal'
 
-        self.ent_param_curve_A['state'] = 'normal'
-        self.ent_param_curve_B['state'] = 'normal'
-        self.ent_param_curve_C['state'] = 'normal'
-        self.ent_param_edges_X1['state'] = 'normal'
-        self.ent_param_edges_dX['state'] = 'normal'
+        self.btn_update_curve_r['state'] = 'normal'
+        self.btn_update_edges_r['state'] = 'normal'
+        self.ent_param_curve_A_r['state'] = 'normal'
+        self.ent_param_curve_B_r['state'] = 'normal'
+        self.ent_param_curve_C_r['state'] = 'normal'
+        self.ent_param_edges_X1_r['state'] = 'normal'
+        self.ent_param_edges_dX_r['state'] = 'normal'
+
         self.ent_smash_range['state'] = 'normal'
 
         self.ent_folder_trace['state'] = 'normal'
@@ -1082,21 +1274,30 @@ class IFUM_AperMap_Maker:
         self.btn_load_trace['state'] = 'disabled'
         self.btn_load_pypeit['state'] = 'disabled'
         self.btn_load_apermap['state'] = 'disabled'
-        self.btn_update_curve['state'] = 'disabled'
-        self.btn_update_edges['state'] = 'disabled'
 
-        self.ent_param_curve_A['state'] = 'disabled'
-        self.ent_param_curve_B['state'] = 'disabled'
-        self.ent_param_curve_C['state'] = 'disabled'
-        self.ent_param_edges_X1['state'] = 'disabled'
-        self.ent_param_edges_dX['state'] = 'disabled'
+        self.btn_update_curve_b['state'] = 'disabled'
+        self.btn_update_edges_b['state'] = 'disabled'
+        self.ent_param_curve_A_b['state'] = 'disabled'
+        self.ent_param_curve_B_b['state'] = 'disabled'
+        self.ent_param_curve_C_b['state'] = 'disabled'
+        self.ent_param_edges_X1_b['state'] = 'disabled'
+        self.ent_param_edges_dX_b['state'] = 'disabled'
+
+        self.btn_update_curve_r['state'] = 'disabled'
+        self.btn_update_edges_r['state'] = 'disabled'
+        self.ent_param_curve_A_r['state'] = 'disabled'
+        self.ent_param_curve_B_r['state'] = 'disabled'
+        self.ent_param_curve_C_r['state'] = 'disabled'
+        self.ent_param_edges_X1_r['state'] = 'disabled'
+        self.ent_param_edges_dX_r['state'] = 'disabled'
+
         self.ent_smash_range['state'] = 'disabled'
 
         self.ent_folder_trace['state'] = 'disabled'
         self.btn_folder_trace['state'] = 'disabled'
 
-        self.btn_select_curve['state'] = 'disabled'
-        self.btn_select_edges['state'] = 'disabled'
+        self.btn_select_curve_b['state'] = 'disabled'
+        self.btn_select_edges_b['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_apermap['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
@@ -1113,8 +1314,8 @@ class IFUM_AperMap_Maker:
     def cut_data_by_edges(self, data_raw):
         data_mask = np.zeros_like(data_raw)
         yy = np.arange(len(data_raw))
-        x1 = np.int32(np.round(func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[0])))
-        x2 = np.int32(np.round(func_parabola(yy, self.param_curve[0], self.param_curve[1], self.param_edges[1])))
+        x1 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[0])))
+        x2 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])))
 
         for iy in range(len(yy)):
             data_mask[iy, x1[iy-1]:x2[iy]] = data_raw[iy, x1[iy-1]:x2[iy]]
