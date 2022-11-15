@@ -88,9 +88,9 @@ class IFUM_AperMap_Maker:
         self.x_last, self.y_last = -1., -1.
         self.curve_points = np.array([])
         self.param_curve_b = np.array([1.22771242e-05, 2.28414233e+03, 7.87506089e+02]) #np.zeros(3)
-        self.param_curve_r = np.array([1.22771242e-05, 2.28414233e+03, 7.87506089e+02]) #np.zeros(3)
-        self.param_edges_b = np.array([416., 1304., 1304.-416.])#np.zeros(2)
-        self.param_edges_r = np.array([416., 1304., 1304.-416.])#np.zeros(2)
+        self.param_curve_r = np.array([1.53314740e-05, 2.12797487e+03, 6.75423701e+02]) #np.zeros(3)
+        self.param_edges_b = np.array([418., 1250., 1250.-418.])#np.zeros(2)
+        self.param_edges_r = np.array([426., 1258., 1258.-426.])#np.zeros(2)
         self.param_smash_range = '0.4,0.6'
 
         #### initialize string variables
@@ -175,10 +175,10 @@ class IFUM_AperMap_Maker:
         lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=6, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_curve_b.grid(row=6, column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_select_curve_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_points, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_points_r, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_curve_r.grid(row=6, column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (b-side)
@@ -236,10 +236,10 @@ class IFUM_AperMap_Maker:
         lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=10, column=1, columnspan=5, sticky="w")
 
-        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges_b, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_edges_b.grid(row=10, column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_select_edges_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_edges, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_edges_r, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_edges_r.grid(row=10, column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (b-side)
@@ -849,7 +849,9 @@ class IFUM_AperMap_Maker:
 
     def disable_dependent_btns(self):
         self.btn_select_curve_b['state'] = 'disabled'
+        self.btn_select_curve_r['state'] = 'disabled'
         self.btn_select_edges_b['state'] = 'disabled'
+        self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
@@ -876,6 +878,7 @@ class IFUM_AperMap_Maker:
             self.lbl_file_curve.config(bg='yellow')
             self.disable_dependent_btns()
             self.btn_select_curve_b['state'] = 'normal'
+            self.btn_select_curve_r['state'] = 'normal'
 
     def load_4fits_edges(self):
         label = self.load_4fits()
@@ -885,6 +888,7 @@ class IFUM_AperMap_Maker:
             self.lbl_file_edges.config(bg='yellow')
             self.disable_dependent_btns()
             self.btn_select_edges_b['state'] = 'normal'
+            self.btn_select_edges_r['state'] = 'normal'
 
     def load_4fits_trace(self):
         label = self.load_4fits()
@@ -1099,20 +1103,39 @@ class IFUM_AperMap_Maker:
             self.ax2.plot(x2, yy, 'r--')
             self.update_image()
 
-    def pick_points(self):
+    def pick_points_b(self):
+        shoe = 'b'
         self.disable_others()
         self.btn_select_curve_b['state'] = 'active'
-        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_curve)
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve'))
 
-    def pick_edges(self):
+    def pick_points_r(self):
+        shoe = 'r'
+        self.disable_others()
+        self.btn_select_curve_r['state'] = 'active'
+        self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
+        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve'))
+
+    def pick_edges_b(self):
+        shoe = 'b'
         self.disable_others()
         self.btn_select_edges_b['state'] = 'active'
 
         self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
-        self.update_image()
-        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_edges)
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        self.update_image(shoe=shoe)
+        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges'))
+
+    def pick_edges_r(self):
+        shoe = 'r'
+        self.disable_others()
+        self.btn_select_edges_r['state'] = 'active'
+
+        self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
+        self.update_image(shoe=shoe)
+        self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
+        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges'))
 
     def pick_slits(self):
         self.disable_others()
@@ -1145,12 +1168,23 @@ class IFUM_AperMap_Maker:
             #### break the mpl connection
             self.break_mpl_connect()
 
-    def key_press(self, event):
+    def key_press(self, event, step):
         if event.key == 'escape':
             #### enable other functions
             self.enable_others()
-            self.btn_select_curve_b['state'] = 'disabled'
-            self.btn_select_edges_b['state'] = 'disabled'
+
+            if step=='curve':
+                self.btn_select_curve_b['state'] = 'normal'
+                self.btn_select_curve_r['state'] = 'normal'
+            elif step=='edges':
+                self.btn_select_edges_b['state'] = 'normal'
+                self.btn_select_edges_r['state'] = 'normal'
+            #if shoe=='b':
+            #    self.btn_select_curve_b['state'] = 'disabled'
+            #    self.btn_select_edges_b['state'] = 'disabled'
+            #elif shoe=='r':
+            #    self.btn_select_curve_r['state'] = 'disabled'
+            #    self.btn_select_edges_r['state'] = 'disabled'
 
             #### break the mpl connection
             self.break_mpl_connect()
@@ -1164,15 +1198,18 @@ class IFUM_AperMap_Maker:
                 self.ax.scatter(len(self.data_full[0])/2, event.ydata, c='r', marker='x', zorder=10)
                 self.update_image(uniform=True)
 
-    def on_click_curve(self, event):
+    def on_click_curve(self, event, shoe):
         if event.button is MouseButton.RIGHT:
             if len(self.points)<6 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
                 self.points.append([event.xdata, event.ydata])
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
 
-                self.ax.scatter(event.xdata, event.ydata, c='r', marker='x', zorder=10)
-                self.update_image()
+                if shoe=='b':
+                    self.ax.scatter(event.xdata, event.ydata, c='r', marker='x', zorder=10)
+                elif shoe=='r':
+                    self.ax2.scatter(event.xdata, event.ydata, c='r', marker='x', zorder=10)
+                self.update_image(shoe=shoe)
 
             if len(self.points)==6:
                 pts = np.array(self.points)
@@ -1183,45 +1220,76 @@ class IFUM_AperMap_Maker:
                 popt, pcov = curve_fit(func_parabola, pts[:, 1], pts[:, 0])
                 print(popt)
 
-                self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
-                self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
-                self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
-                self.param_curve_b = popt
+                if shoe=='b':
+                    self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
+                    self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
+                    self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
+                    self.param_curve_b = popt
+                elif shoe=='r':
+                    self.txt_param_curve_A_r.set("%.3e"%(popt[0]))
+                    self.txt_param_curve_B_r.set("%.1f"%(popt[1]))
+                    self.txt_param_curve_C_r.set("%.1f"%(popt[2]))
+                    self.param_curve_r = popt
 
                 #### plot the fitted curve
-                self.plot_curve()
+                self.plot_curve(shoe=shoe)
 
                 #### enable other functions
                 self.enable_others()
-                self.btn_select_curve_b['state'] = 'disabled'
+                
+                self.btn_select_curve_b['state'] = 'normal' 
+                self.btn_select_curve_r['state'] = 'normal' 
+                #if shoe=='b':
+                #    self.btn_select_curve_b['state'] = 'disabled'
+                #elif shoe=='r':
+                #    self.btn_select_curve_r['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
 
-    def on_click_edges(self, event):
+    def on_click_edges(self, event, shoe):
         if event.button is MouseButton.RIGHT:
             if len(self.points)<2 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
                 self.points.append([event.xdata, event.ydata])
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
-                self.ax.scatter(event.xdata, len(self.data_full)/2, c='r', marker='x', zorder=10)
-                self.update_image()
+                
+                if shoe=='b':
+                    self.ax.scatter(event.xdata, len(self.data_full)/2, c='r', marker='x', zorder=10)
+                elif shoe=='r':
+                    self.ax2.scatter(event.xdata, len(self.data_full2)/2, c='r', marker='x', zorder=10)
+                self.update_image(shoe=shoe)
 
             if len(self.points) == 2:
-                self.param_edges_b = np.array([self.points[0][0], self.points[1][0]])
-                self.param_edges_b = np.sort(self.param_edges_b)
-                self.param_edges_b = np.append(self.param_edges_b, self.param_edges_b[1]-self.param_edges_b[0])
 
-                self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
-                self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
-                self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
+                if shoe=='b':
+                    self.param_edges_b = np.array([self.points[0][0], self.points[1][0]])
+                    self.param_edges_b = np.sort(self.param_edges_b)
+                    self.param_edges_b = np.append(self.param_edges_b, self.param_edges_b[1]-self.param_edges_b[0])
+                    self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
+                    self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
+                    self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
+                    self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
+                elif shoe=='r':
+                    self.param_edges_r = np.array([self.points[0][0], self.points[1][0]])
+                    self.param_edges_r = np.sort(self.param_edges_r)
+                    self.param_edges_r = np.append(self.param_edges_r, self.param_edges_r[1]-self.param_edges_r[0])
+                    self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
+                    self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
+                    self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
+                    self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
                 #### plot the edges
-                self.plot_edges()
+                self.plot_edges(shoe=shoe)
 
                 #### enable other functions
                 self.enable_others()
-                self.btn_select_edges_b['state'] = 'disabled'
+                self.btn_select_edges_b['state'] = 'normal'
+                self.btn_select_edges_r['state'] = 'normal'
+                #if shoe=='b':
+                #    self.btn_select_edges_b['state'] = 'disabled'
+                #elif shoe=='r':
+                #    self.btn_select_edges_r['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
@@ -1298,6 +1366,8 @@ class IFUM_AperMap_Maker:
 
         self.btn_select_curve_b['state'] = 'disabled'
         self.btn_select_edges_b['state'] = 'disabled'
+        self.btn_select_curve_r['state'] = 'disabled'
+        self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_apermap['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
