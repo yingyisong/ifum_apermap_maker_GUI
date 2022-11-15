@@ -1179,12 +1179,6 @@ class IFUM_AperMap_Maker:
             elif step=='edges':
                 self.btn_select_edges_b['state'] = 'normal'
                 self.btn_select_edges_r['state'] = 'normal'
-            #if shoe=='b':
-            #    self.btn_select_curve_b['state'] = 'disabled'
-            #    self.btn_select_edges_b['state'] = 'disabled'
-            #elif shoe=='r':
-            #    self.btn_select_curve_r['state'] = 'disabled'
-            #    self.btn_select_edges_r['state'] = 'disabled'
 
             #### break the mpl connection
             self.break_mpl_connect()
@@ -1239,10 +1233,6 @@ class IFUM_AperMap_Maker:
                 
                 self.btn_select_curve_b['state'] = 'normal' 
                 self.btn_select_curve_r['state'] = 'normal' 
-                #if shoe=='b':
-                #    self.btn_select_curve_b['state'] = 'disabled'
-                #elif shoe=='r':
-                #    self.btn_select_curve_r['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
@@ -1286,10 +1276,6 @@ class IFUM_AperMap_Maker:
                 self.enable_others()
                 self.btn_select_edges_b['state'] = 'normal'
                 self.btn_select_edges_r['state'] = 'normal'
-                #if shoe=='b':
-                #    self.btn_select_edges_b['state'] = 'disabled'
-                #elif shoe=='r':
-                #    self.btn_select_edges_r['state'] = 'disabled'
 
                 #### break the mpl connection
                 self.break_mpl_connect()
