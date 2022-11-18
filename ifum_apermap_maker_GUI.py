@@ -487,14 +487,23 @@ class IFUM_AperMap_Maker:
         dirname = self.ent_folder_trace.get()
         filename = self.lbl_file_pypeit['text']
         smash_range = self.ent_smash_range.get()
-        write_pypeit_file(dirname, filename, smash_range)
+        write_pypeit_file(dirname, 'b'+filename, smash_range)
+        write_pypeit_file(dirname, 'r'+filename, smash_range)
 
         #### show the smash range
         self.clear_image()
+        
+        # b side
         xx = np.float32(smash_range.split(','))*len(self.data_full[0])
         self.ax.axvline(xx[0], c='g', ls='--')
         self.ax.axvline(xx[1], c='g', ls='--')
-        self.update_image()
+
+        # r side
+        xx = np.float32(smash_range.split(','))*len(self.data_full2[0])
+        self.ax2.axvline(xx[0], c='g', ls='--')
+        self.ax2.axvline(xx[1], c='g', ls='--')
+
+        self.update_image() 
 
         self.btn_run_pypeit['state'] = 'normal'
         #self.popup_showinfo('', 'Success to make a PypeIt file:\n %s'%os.path.join(dirname, 'pypeit_file', filename+'.pypeit'))
