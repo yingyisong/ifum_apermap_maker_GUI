@@ -14,7 +14,7 @@ from datetime import datetime
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, cached_fits_open
+from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cached_fits_open
 
 import subprocess
 
@@ -810,12 +810,13 @@ class IFUM_AperMap_Maker:
             fname = os.path.join(dirname, "b%sc1.fits"%(fnum))
             if os.path.isfile(fname):
                 self.data_full = None
-                self.hdr_c1 = None
-                self.data_full, self.hdr_c1 = pack_4fits_simple(fnum, dirname, 'b')
+                self.hdr_c1_b = None
+                self.data_full, self.hdr_c1_b = pack_4fits_simple(fnum, dirname, 'b')
                 self.file_current = fnum
 
                 self.data_full2 = None
-                self.data_full2, hdr_temp = pack_4fits_simple(fnum, dirname, 'r')
+                self.hdr_c1_r = None
+                self.data_full2, self.hdr_c1_r = pack_4fits_simple(fnum, dirname, 'r')
 
                 #### show the fits image
                 self.clear_image()
@@ -823,29 +824,6 @@ class IFUM_AperMap_Maker:
                 return fnum #shoe_i+fnum
         else:
             return '0000'
-
-    def load_4fits_old(self):
-        """Load the selected fits file."""
-        shoe_i = self.shoe.get()
-        dirname = self.ent_folder.get()
-        idxs = self.box_files.curselection()
-
-        if len(idxs)==1:
-            idx = int(idxs[0])
-            fnum = self.box_files.get(idx)
-            fname = os.path.join(dirname, "%s%sc1.fits"%(shoe_i,fnum))
-            if os.path.isfile(fname):
-                self.data_full = None
-                self.hdr_c1 = None
-                self.data_full, self.hdr_c1 = pack_4fits_simple(fnum, dirname, shoe_i)
-                self.file_current = shoe_i+fnum
-
-                #### show the fits image
-                self.clear_image()
-                self.update_image()
-                return shoe_i+fnum
-        else:
-            return 'x0000'
 
     def disable_dependent_btns(self):
         self.btn_select_curve_b['state'] = 'disabled'
@@ -1036,15 +1014,10 @@ class IFUM_AperMap_Maker:
         self.canvas2.get_tk_widget().pack() #grid(row=1, column=0)
 
     def clear_image(self, shoe='both'):
-        if shoe=='b':
+        if shoe=='b' or shoe=='both':
             self.fig.clf()
             self.ax = self.fig.add_subplot(111)
-        elif shoe=='r':
-            self.fig2.clf()
-            self.ax2 = self.fig2.add_subplot(111)
-        else:
-            self.fig.clf()
-            self.ax = self.fig.add_subplot(111)
+        if shoe=='r' or shoe=='both':
             self.fig2.clf()
             self.ax2 = self.fig2.add_subplot(111)
 
@@ -1075,27 +1048,27 @@ class IFUM_AperMap_Maker:
             self.canvas.draw_idle()
             self.canvas2.draw_idle()
 
-    def plot_curve(self, shoe):
-        if shoe=='b':
+    def plot_curve(self, shoe='both'):
+        if shoe=='b' or shoe=='both':
             yy = np.arange(len(self.data_full))
             xx = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2])
             self.ax.plot(xx, yy, 'r--')
             self.update_image(shoe=shoe)
-        elif shoe=='r':
+        if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
             xx = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2])
             self.ax2.plot(xx, yy, 'r--')
             self.update_image(shoe=shoe)
 
-    def plot_edges(self, shoe):
-        if shoe=='b':
+    def plot_edges(self, shoe='both'):
+        if shoe=='b' or shoe=='both':
             yy = np.arange(len(self.data_full))
             x1 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[0])
             self.ax.plot(x1, yy, 'r--')
             x2 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])
             self.ax.plot(x2, yy, 'r--')
             self.update_image()
-        elif shoe=='r':
+        if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
             x1 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[0])
             self.ax2.plot(x1, yy, 'r--')
@@ -1367,11 +1340,15 @@ class IFUM_AperMap_Maker:
         self.fig.canvas.mpl_disconnect(self.cidpick)
         self.fig.canvas.mpl_disconnect(self.cidexit)
 
-    def cut_data_by_edges(self, data_raw):
+    def cut_data_by_edges(self, data_raw, shoe):
         data_mask = np.zeros_like(data_raw)
         yy = np.arange(len(data_raw))
-        x1 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[0])))
-        x2 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])))
+        if shoe == 'b':
+            x1 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[0])))
+            x2 = np.int32(np.round(func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])))
+        elif shoe == 'r':
+            x1 = np.int32(np.round(func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[0])))
+            x2 = np.int32(np.round(func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[1])))
 
         for iy in range(len(yy)):
             data_mask[iy, x1[iy-1]:x2[iy]] = data_raw[iy, x1[iy-1]:x2[iy]]
@@ -1379,48 +1356,18 @@ class IFUM_AperMap_Maker:
         return data_mask
 
     def make_file_trace(self):
-        self.data_full = self.cut_data_by_edges(self.data_full)
+        self.data_full = self.cut_data_by_edges(self.data_full, 'b')
+        self.data_full2 = self.cut_data_by_edges(self.data_full2, 'r')
         self.file_current = self.file_current+"_trace"
 
         #### show the fits image
-        self.clear_image()
-        self.plot_edges()
+        self.clear_image(shoe='both')
+        self.plot_edges(shoe='both')
 
-        #### write to a fits file
-        X2 = len(self.data_full[0])/2
-        Y2 = len(self.data_full)/2
-
-        hdu_full = fits.PrimaryHDU(self.data_full,header=self.hdr_c1)
-        hdul_full = fits.HDUList([hdu_full])
-        hdr_full  = hdul_full[0].header
-        if ('BIASSEC' in hdr_full):
-            del hdr_full['BIASSEC']
-            del hdr_full['DATASEC']
-            del hdr_full['TRIMSEC']
-        if ('NOVERSCN' in hdr_full):
-            del hdr_full['NOVERSCN']
-        if ('NBIASLNS' in hdr_full):
-            del hdr_full['NBIASLNS']
-        #if (flag_egain):
-        #    hdr_full['ENOISE'] = np.mean(enoise_full)
-        hdr_full['NOPAMPS'] = 1
-        hdr_full['OPAMP'] = 1
-        hdr_full['FILENAME'] = (self.filename_trace,'')
-        hdr_full['DATASEC'] = ('[1:%d,1:%d]'%(X2*2,Y2*2),'NOAO: data section')
-        hdr_full['CCDSEC'] = '[1:%d,1:%d]'%(X2*2,Y2*2)
-        hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
-
-        #### save trace file
+        #### write the fits file
         self.folder_trace = self.ent_folder_trace.get()
-        path_trace = os.path.join(self.folder_trace, self.filename_trace+'.fits')
-        hdul_full.writeto(path_trace,overwrite=True)
-
-        #### save backup file
-        dir_backup = os.path.join(self.folder_trace, "backup_trace")
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        path_backup = os.path.join(dir_backup, "%s_%s_trace.fits"%(self.filename_trace[0:5], datetime.today().strftime('%y%m%d_%H%M')))
-        hdul_full.writeto(path_backup,overwrite=False)
+        write_trace_file(self.data_full, self.hdr_c1_b, self.folder_trace, 'b'+self.file_current)
+        write_trace_file(self.data_full2, self.hdr_c1_r, self.folder_trace, 'r'+self.file_current)
 
         #### control widgets
         self.btn_make_trace['state'] = 'disabled'
