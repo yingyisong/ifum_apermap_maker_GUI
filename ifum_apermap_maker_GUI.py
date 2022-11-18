@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit
 from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cached_fits_open
 
 import subprocess
+from multiprocessing import Process
 
 
 def main():
@@ -310,7 +311,7 @@ class IFUM_AperMap_Maker:
         lbl_step4 = tk.Label(self.frame1, text="make an AperMap file using a TRACE file", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=15, column=1, columnspan=4, sticky="w")
 
-        self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_trace", fg=LABEL_COLOR)
+        self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000_trace", fg=LABEL_COLOR)
         self.lbl_file_pypeit.grid(row=15, column=5, columnspan=2, sticky="e")
 
         self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal', highlightbackground=BG_COLOR)
@@ -883,16 +884,20 @@ class IFUM_AperMap_Maker:
         filename = filedialog.askopenfilename(initialdir=self.folder_trace)
         if os.path.isfile(filename) and filename.endswith("_trace.fits"):
             #hdul_temp = cached_fits_open(filename)
-            hdul_temp = fits.open(filename)
+            dirname, fname = os.path.split(filename)
+            fname = fname[1:]
+            hdul_temp = fits.open(os.path.join(dirname, 'b'+fname))
             self.data_full = np.float32(hdul_temp[0].data)
+            hdul_temp = fits.open(os.path.join(dirname, 'r'+fname))
+            self.data_full2 = np.float32(hdul_temp[0].data)
 
-            #self.folder_trace = filename[0:-17]
+            #### update trace folder
             self.folder_trace = os.path.dirname(filename)
             self.ent_folder_trace.delete(0, tk.END)
             self.ent_folder_trace.insert(tk.END, self.folder_trace)
 
-            #self.filename_trace = filename.split('/')[-1]
-            self.filename_trace = os.path.basename(filename)
+            #### update trace file
+            self.filename_trace = fname #os.path.basename(filename)
             file_temp = self.filename_trace.split('.')[0]
             self.lbl_file_pypeit['text'] = file_temp
             self.file_current = file_temp
@@ -1022,30 +1027,19 @@ class IFUM_AperMap_Maker:
             self.ax2 = self.fig2.add_subplot(111)
 
     def update_image(self, shoe='both', percent=85.9, uniform=False):
-        if shoe=='b':
+        if shoe=='b' or shoe=='both':
             if uniform:
                 self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
             else:
                 self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
             self.ax.set_title("b%s"%self.file_current)
             self.canvas.draw_idle()
-        elif shoe=='r':
+        if shoe=='r' or shoe=='both':
             if uniform:
                 self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
             else:
                 self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
             self.ax2.set_title("r%s"%self.file_current)
-            self.canvas2.draw_idle()
-        else:
-            if uniform:
-                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
-                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
-            else:
-                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
-                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
-            self.ax.set_title("b%s"%self.file_current)
-            self.ax2.set_title("r%s"%self.file_current)
-            self.canvas.draw_idle()
             self.canvas2.draw_idle()
 
     def plot_curve(self, shoe='both'):
