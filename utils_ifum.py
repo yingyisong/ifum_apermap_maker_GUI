@@ -431,7 +431,7 @@ def write_aperMap(path_MasterSlits, IFU_type, Channel, file_name, file_date, N_x
 
     hdu_map.writeto(file_name+'_'+file_date+'.fits',overwrite=True)
 
-def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
+def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     dirname_output = os.path.join(dirname, 'pypeit_file')
     filename_output = filename+'.pypeit'
     filename_fits = filename+'.fits'
@@ -444,7 +444,8 @@ def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
     file.write("[calibrations]\n")
     file.write("    [[slitedges]]\n")
     file.write("        smash_range = %s\n"%smash_range)
-    file.write("        auto_pca = False")
+    if pca=='off':
+        file.write("        auto_pca = False\n")
     file.write("\n")
     file.write("# Setup\n")
     file.write("setup read\n")
