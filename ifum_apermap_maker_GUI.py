@@ -2,6 +2,7 @@
 from genericpath import exists
 import os
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog
 from tkinter.messagebox import showinfo
 
@@ -154,7 +155,14 @@ class IFUM_AperMap_Maker:
         self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=6)
         self.box_files.grid(row=rows[1], column=0, columnspan=8, sticky="nsew")
 
-        box_scrollbar = tk.Scrollbar(self.frame1, orient="vertical")
+        # scroll bar style
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("Vertical.TScrollbar", gripcount=0,
+                background="Green", darkcolor="DarkGreen", lightcolor="LightGreen",
+                troughcolor="gray", bordercolor="blue", arrowcolor="white")
+
+        box_scrollbar = ttk.Scrollbar(self.frame1, orient="vertical")
         box_scrollbar.grid(row=rows[1], column=7, sticky='nse')
 
         self.box_files.config(yscrollcommand=box_scrollbar.set)
