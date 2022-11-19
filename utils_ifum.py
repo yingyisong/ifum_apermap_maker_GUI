@@ -443,9 +443,11 @@ def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     file.write("spectrograph = magellan_m2fs_blue\n")
     file.write("[calibrations]\n")
     file.write("    [[slitedges]]\n")
-    file.write("        smash_range = %s\n"%smash_range)
     if pca=='off':
         file.write("        auto_pca = False\n")
+    else:
+        file.write("        auto_pca = True\n")
+    file.write("        smash_range = %s\n"%smash_range)
     file.write("\n")
     file.write("# Setup\n")
     file.write("setup read\n")
