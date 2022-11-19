@@ -132,37 +132,37 @@ class IFUM_AperMap_Maker:
         self.init_image2()
 
     def create_widgets_files(self):
-        start, lines = 0, 4
+        start, lines = 0, 2
         rows = np.arange(start, start+lines)
         #### folder
         lbl_folder = tk.Label(self.frame1, text="Folder", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_folder.grid(row=rows[0], column=0, sticky="w")
 
-        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
-        self.btn_folder.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
-
         self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_default]))
-        self.ent_folder.grid(row=rows[1], column=0, columnspan=8, sticky="ew")
+        self.ent_folder.grid(row=rows[0], column=1, columnspan=5, sticky="ew")
 
-        #### file list
-        lbl_files = tk.Label(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_files.grid(row=rows[2], column=0, sticky="w")
+        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
+        self.btn_folder.grid(row=rows[0], column=6, sticky="e", padx=5, pady=5)
 
         self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, highlightbackground=BG_COLOR)
-        self.btn_refresh.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        self.btn_refresh.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
-        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=8)
-        self.box_files.grid(row=rows[3], column=0, columnspan=8, sticky="nsew")
+        #### file list
+        #lbl_files = tk.Label(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_files.grid(row=rows[2], column=0, sticky="w")
+
+        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=6)
+        self.box_files.grid(row=rows[1], column=0, columnspan=8, sticky="nsew")
 
         box_scrollbar = tk.Scrollbar(self.frame1, orient="vertical")
-        box_scrollbar.grid(row=rows[3], column=7, sticky='nse')
+        box_scrollbar.grid(row=rows[1], column=7, sticky='nse')
 
         self.box_files.config(yscrollcommand=box_scrollbar.set)
         box_scrollbar.config(command=self.box_files.yview) 
 
     def create_widgets_curve(self):
         """ step 1 fit curvature using an arc or twilight file """
-        start, lines = 4, 4
+        start, lines = 2, 4
         rows = np.arange(start, start+lines)
 
         lbl_step1 = tk.Label(self.frame1, text="Step 1:", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -226,7 +226,7 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_edges(self):
         """ step 2 select edges using a science or twilight file """
-        start, lines = 8, 4
+        start, lines = 6, 4
         rows = np.arange(start, start+lines)
 
         lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -290,7 +290,7 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_trace(self):
         """ step 3 check and make a masked LED fits file for tracing """
-        start, lines = 12, 2
+        start, lines = 10, 2
         rows = np.arange(start, start+lines)
 
         lbl_step3 = tk.Label(self.frame1, text="Step 3:", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -316,7 +316,7 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_pypeit(self):
         """ step 4 run pypeit for tracing and making the AperMap """
-        start, lines = 14, 4
+        start, lines = 12, 4
         rows = np.arange(start, start+lines)
 
         lbl_step4 = tk.Label(self.frame1, text="Step 4:", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -378,7 +378,7 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_add_slits(self):
         """ step 5 add bad/missing slits """
-        start, lines = 18, 2
+        start, lines = 16, 2
         rows = np.arange(start, start+lines)
 
         lbl_step5 = tk.Label(self.frame1, text="Step 5:", fg=LABEL_COLOR, bg=BG_COLOR)
