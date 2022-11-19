@@ -536,8 +536,9 @@ class IFUM_AperMap_Maker:
         #self.popup_showinfo('', 'Success to make a PypeIt file:\n %s'%os.path.join(dirname, 'pypeit_file', filename+'.pypeit'))
 
     def run_pypeit(self):
+        shoe = self.shoe.get()
         dirname = self.ent_folder_trace.get()
-        filename = self.lbl_file_pypeit['text']
+        filename = shoe+self.lbl_file_pypeit['text']
 
         #### run PypeIt
         dir_pypeitFile = os.path.join(dirname, 'pypeit_file')
@@ -559,6 +560,8 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum['text'] = 'N_slits = %d'%N_slits
         self.btn_make_apermap['state'] = 'normal'
 
+        self.window.focus_set()
+
     def check_file_MasterSlits(self):
         #hdul = cached_fits_open(self.path_MasterSlits)
         hdul = fits.open(self.path_MasterSlits)
@@ -567,7 +570,10 @@ class IFUM_AperMap_Maker:
         self.ifu_type = self.get_ifu_type(N_slits, 20)
 
         #### show messages
-        info_temp = 'PypeIt found %s slits, close to %d (%s)'%(N_slits,self.ifu_type.Ntotal/2,self.ifu_type.label)
+        if N_slits==self.ifu_type.Ntotal/2:
+            info_temp = 'PypeIt found all %d slits for %s'%(N_slits,self.ifu_type.label)
+        else:
+            info_temp = 'PypeIt found %d slits, close to %d (%s)'%(N_slits,self.ifu_type.Ntotal/2,self.ifu_type.label)
         self.popup_showinfo('PypeIt', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
@@ -588,6 +594,9 @@ class IFUM_AperMap_Maker:
     def make_file_apermap_slits(self):
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
+
+        basename = os.path.basename(self.path_MasterSlits)
+        shoe = basename.split('_')[1][0]
 
         #hdul = cached_fits_open(self.path_MasterSlits)
         hdul = fits.open(self.path_MasterSlits)
@@ -660,7 +669,7 @@ class IFUM_AperMap_Maker:
                             map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
 
         #### cut data
-        map_ap = self.cut_data_by_edges(map_ap)
+        map_ap = self.cut_data_by_edges(map_ap, shoe)
 
         #### find the maximum number of pixels in all slits
         num_ap = np.zeros(N_ap, dtype=np.int32)
@@ -699,12 +708,23 @@ class IFUM_AperMap_Maker:
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
 
+        ####
+        self.clear_image()
+        self.file_current = '%s (Nslits=%d)'%(self.lbl_file_apermap['text'], N_new)
+        self.update_image_single(map_ap, self.file_current, shoe='b', uniform=True)
+
         info_temp = 'Saved as %s'%path_aperMap
         self.popup_showinfo('aperMap', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
+        self.window.focus_set()
+
     def make_file_apermap(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
+        basename = os.path.basename(self.path_MasterSlits)
+        fname = basename.split('_')[1]+'_apermap'
+        shoe = fname[0]
+        print(shoe, fname)
 
         #hdul = cached_fits_open(self.path_MasterSlits)
         hdul = fits.open(self.path_MasterSlits)
@@ -733,7 +753,7 @@ class IFUM_AperMap_Maker:
                 map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
 
         #### cut data
-        map_ap = self.cut_data_by_edges(map_ap)
+        map_ap = self.cut_data_by_edges(map_ap, shoe)
 
         #### find the maximum number of pixels in all slits
         num_ap = np.zeros(N_ap, dtype=np.int32)
@@ -764,16 +784,25 @@ class IFUM_AperMap_Maker:
             os.mkdir(dir_aperMap)
         if not os.path.exists(dir_backup):
             os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_pypeit['text'][0], self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(self.lbl_file_pypeit['text'][0], self.ifu_type.label, self.lbl_file_pypeit['text'][1:5],today_backup)
+        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
+        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
         path_backup = os.path.join(dir_backup, file_backup)
         hdu_map.writeto(path_aperMap,overwrite=True)
         os.system('cp %s %s'%(path_aperMap, path_backup))
 
+        #### show apermap
+        self.clear_image(shoe=shoe)
+
+        title = '%s (N_sl=%d)'%(fname,N_sl)
+        self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
+
+        #### show message
         info_temp = 'Saved as %s'%path_aperMap
         self.popup_showinfo('aperMap', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
+
+        self.window.focus_set()
 
 
     def pick_edges_mono(self):
@@ -977,7 +1006,7 @@ class IFUM_AperMap_Maker:
                 ####
                 #hdul_temp = cached_fits_open(pathname)
                 hdul_temp = fits.open(pathname)
-                #N_slits_file = hdul_temp[0].header['NSLITS']
+                N_slits_file = hdul_temp[0].header['NSLITS']
 
                 #if N_slits==N_slits_file:
                 self.folder_trace = dirname
@@ -987,7 +1016,7 @@ class IFUM_AperMap_Maker:
                 self.filename_trace = filename
                 file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
                 self.lbl_file_apermap['text'] = file_temp
-                self.file_current = file_temp+" (Nslits=%s)"%N_slits ### check if this is correct
+                self.file_current = file_temp+" (Nslits=%s)"%N_slits_file 
                 self.shoe.set(file_temp[2])
 
                 #### handle other widegts
@@ -1004,7 +1033,8 @@ class IFUM_AperMap_Maker:
 
                 #### show the fits image
                 self.clear_image()
-                self.update_image(uniform=True)
+                #self.update_image(uniform=True)
+                self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
             self.filename_trace = "apx0000_0000.fits"
@@ -1014,6 +1044,7 @@ class IFUM_AperMap_Maker:
             self.gray_all_lbl_file()
             self.fig.clf()
             self.canvas.draw_idle()
+        self.window.focus_set()
 
     def init_image1(self):
         # the figure that will contain the plot
@@ -1077,6 +1108,22 @@ class IFUM_AperMap_Maker:
             else:
                 self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
             self.ax2.set_title("r%s"%self.file_current)
+            self.canvas2.draw_idle()
+
+    def update_image_single(self, data, title, shoe='b', percent=85.9, uniform=False):
+        if shoe=='b':
+            if uniform:
+                self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
+            else:
+                self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+            self.ax.set_title(title)
+            self.canvas.draw_idle()
+        if shoe=='r':
+            if uniform:
+                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
+            else:
+                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+            self.ax2.set_title(title)
             self.canvas2.draw_idle()
 
     def plot_curve(self, shoe='both'):
@@ -1146,7 +1193,8 @@ class IFUM_AperMap_Maker:
         self.btn_select_slits['state'] = 'active'
 
         self.ax.axvline(len(self.data_full[0])/2, c='g', ls='-')
-        self.update_image(uniform=True)
+        #self.update_image(shoe='b', uniform=True)
+        self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_slits)
         self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press_slits)
 
@@ -1194,7 +1242,8 @@ class IFUM_AperMap_Maker:
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
                 self.ax.scatter(len(self.data_full[0])/2, event.ydata, c='r', marker='x', zorder=10)
-                self.update_image(uniform=True)
+                #self.update_image(uniform=True)
+                self.update_image_single(self.data, self.file_current, shoe='b', uniform=True)
 
     def on_click_curve(self, event, shoe):
         if event.button is MouseButton.RIGHT:
