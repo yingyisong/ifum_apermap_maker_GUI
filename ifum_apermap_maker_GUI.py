@@ -151,8 +151,14 @@ class IFUM_AperMap_Maker:
         self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, highlightbackground=BG_COLOR)
         self.btn_refresh.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
-        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files)
+        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=8)
         self.box_files.grid(row=rows[3], column=0, columnspan=8, sticky="nsew")
+
+        box_scrollbar = tk.Scrollbar(self.frame1, orient="vertical")
+        box_scrollbar.grid(row=rows[3], column=7, sticky='nse')
+
+        self.box_files.config(yscrollcommand=box_scrollbar.set)
+        box_scrollbar.config(command=self.box_files.yview) 
 
     def create_widgets_curve(self):
         """ step 1 fit curvature using an arc or twilight file """
