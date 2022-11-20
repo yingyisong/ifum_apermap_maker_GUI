@@ -15,7 +15,7 @@ from datetime import datetime
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cached_fits_open
+from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
 
 import subprocess
 from multiprocessing import Process
@@ -43,7 +43,7 @@ if check_appearance():
     BG_COLOR = 'black'
 else:
     LABEL_COLOR = 'black'
-    BG_COLOR='white'
+    BG_COLOR='lightgray'
 
 class IFUM_AperMap_Maker:
 
@@ -82,9 +82,10 @@ class IFUM_AperMap_Maker:
         self.data_full2 = np.ones((4048, 4048), dtype=np.int32)
         self.file_current = "0000"
 
-        self.folder_default = "./data_raw/"
+        self.folder_rawdata = "./data_raw/"
         self.folder_trace   = "./data_trace/"
         self.path_MasterSlits = ' '
+        self.labelname_mono   = "input_an_unique_label_name"
 
         self.points = []
         self.x_last, self.y_last = -1., -1.
@@ -113,6 +114,7 @@ class IFUM_AperMap_Maker:
         self.txt_param_edges_dX_r = tk.StringVar(value=['%.0f'%self.param_edges_r[2]])
         self.txt_folder_trace = tk.StringVar(value=[self.folder_trace])
         self.txt_smash_range = tk.StringVar(value=[self.param_smash_range])
+        self.txt_labelname_mono = tk.StringVar(value=[self.labelname_mono])
 
         #### create all widgets
         #self.my_counter = None  # All attributes should be initialize in init
@@ -122,7 +124,7 @@ class IFUM_AperMap_Maker:
         self.create_widgets_trace()  # step 3
         self.create_widgets_pypeit() # step 4
         self.create_widgets_add_slits()   # step 5
-        #self.create_widgets_mono()   # step 6
+        self.create_widgets_mono()   # step 6
         self.bind_widgets()
 
         #### initialize widgets
@@ -139,7 +141,7 @@ class IFUM_AperMap_Maker:
         lbl_folder = tk.Label(self.frame1, text="Folder", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_folder.grid(row=rows[0], column=0, sticky="w")
 
-        self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_default]))
+        self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_rawdata]))
         self.ent_folder.grid(row=rows[0], column=1, columnspan=5, sticky="ew")
 
         self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
@@ -152,15 +154,15 @@ class IFUM_AperMap_Maker:
         #lbl_files = tk.Label(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_files.grid(row=rows[2], column=0, sticky="w")
 
-        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=6)
+        self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=7)
         self.box_files.grid(row=rows[1], column=0, columnspan=8, sticky="nsew")
 
         # scroll bar style
         style = ttk.Style()
         style.theme_use('clam')
         style.configure("Vertical.TScrollbar", gripcount=0,
-                background="Green", darkcolor="DarkGreen", lightcolor="LightGreen",
-                troughcolor="gray", bordercolor="blue", arrowcolor="white")
+                background=BG_COLOR, darkcolor=LABEL_COLOR, lightcolor=LABEL_COLOR,
+                troughcolor="gray", bordercolor=BG_COLOR, arrowcolor="gray")
 
         box_scrollbar = ttk.Scrollbar(self.frame1, orient="vertical")
         box_scrollbar.grid(row=rows[1], column=7, sticky='nse')
@@ -185,7 +187,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_curve.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
         #### pick points
-        lbl_note_curve = tk.Label(self.frame1, text="Note: curve model is x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_note_curve = tk.Label(self.frame1, text="Note: x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
@@ -239,7 +241,7 @@ class IFUM_AperMap_Maker:
 
         lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=0, sticky="w")
-        lbl_step2 = tk.Label(self.frame1, text="select full spectral span using SCI/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step2 = tk.Label(self.frame1, text="select spectral spans using SCI/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -249,7 +251,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_edges.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
         #### pick edges
-        lbl_note_edges = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_note_edges = tk.Label(self.frame1, text="Note: select 2 points along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges_b, state='disabled', highlightbackground=BG_COLOR)
@@ -410,31 +412,39 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap_slits, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_slits.grid(row=rows[1], column=7, sticky='e', padx=5, pady=5)
 
-    #def create_widgets_mono(self):
-    #    """ step 6 make monochromatic apermap """
-    #    lbl_step6 = tk.Label(self.frame1, text="Step 6:")
-    #    lbl_step6.grid(row=rows[2], column=0, sticky="w")
-    #    lbl_step6 = tk.Label(self.frame1, text="(optional) make a monochromatic AperMap file")
-    #    lbl_step6.grid(row=rows[2], column=1, columnspan=5, sticky="w")
+    def create_widgets_mono(self):
+        """ step 6 make monochromatic apermap """
+        start, lines = 18, 4
+        rows = np.arange(start, start+lines)
 
-    #    self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="x0000_full")
-    #    self.lbl_file_apermap.grid(row=rows[2], column=6, sticky="e")
+        lbl_step6 = tk.Label(self.frame1, text="Step 6:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6.grid(row=rows[0], column=0, sticky="w")
+        lbl_step6 = tk.Label(self.frame1, text="(optional) make monochromatic AperMap files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
-    #    self.btn_load_apermap = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits, state='normal')
-    #    self.btn_load_apermap.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        #### step 6a
+        lbl_step6a = tk.Label(self.frame1, text="6a. Use Step 2 to select spans", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6a.grid(row=rows[0], column=6, columnspan=2, sticky="w")
 
-    #    #### pick edges for the monochromatic spec span
-    #    #lbl_edge = tk.Label(self.frame1, text="Note: one left and one right along y-axis middle line")
-    #    #lbl_edge.grid(row=rows[1], column=1, sticky="w", columnspan=2)
+        #### step 6b
+        lbl_step6b = tk.Label(self.frame1, text="6b. Load raw AperMap files (ap*.fits)", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
 
-    #    #self.btn_edge_mc_select = tk.Button(self.frame1, width=6, text="Select", command=self.pick_edges_mono, state='disabled')
-    #    #self.btn_edge_mc_select.grid(row=rows[1], column=2, sticky="e", pady=5)
+        self.lbl_file_mono = tk.Label(self.frame1, relief=tk.SUNKEN, text="XXX_0000", fg=LABEL_COLOR)
+        self.lbl_file_mono.grid(row=rows[1], column=4, columnspan=3, sticky="e")
 
-    #    #self.btn_edge_mc_make = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_apermap, state='disabled')
-    #    #self.btn_edge_mc_make.grid(row=rows[1], column=3, sticky="e", padx=5, pady=5)
+        self.btn_load_mono = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap2, state='normal', highlightbackground=BG_COLOR)
+        self.btn_load_mono.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
-    #    #self.lbl_edge_mc_param = tk.Label(self.frame1, relief=tk.SUNKEN, text="(x1, x2, dx) =")
-    #    #self.lbl_edge_mc_param.grid(row=rows[1], column=1, columnspan=3, sticky="w")
+        #### step 6c
+        lbl_step6b = tk.Label(self.frame1, text="6c. Save to new files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6b.grid(row=rows[3], column=1, columnspan=2, sticky="w")
+
+        self.ent_labelname_mono = tk.Entry(self.frame1, textvariable=self.txt_labelname_mono, state='normal')
+        self.ent_labelname_mono.grid(row=rows[3], column=3, columnspan=4, sticky="ew")
+
+        self.btn_make_apermap_mono = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_apermap_mono, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_mono.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
     def bind_widgets(self):
         """ event bindings """
@@ -469,9 +479,15 @@ class IFUM_AperMap_Maker:
         self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
         self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
 
+        self.ent_labelname_mono.bind('<Return>', self.refresh_labelname_mono)
+        self.ent_labelname_mono.bind('<KP_Enter>', self.refresh_labelname_mono) # unique for macOS
+
         self.window.bind_all('<1>', lambda event: event.widget.focus_set())
 
     def refresh_smash_range(self, *args):
+        self.window.focus_set()
+
+    def refresh_labelname_mono(self, *args):
         self.window.focus_set()
 
     def update_curve_b(self, *agrs):
@@ -824,12 +840,12 @@ class IFUM_AperMap_Maker:
 
     def open_folder(self):
         """Open a folder using the Browse button."""
-        dirname = filedialog.askdirectory(initialdir=self.folder_default)
+        dirname = filedialog.askdirectory(initialdir=self.folder_rawdata)
         if not dirname:
             return
         self.ent_folder.delete(0, tk.END)
         self.ent_folder.insert(tk.END, dirname)
-        self.folder_default = dirname
+        self.folder_rawdata = dirname
 
     def refresh_folder(self, *args):
         """Refresh the file list in the folder."""
@@ -916,6 +932,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
+        self.btn_make_apermap_mono['state'] = 'disabled'
         #self.lbl_slitnum['text'] = 'N_slits = 000'
 
     def gray_all_lbl_file(self):
@@ -926,6 +943,7 @@ class IFUM_AperMap_Maker:
         self.lbl_file_trace.config(bg=bg_color)
         self.lbl_file_pypeit.config(bg=bg_color)
         self.lbl_file_apermap.config(bg=bg_color)
+        self.lbl_file_mono.config(bg=bg_color)
         _dummy_lbl.destroy()
 
     def load_4fits_curve(self):
@@ -997,13 +1015,54 @@ class IFUM_AperMap_Maker:
             self.lbl_file_pypeit['text'] = self.filename_trace.split('.')[0]
             self.disable_make_apermap()
             self.gray_all_lbl_file()
-            self.fig.clf()
-            self.canvas.draw_idle()
+            self.remove_image()
+        self.window.focus_set()
+
+    def open_fits_apermap2(self):
+        self.folder_trace = self.ent_folder_trace.get()
+        pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace,'aperMap'))
+        dirname, filename = os.path.split(pathname)
+        if os.path.isfile(pathname) and filename.endswith(".fits") and filename.startswith('ap'):
+            #hdul_temp = cached_fits_open(filename)
+            fname = filename[4:]
+            hdul_temp = fits.open(os.path.join(dirname, 'apb_'+fname))
+            self.hdr_b = hdul_temp[0].header
+            self.data_full = np.float32(hdul_temp[0].data)
+            hdul_temp = fits.open(os.path.join(dirname, 'apr_'+fname))
+            self.hdr_r = hdul_temp[0].header
+            self.data_full2 = np.float32(hdul_temp[0].data)
+
+            #### update apermap folder
+            self.folder_apermap = dirname
+
+            #### update apermap file
+            self.filename_apermap = os.path.basename(pathname)
+            file_temp = self.filename_apermap.split('.')[0].split('_')
+            self.file_current = file_temp[1]+'_'+file_temp[2] 
+            self.lbl_file_mono['text'] = self.file_current 
+            #self.shoe.set(file_temp[0])
+
+            self.gray_all_lbl_file()
+            self.lbl_file_mono.config(bg='yellow')
+            self.disable_dependent_btns()
+            self.btn_make_apermap_mono['state'] = 'normal'
+
+            #### show the fits image
+            self.clear_image()
+            self.update_image(uniform=True)
+        else:
+            self.data_full = np.ones((4048, 4048), dtype=np.int32)
+            self.filename_apermap = "apb_XXX_0000.fits"
+            self.file_current = "0000"
+            self.lbl_file_mono['text'] = 'XXX_'+self.file_current
+            self.btn_make_apermap_mono['state'] = 'disabled'
+            self.gray_all_lbl_file()
+            self.remove_image()
         self.window.focus_set()
 
     def open_fits_apermap(self):
         self.folder_trace = self.ent_folder_trace.get()
-        pathname = filedialog.askopenfilename(initialdir=self.folder_trace)
+        pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace, 'aperMap'))
         dirname, filename = os.path.split(pathname)
 
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
@@ -1054,10 +1113,10 @@ class IFUM_AperMap_Maker:
             self.filename_trace = "apx0000_0000.fits"
             self.file_current = "0000"
             self.lbl_file_apermap['text'] = self.filename_trace.split('.')[0]
-            #self.disable_add_slit()
+            self.btn_select_slits['state'] = 'disabled'
+            self.btn_make_apermap_slits['state'] = 'disabled'
             self.gray_all_lbl_file()
-            self.fig.clf()
-            self.canvas.draw_idle()
+            self.remove_image()
         self.window.focus_set()
 
     def init_image1(self):
@@ -1099,6 +1158,14 @@ class IFUM_AperMap_Maker:
 
         # placing the toolbar on the Tkinter window
         self.canvas2.get_tk_widget().pack() #grid(row=1, column=0)
+
+    def remove_image(self, shoe='both'):
+        if shoe=='b' or shoe=='both':
+            self.fig.clf()
+            self.canvas.draw_idle()
+        if shoe=='r' or shoe=='both':
+            self.fig2.clf()
+            self.canvas2.draw_idle()
 
     def clear_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
@@ -1145,12 +1212,12 @@ class IFUM_AperMap_Maker:
             yy = np.arange(len(self.data_full))
             xx = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2])
             self.ax.plot(xx, yy, 'r--')
-            self.update_image(shoe=shoe)
+            self.update_image(shoe='b')
         if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
             xx = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2])
             self.ax2.plot(xx, yy, 'r--')
-            self.update_image(shoe=shoe)
+            self.update_image(shoe='r')
 
     def plot_edges(self, shoe='both'):
         if shoe=='b' or shoe=='both':
@@ -1159,14 +1226,14 @@ class IFUM_AperMap_Maker:
             self.ax.plot(x1, yy, 'r--')
             x2 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])
             self.ax.plot(x2, yy, 'r--')
-            self.update_image()
+            self.update_image(shoe='b')
         if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
             x1 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[0])
             self.ax2.plot(x1, yy, 'r--')
             x2 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[1])
             self.ax2.plot(x2, yy, 'r--')
-            self.update_image()
+            self.update_image(shoe='r')
 
     def pick_points_b(self):
         shoe = 'b'
@@ -1362,6 +1429,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_trace['state'] = 'normal'
         self.btn_load_pypeit['state'] = 'normal'
         self.btn_load_apermap['state'] = 'normal'
+        self.btn_load_mono['state'] = 'normal'
         
         self.btn_update_curve_b['state'] = 'normal'
         self.btn_update_edges_b['state'] = 'normal'
@@ -1380,6 +1448,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX_r['state'] = 'normal'
 
         self.ent_smash_range['state'] = 'normal'
+        self.ent_labelname_mono['state'] = 'normal'
 
         self.ent_folder_trace['state'] = 'normal'
         self.btn_folder_trace['state'] = 'normal'
@@ -1399,6 +1468,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_trace['state'] = 'disabled'
         self.btn_load_pypeit['state'] = 'disabled'
         self.btn_load_apermap['state'] = 'disabled'
+        self.btn_load_mono['state'] = 'disabled'
 
         self.btn_update_curve_b['state'] = 'disabled'
         self.btn_update_edges_b['state'] = 'disabled'
@@ -1417,6 +1487,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX_r['state'] = 'disabled'
 
         self.ent_smash_range['state'] = 'disabled'
+        self.ent_labelname_mono['state'] = 'disabled'
 
         self.ent_folder_trace['state'] = 'disabled'
         self.btn_folder_trace['state'] = 'disabled'
@@ -1469,6 +1540,23 @@ class IFUM_AperMap_Maker:
 
         #### control widgets
         self.btn_make_trace['state'] = 'disabled'
+
+    def make_file_apermap_mono(self):
+        self.data_full = self.cut_data_by_edges(self.data_full, 'b')
+        self.data_full2 = self.cut_data_by_edges(self.data_full2, 'r')
+
+        #### show the fits image
+        self.clear_image(shoe='both')
+        #self.plot_edges(shoe='both')
+        self.update_image(shoe='both', uniform=True)
+
+        #### write the fits file
+        fname = self.lbl_file_mono['text']+'_'+self.ent_labelname_mono.get()
+        cut_apermap(self.data_full, self.hdr_b, self.folder_apermap, 'apb_'+fname)
+        cut_apermap(self.data_full2, self.hdr_r, self.folder_apermap, 'apr_'+fname)
+
+        #### control widgets
+        self.btn_make_apermap_mono['state'] = 'disabled'
 
     def popup_showinfo(self, title, message):
         showinfo(title=title, message=message)
