@@ -752,6 +752,9 @@ class IFUM_AperMap_Maker:
 
         self.window.focus_set()
 
+    def make_file_apermap_fix(self):
+        return 0
+
     def make_file_apermap(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
         basename = os.path.basename(self.path_MasterSlits)
