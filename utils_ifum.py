@@ -448,6 +448,7 @@ def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     else:
         file.write("        auto_pca = True\n")
     file.write("        smash_range = %s\n"%smash_range)
+    file.write("        length_range = 0.7")
     file.write("\n")
     file.write("# Setup\n")
     file.write("setup read\n")

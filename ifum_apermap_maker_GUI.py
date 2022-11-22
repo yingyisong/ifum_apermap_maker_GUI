@@ -187,7 +187,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_curve.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
         #### pick points
-        lbl_note_curve = tk.Label(self.frame1, text="Note: x-C = A*(y-B)^2; select 6 points", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_note_curve = tk.Label(self.frame1, text="Note: x-C = A*(y-B)^2; select 7 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
@@ -846,6 +846,7 @@ class IFUM_AperMap_Maker:
         self.ent_folder.delete(0, tk.END)
         self.ent_folder.insert(tk.END, dirname)
         self.folder_rawdata = dirname
+        self.refresh_folder()
 
     def refresh_folder(self, *args):
         """Refresh the file list in the folder."""
@@ -1106,6 +1107,7 @@ class IFUM_AperMap_Maker:
 
                 #### show the fits image
                 self.clear_image()
+                self.remove_image(shoe='r')
                 #self.update_image(uniform=True)
                 self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
         else:
@@ -1239,35 +1241,45 @@ class IFUM_AperMap_Maker:
         shoe = 'b'
         self.disable_others()
         self.btn_select_curve_b['state'] = 'active'
+        self.clear_image(shoe=shoe)
+        self.update_image(shoe=shoe)
+
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve'))
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve', shoe=shoe))
 
     def pick_points_r(self):
         shoe = 'r'
         self.disable_others()
         self.btn_select_curve_r['state'] = 'active'
+        self.clear_image(shoe=shoe)
+        self.update_image(shoe=shoe)
+
         self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
-        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve'))
+        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve', shoe=shoe))
 
     def pick_edges_b(self):
         shoe = 'b'
         self.disable_others()
         self.btn_select_edges_b['state'] = 'active'
 
+        self.clear_image(shoe=shoe)
+        self.update_image(shoe=shoe)
         self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
         self.update_image(shoe=shoe)
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges'))
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges', shoe=shoe))
 
     def pick_edges_r(self):
         shoe = 'r'
         self.disable_others()
         self.btn_select_edges_r['state'] = 'active'
 
+        self.clear_image(shoe=shoe)
+        self.update_image(shoe=shoe)
         self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
         self.update_image(shoe=shoe)
         self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
-        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges'))
+        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges', shoe=shoe))
 
     def pick_slits(self):
         self.disable_others()
@@ -1299,9 +1311,9 @@ class IFUM_AperMap_Maker:
             file.close()
 
             #### break the mpl connection
-            self.break_mpl_connect()
+            self.break_mpl_connect(shoe='b')
 
-    def key_press(self, event, step):
+    def key_press(self, event, step, shoe):
         if event.key == 'escape':
             #### enable other functions
             self.enable_others()
@@ -1314,7 +1326,7 @@ class IFUM_AperMap_Maker:
                 self.btn_select_edges_r['state'] = 'normal'
 
             #### break the mpl connection
-            self.break_mpl_connect()
+            self.break_mpl_connect(shoe=shoe)
 
     def on_click_slits(self, event):
         if event.button is MouseButton.RIGHT:
@@ -1328,7 +1340,7 @@ class IFUM_AperMap_Maker:
 
     def on_click_curve(self, event, shoe):
         if event.button is MouseButton.RIGHT:
-            if len(self.points)<6 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
+            if len(self.points)<7 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
                 self.points.append([event.xdata, event.ydata])
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
@@ -1339,7 +1351,7 @@ class IFUM_AperMap_Maker:
                     self.ax2.scatter(event.xdata, event.ydata, c='r', marker='x', zorder=10)
                 self.update_image(shoe=shoe)
 
-            if len(self.points)==6:
+            if len(self.points)==7:
                 pts = np.array(self.points)
 
                 for pt in pts:
@@ -1369,7 +1381,7 @@ class IFUM_AperMap_Maker:
                 self.btn_select_curve_r['state'] = 'normal' 
 
                 #### break the mpl connection
-                self.break_mpl_connect()
+                self.break_mpl_connect(shoe=shoe)
 
     def on_click_edges(self, event, shoe):
         if event.button is MouseButton.RIGHT:
@@ -1412,7 +1424,7 @@ class IFUM_AperMap_Maker:
                 self.btn_select_edges_r['state'] = 'normal'
 
                 #### break the mpl connection
-                self.break_mpl_connect()
+                self.break_mpl_connect(shoe=shoe)
 
     def enable_others(self):
         self.btn_folder['state'] = 'normal'
@@ -1501,13 +1513,18 @@ class IFUM_AperMap_Maker:
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
 
-    def break_mpl_connect(self):
+    def break_mpl_connect(self, shoe='b'):
         #### break the mpl connection
         self.curve_points = np.array(self.points)
         self.points = []
         self.x_last, self.y_last = -1., -1.
-        self.fig.canvas.mpl_disconnect(self.cidpick)
-        self.fig.canvas.mpl_disconnect(self.cidexit)
+
+        if shoe=='b':
+            self.fig.canvas.mpl_disconnect(self.cidpick)
+            self.fig.canvas.mpl_disconnect(self.cidexit)
+        elif shoe=='r':
+            self.fig2.canvas.mpl_disconnect(self.cidpick)
+            self.fig2.canvas.mpl_disconnect(self.cidexit)
 
     def cut_data_by_edges(self, data_raw, shoe):
         data_mask = np.zeros_like(data_raw)
