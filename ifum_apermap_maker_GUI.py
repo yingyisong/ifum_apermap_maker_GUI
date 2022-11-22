@@ -383,8 +383,8 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         #self.lbl_slitnum.grid(row=rows[3], column=5, columnspan=2, sticky="e")
 
-        self.btn_make_apermap = tk.Button(self.frame1, width=6, text='Save', command=self.make_file_apermap, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_apermap.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
+        self.btn_make_apermap_fix = tk.Button(self.frame1, width=6, text='Auto-fix', command=self.make_file_apermap_fix, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_fix.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_add_slits(self):
         """ step 5 add bad/missing slits """
@@ -588,7 +588,10 @@ class IFUM_AperMap_Maker:
         #### check the MasterSlits file
         N_slits = self.check_file_MasterSlits()
         #self.lbl_slitnum['text'] = 'N_slits = %d'%N_slits
-        self.btn_make_apermap['state'] = 'normal'
+        self.make_file_apermap()
+        
+        if N_slits!=self.ifu_type.Ntotal/2:
+            self.btn_make_apermap_fix['state'] = 'normal'
 
         self.window.focus_set()
 
@@ -876,7 +879,7 @@ class IFUM_AperMap_Maker:
     def disable_make_apermap(self):
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        self.btn_make_apermap['state'] = 'disabled'
+        self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
 
@@ -930,7 +933,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        self.btn_make_apermap['state'] = 'disabled'
+        self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
         self.btn_make_apermap_mono['state'] = 'disabled'
@@ -1509,9 +1512,10 @@ class IFUM_AperMap_Maker:
         self.btn_select_curve_r['state'] = 'disabled'
         self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
-        self.btn_make_apermap['state'] = 'disabled'
+        self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
+        self.btn_make_apermap_mono['state'] = 'disabled'
 
     def break_mpl_connect(self, shoe='b'):
         #### break the mpl connection
