@@ -585,13 +585,9 @@ class IFUM_AperMap_Maker:
         os.system('mv '+path_MasterSlits_default+' '+self.path_MasterSlits)
         os.system('rm %s'%os.path.join(dir_pypeitFile,filename+'.calib'))
 
-        #### check the MasterSlits file
-        N_slits = self.check_file_MasterSlits()
+
         #self.lbl_slitnum['text'] = 'N_slits = %d'%N_slits
         self.make_file_apermap()
-        
-        if N_slits!=self.ifu_type.Ntotal/2:
-            self.btn_make_apermap_fix['state'] = 'normal'
 
         self.window.focus_set()
 
@@ -834,9 +830,14 @@ class IFUM_AperMap_Maker:
         self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
 
         #### show message
-        info_temp = 'Saved as %s'%path_aperMap
-        self.popup_showinfo('aperMap', info_temp)
-        print('\n++++\n++++ %s\n++++\n'%(info_temp))
+        #info_temp = 'Saved as %s'%path_aperMap
+        #self.popup_showinfo('aperMap', info_temp)
+        #print('\n++++\n++++ %s\n++++\n'%(info_temp))
+
+        #### check the MasterSlits file
+        N_slits = self.check_file_MasterSlits()       
+        if N_slits!=self.ifu_type.Ntotal/2:
+            self.btn_make_apermap_fix['state'] = 'normal'
 
         self.window.focus_set()
 
