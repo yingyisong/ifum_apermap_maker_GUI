@@ -682,28 +682,38 @@ class IFUM_AperMap_Maker:
                 #map_ap[spat_id_temp-2:spat_id_temp+1, int(nspec/2)-2:int(nspec/2)+1] = np.int32(ap_num)
                 #print("!!!!!!", spat_id_temp-2, spat_id_temp+1, int(nspec/2)-2, int(nspec/2)+1)
 
-                #dist_temp = np.abs(spat_id_raw-spat_id_temp)
+                #### insert a missing slit using the nearest slit
+                dist_temp = np.abs(spat_id_raw-spat_id_temp)
+                i_temp = np.where(dist_temp==np.min(dist_temp))[0][0]
+                shift_temp = spat_id_temp-spat_id_raw[i_temp]
+                print(ap_num, i_temp)
 
-                d1_spat_id = spat_id_temp - spat_id_new[i_ap-1]
-                d2_spat_id = spat_id_new[i_ap+1] - spat_id_temp
-                print(d1_spat_id, d2_spat_id)
-                if d1_spat_id>d2_spat_id:
-                    temp_index = np.where(spat_id_raw==spat_id_new[i_ap+1])[0]
-                    if len(temp_index)==1:
-                        i_temp = temp_index[0]
-                        for x_temp in range(nspec):
-                            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                            map_ap[ap_y1-d2_spat_id:ap_y2-d2_spat_id, x_temp] = np.int32(ap_num)
-                else:
-                    temp_index = np.where(spat_id_raw==spat_id_new[i_ap-1])[0]
-                    if len(temp_index)==1:
-                        i_temp = temp_index[0]
-                        for x_temp in range(nspec):
-                            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                            map_ap[ap_y1+d1_spat_id:ap_y2+d1_spat_id, x_temp] = np.int32(ap_num)
-                            map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
+                for x_temp in range(nspec):
+                    ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                    ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+                    map_ap[ap_y1+shift_temp:ap_y2+shift_temp, x_temp] = np.int32(ap_num)
+
+                ##### insert a missing slit using either one slit before or after
+                #d1_spat_id = spat_id_temp - spat_id_new[i_ap-1]
+                #d2_spat_id = spat_id_new[i_ap+1] - spat_id_temp
+                #print(d1_spat_id, d2_spat_id)
+                #if d1_spat_id>d2_spat_id:
+                #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap+1])[0]
+                #    if len(temp_index)==1:
+                #        i_temp = temp_index[0]
+                #        for x_temp in range(nspec):
+                #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+                #            map_ap[ap_y1-d2_spat_id:ap_y2-d2_spat_id, x_temp] = np.int32(ap_num)
+                #else:
+                #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap-1])[0]
+                #    if len(temp_index)==1:
+                #        i_temp = temp_index[0]
+                #        for x_temp in range(nspec):
+                #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+                #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+                #            map_ap[ap_y1+d1_spat_id:ap_y2+d1_spat_id, x_temp] = np.int32(ap_num)
+                #            map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
 
         #### cut data
         map_ap = self.cut_data_by_edges(map_ap, shoe)
