@@ -601,7 +601,7 @@ class IFUM_AperMap_Maker:
         hdul = fits.open(self.path_MasterSlits)
         hdr = hdul[1].header
         N_slits = np.int32(hdr['NSLITS'])
-        self.ifu_type = self.get_ifu_type(N_slits, 20)
+        self.ifu_type = self.get_ifu_type(N_slits)
 
         #### show messages
         if message:
@@ -614,18 +614,20 @@ class IFUM_AperMap_Maker:
 
         return N_slits
 
-    def get_ifu_type(self, Nslits, Nerr):
-        if np.abs(Nslits-self.LSB.Ntotal/2)<Nerr:
+    def get_ifu_type(self, Nslits):
+        Nslits_IFU = np.array([self.LSB.Ntotal/2, self.STD.Ntotal/2, self.HR.Ntotal/2])
+        diff_Nslits = np.abs(Nslits_IFU-Nslits)
+        idx_IFU = np.where(diff_Nslits==np.min(diff_Nslits))[0][0]
+        
+        if idx_IFU==0:
             return self.LSB
-        elif np.abs(Nslits-self.STD.Ntotal/2)<Nerr:
+        elif idx_IFU==1:
             return self.STD
-        elif np.abs(Nslits-self.HR.Ntotal/2)<Nerr:
+        elif idx_IFU==2:
             return self.HR
-        elif np.abs(Nslits-self.M2FS.Ntotal/2)<Nerr:
-            return self.M2FS
         else:
             return self.UNKNOWN
-
+    
     def make_file_apermap_slits(self):
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
