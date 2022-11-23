@@ -94,6 +94,10 @@ class IFUM_AperMap_Maker:
         self.param_curve_r = np.array([1.53314740e-05, 2.12797487e+03, 6.75423701e+02]) #np.zeros(3)
         self.param_edges_b = np.array([418., 1250., 1250.-418.])#np.zeros(2)
         self.param_edges_r = np.array([426., 1258., 1258.-426.])#np.zeros(2)
+        #self.param_curve_b = np.array([-1.67977832e-05, 1.86465356e+03, 9.65048123e+02]) #np.zeros(3) for STD_b0107 Triplet
+        #self.param_curve_r = np.array([-1.76051975e-05, 2.19290161e+03, 1.29282266e+03]) #np.zeros(3)
+        #self.param_edges_b = np.array([603., 1571., 968.])#np.zeros(2)
+        #self.param_edges_r = np.array([600., 1568., 968.])#np.zeros(2)
         self.param_smash_range = '0.4,0.6'
 
         #### initialize string variables
@@ -383,7 +387,7 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         #self.lbl_slitnum.grid(row=rows[3], column=5, columnspan=2, sticky="e")
 
-        self.btn_make_apermap_fix = tk.Button(self.frame1, width=6, text='Auto-fix', command=self.make_file_apermap_fix, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_fix = tk.Button(self.frame1, width=6, text='Auto-fix', command=self.make_file_apermap_fix, state='normal', highlightbackground=BG_COLOR)
         self.btn_make_apermap_fix.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_add_slits(self):
@@ -586,12 +590,13 @@ class IFUM_AperMap_Maker:
         os.system('rm %s'%os.path.join(dir_pypeitFile,filename+'.calib'))
 
 
+        N_slits = self.check_file_MasterSlits(message=False)       
         #self.lbl_slitnum['text'] = 'N_slits = %d'%N_slits
         self.make_file_apermap()
 
         self.window.focus_set()
 
-    def check_file_MasterSlits(self):
+    def check_file_MasterSlits(self, message=True):
         #hdul = cached_fits_open(self.path_MasterSlits)
         hdul = fits.open(self.path_MasterSlits)
         hdr = hdul[1].header
@@ -599,12 +604,13 @@ class IFUM_AperMap_Maker:
         self.ifu_type = self.get_ifu_type(N_slits, 20)
 
         #### show messages
-        if N_slits==self.ifu_type.Ntotal/2:
-            info_temp = 'PypeIt found all %d slits for %s'%(N_slits,self.ifu_type.label)
-        else:
-            info_temp = 'PypeIt found %d slits, close to %d (%s)'%(N_slits,self.ifu_type.Ntotal/2,self.ifu_type.label)
-        self.popup_showinfo('PypeIt', info_temp)
-        print('\n++++\n++++ %s\n++++\n'%(info_temp))
+        if message:
+            if N_slits==self.ifu_type.Ntotal/2:
+                info_temp = 'PypeIt found all %d slits for %s'%(N_slits,self.ifu_type.label)
+            else:
+                info_temp = 'PypeIt found %d slits, close to %d (%s)'%(N_slits,self.ifu_type.Ntotal/2,self.ifu_type.label)
+            self.popup_showinfo('PypeIt', info_temp)
+            print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
         return N_slits
 
@@ -675,6 +681,8 @@ class IFUM_AperMap_Maker:
             else:
                 #map_ap[spat_id_temp-2:spat_id_temp+1, int(nspec/2)-2:int(nspec/2)+1] = np.int32(ap_num)
                 #print("!!!!!!", spat_id_temp-2, spat_id_temp+1, int(nspec/2)-2, int(nspec/2)+1)
+
+                #dist_temp = np.abs(spat_id_raw-spat_id_temp)
 
                 d1_spat_id = spat_id_temp - spat_id_new[i_ap-1]
                 d2_spat_id = spat_id_new[i_ap+1] - spat_id_temp
@@ -749,7 +757,81 @@ class IFUM_AperMap_Maker:
         self.window.focus_set()
 
     def make_file_apermap_fix(self):
-        return 0
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        basename = os.path.basename(self.path_MasterSlits)
+        fname = basename.split('_')[1]+'_apermap'
+        shoe = fname[0]
+        print(shoe, fname)
+
+        #hdul = cached_fits_open(self.path_MasterSlits)
+        hdul = fits.open(self.path_MasterSlits)
+        hdr = hdul[1].header
+        data = hdul[1].data
+
+        N_sl  = np.int32(hdr['NSLITS'])
+        nspec = np.int32(hdr['NSPEC']) ### binning?
+        nspat = np.int32(hdr['NSPAT'])
+        map_ap = np.zeros((nspat,nspec), dtype=np.int32)
+        print('nspat, nspec=',nspat,nspec)
+        print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
+
+        ####
+        if N_ap>N_sl:
+            print('!!! Warning: Missing %d fiber(s). !!!'%(N_ap-N_sl))
+        elif N_ap<N_sl:
+            print('!!! Warning: Found %d more fiber(s) than expected. !!!'%(N_sl-N_ap))
+        
+        ap_id = data['spat_id']
+        ap_diff = np.diff(ap_id)
+        Nx = self.ifu_type.Nx
+        Ny = self.ifu_type.Ny
+        ap_id_add = np.array([], dtype=np.int32)
+
+        ##### manually add starting fibers
+        #N_start = 3
+        #diff_med = np.median(ap_diff)
+        #for i in range(N_start):
+        #    ap_id_add = np.append(ap_id_add, ap_id[0]-i*diff_med)
+        #ap_id_add = np.sort(ap_id_add)
+        #ap_id = np.append(ap_id_add, ap_id)
+        #ap_diff = np.diff(ap_id)
+        #print(ap_id_add)
+        #diff_med = np.median(ap_diff)
+        #ap_id_add = np.append(ap_id_add, ap_id[46]-diff_med)
+        #ap_id = np.insert(ap_id, 46, ap_id_add[0])
+        #ap_diff = np.diff(ap_id)
+
+        thresh_diff = 1.7
+        iy = 0
+        while iy <= Ny/2:
+            ibundle = iy*Nx
+            diff_temp = np.median(ap_diff[ibundle:ibundle+Nx-1])
+            mask_temp = ap_diff[ibundle:ibundle+Nx-1]>thresh_diff*diff_temp
+            if np.sum(mask_temp)>0:
+                idx_temp = np.where(mask_temp)[0]
+                ap_id_temp =  ap_id[ibundle+idx_temp]+diff_temp
+                ap_id_add = np.append(ap_id_add, ap_id_temp)
+                ap_id = np.insert(ap_id, ibundle+idx_temp+1, ap_id_temp)
+                ap_diff = np.diff(ap_id)
+            else:
+                iy += 1
+        
+        #### 
+        print("Auto-fix found %d fiber(s) to add"%len(ap_id_add))
+
+        #### save new spat_id positions into a file
+        dirname = os.path.join(self.folder_trace, 'slits_file')
+        filename = self.filename_trace.split('_')[2]+'_slits.txt'
+
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+
+        file = open(os.path.join(dirname, filename), 'w')
+        for temp in ap_id_add:
+            file.write("%d\n"%temp)
+        file.close()
+
+        self.make_file_apermap_slits()
 
     def make_file_apermap(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
@@ -883,7 +965,7 @@ class IFUM_AperMap_Maker:
     def disable_make_apermap(self):
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        self.btn_make_apermap_fix['state'] = 'disabled'
+        #self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
 
@@ -937,7 +1019,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        self.btn_make_apermap_fix['state'] = 'disabled'
+        #self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
         self.btn_make_apermap_mono['state'] = 'disabled'
@@ -1516,7 +1598,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_curve_r['state'] = 'disabled'
         self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
-        self.btn_make_apermap_fix['state'] = 'disabled'
+        #self.btn_make_apermap_fix['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
         self.btn_make_apermap_mono['state'] = 'disabled'
