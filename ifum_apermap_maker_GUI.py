@@ -414,8 +414,8 @@ class IFUM_AperMap_Maker:
         self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_bundles, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_fix = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix, state='normal', highlightbackground=BG_COLOR)
-        self.btn_make_apermap_fix.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
+        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2, state='normal', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_bundles.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### select y positions of all missing slits
         lbl_slits_note = tk.Label(self.frame1, text='Opt. B: By exact slit positions (pick N missing points)', fg=LABEL_COLOR, bg=BG_COLOR)
@@ -790,6 +790,20 @@ class IFUM_AperMap_Maker:
         shoe = fname[0]
         print(shoe, fname)
 
+        #### load bundle centers
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_bundles = self.filename_trace.split('_')[2]+'_bundles.txt'
+        path_bundles = os.path.join(dirname_slits, filename_bundles)
+        if os.path.isfile(path_bundles):
+            pts_pick = np.int32(readFloat_space(path_bundles, 0))
+        else:
+            pts_pick = np.array([])       
+        n_pick = len(pts_pick)
+
+        print("Loaded in %d bundle centers, %s has %d bundle centers"%(n_pick, self.ifu_type.label, self.ifu_type.Ny/4))
+        if len(pts_pick)!=self.ifu_type.Ny/4:
+            return 0
+
         #### read MasterSlits
         #hdul = cached_fits_open(self.path_MasterSlits)
         hdul = fits.open(self.path_MasterSlits)
@@ -818,7 +832,6 @@ class IFUM_AperMap_Maker:
         #### add missing fibers
         thresh_diff = 1.7
         ap_diff_med = np.median(ap_diff)
-        n_pick = len(pts_pick)
 
         pts_diff = np.diff(pts_pick)
         pts_gap = pts_pick[0:-1] + pts_diff/2.
@@ -863,7 +876,6 @@ class IFUM_AperMap_Maker:
         file.close()
 
         self.make_file_apermap_slits()
-
 
     def make_file_apermap_fix(self):
         N_ap = np.int32(self.ifu_type.Ntotal/2)
@@ -1028,7 +1040,7 @@ class IFUM_AperMap_Maker:
         #### check the MasterSlits file
         N_slits = self.check_file_MasterSlits()       
         if N_slits!=self.ifu_type.Ntotal/2:
-            self.btn_make_apermap_fix['state'] = 'normal'
+            self.btn_make_apermap_bundles['state'] = 'normal'
 
         self.window.focus_set()
 
@@ -1074,7 +1086,8 @@ class IFUM_AperMap_Maker:
     def disable_make_apermap(self):
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        #self.btn_make_apermap_fix['state'] = 'disabled'
+        self.btn_select_bundles['state'] = 'disabled'
+        self.btn_make_apermap_bundles['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
 
@@ -1128,7 +1141,8 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace['state'] = 'disabled'
         self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
-        #self.btn_make_apermap_fix['state'] = 'disabled'
+        self.btn_select_bundles['state'] = 'disabled'
+        self.btn_make_apermap_bundles['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
         self.btn_make_apermap_mono['state'] = 'disabled'
@@ -1295,6 +1309,8 @@ class IFUM_AperMap_Maker:
                 self.gray_all_lbl_file()
                 self.lbl_file_apermap.config(bg='yellow')
                 self.disable_dependent_btns()
+                self.btn_select_bundles['state'] = 'normal'
+                self.btn_make_apermap_bundles['state'] = 'normal'
                 self.btn_select_slits['state'] = 'normal'
                 self.btn_make_apermap_slits['state'] = 'normal'
 
@@ -1313,6 +1329,8 @@ class IFUM_AperMap_Maker:
             self.filename_trace = "apx0000_0000.fits"
             self.file_current = "0000"
             self.lbl_file_apermap['text'] = self.filename_trace.split('.')[0]
+            self.btn_select_bundles['state'] = 'disabled'
+            self.btn_make_apermap_bundles['state'] = 'disabled'
             self.btn_select_slits['state'] = 'disabled'
             self.btn_make_apermap_slits['state'] = 'disabled'
             self.gray_all_lbl_file()
@@ -1491,7 +1509,7 @@ class IFUM_AperMap_Maker:
 
     def pick_bundles(self):
         self.disable_others()
-        self.btn_select_slits['state'] = 'active'
+        self.btn_select_bundles['state'] = 'active'
 
         self.ax.axvline(len(self.data_full[0])/2, c='g', ls='-')
         #self.update_image(shoe='b', uniform=True)
@@ -1525,8 +1543,8 @@ class IFUM_AperMap_Maker:
         if event.key == 'escape':
             #### enable other functions
             self.enable_others()
-            self.btn_select_slits['state'] = 'normal'
-            self.btn_make_apermap_slits['state'] = 'normal'
+            self.btn_select_bundles['state'] = 'normal'
+            self.btn_make_apermap_bundles['state'] = 'normal'
 
             #### save the y positions into a file
             dirname = os.path.join(self.folder_trace, 'slits_file')
@@ -1566,7 +1584,7 @@ class IFUM_AperMap_Maker:
                 self.x_last, self.y_last = event.xdata, event.ydata
                 self.ax.scatter(len(self.data_full[0])/2, event.ydata, c='r', marker='x', zorder=10)
                 #self.update_image(uniform=True)
-                self.update_image_single(self.data, self.file_current, shoe='b', uniform=True)
+                self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
 
     def on_click_curve(self, event, shoe):
         if event.button is MouseButton.RIGHT:
@@ -1739,7 +1757,8 @@ class IFUM_AperMap_Maker:
         self.btn_select_curve_r['state'] = 'disabled'
         self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
-        #self.btn_make_apermap_fix['state'] = 'disabled'
+        self.btn_select_bundles['state'] = 'disabled'
+        self.btn_make_apermap_bundles['state'] = 'disabled'
         self.btn_select_slits['state'] = 'disabled'
         self.btn_make_apermap_slits['state'] = 'disabled'
         self.btn_make_apermap_mono['state'] = 'disabled'
