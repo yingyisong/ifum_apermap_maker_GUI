@@ -414,7 +414,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_bundles, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2, state='normal', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_bundles.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### select y positions of all missing slits
@@ -830,8 +830,8 @@ class IFUM_AperMap_Maker:
         ap_id_add = np.array([], dtype=np.int32)
 
         #### add missing fibers
-        thresh_diff = 1.7
-        ap_diff_med = np.median(ap_diff)
+        thresh_diff = 1.5
+        #ap_diff_med = np.median(ap_diff)
 
         pts_diff = np.diff(pts_pick)
         pts_gap = pts_pick[0:-1] + pts_diff/2.
@@ -841,22 +841,26 @@ class IFUM_AperMap_Maker:
         for i in range(n_pick*2):
             mask_id_temp = np.logical_and(ap_id>pts_all[i], ap_id<=pts_all[i+1])
             ap_id_temp = ap_id[mask_id_temp]
+            ap_diff_med_temp = np.median(np.diff(ap_id_temp))
+
             ap_id_temp = np.append(pts_all[i], ap_id_temp)
             ap_id_temp = np.append(ap_id_temp, pts_all[i+1])
             ap_diff_temp = np.diff(ap_id_temp)
             
-            while ap_diff_temp<=self.ifu_type.Nx:
-                mask_diff_temp = ap_diff_temp>thresh_diff*ap_diff_med
+            print('Working on %d/%d to add %d fiber(s)'%(i+1, n_pick*2, self.ifu_type.Nx-len(ap_diff_temp)+1))
+            while len(ap_diff_temp)<=self.ifu_type.Nx:
+                mask_diff_temp = ap_diff_temp>thresh_diff*ap_diff_med_temp
                 if np.sum(mask_diff_temp)>0:
                     if i%2==0:
                         idx_temp = np.where(mask_diff_temp)[-1]
-                        ap_id_add_temp = ap_id_temp[idx_temp] - ap_diff_med
+                        ap_id_add_temp = ap_id_temp[idx_temp+1] - ap_diff_med_temp
                     else:
                         idx_temp = np.where(mask_diff_temp)[0]
-                        ap_id_add_temp = ap_id_temp[idx_temp] + ap_diff_med
-                    ap_id_add = np.append(ap_id_add, ap_id_add_temp)
+                        ap_id_add_temp = ap_id_temp[idx_temp] + ap_diff_med_temp
+                    ap_id_add = np.sort( np.append(ap_id_add, ap_id_add_temp) )
                     ap_id_temp = np.sort( np.append(ap_id_temp, ap_id_add_temp) )
                     ap_diff_temp = np.diff(ap_id_temp)
+                    print(len(ap_id_add), ap_id_add_temp)
             
             ap_id = np.sort( np.append(ap_id[~mask_id_temp], ap_id_temp) )
                         
