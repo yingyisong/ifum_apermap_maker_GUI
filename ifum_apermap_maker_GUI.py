@@ -387,8 +387,6 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         #self.lbl_slitnum.grid(row=rows[3], column=5, columnspan=2, sticky="e")
 
-
-
     def create_widgets_add_slits(self):
         """ step 5 add bad/missing slits """
         start, lines = 16, 4
@@ -413,7 +411,7 @@ class IFUM_AperMap_Maker:
         lbl_bundles_note = tk.Label(self.frame1, text='Opt. A: By bundle centers (pick 5, 6 or 8 points)', fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_bundles_note.grid(row=rows[2], column=1, columnspan=5, sticky='w')
 
-        self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_bundles, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="e", padx=5, pady=5)
 
         self.btn_make_apermap_fix = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix, state='normal', highlightbackground=BG_COLOR)
@@ -1491,6 +1489,16 @@ class IFUM_AperMap_Maker:
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_slits)
         self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press_slits)
 
+    def pick_bundles(self):
+        self.disable_others()
+        self.btn_select_slits['state'] = 'active'
+
+        self.ax.axvline(len(self.data_full[0])/2, c='g', ls='-')
+        #self.update_image(shoe='b', uniform=True)
+        self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
+        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', self.on_click_slits)
+        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', self.key_press_bundles)
+
     def key_press_slits(self, event):
         if event.key == 'escape':
             #### enable other functions
@@ -1501,6 +1509,28 @@ class IFUM_AperMap_Maker:
             #### save the y positions into a file
             dirname = os.path.join(self.folder_trace, 'slits_file')
             filename = self.filename_trace.split('_')[2]+'_slits.txt'
+
+            if not os.path.exists(dirname):
+                os.mkdir(dirname)
+
+            file = open(os.path.join(dirname, filename), 'w')
+            for point in self.points:
+                file.write("%d\n"%point[1])
+            file.close()
+
+            #### break the mpl connection
+            self.break_mpl_connect(shoe='b')
+
+    def key_press_bundles(self, event):
+        if event.key == 'escape':
+            #### enable other functions
+            self.enable_others()
+            self.btn_select_slits['state'] = 'normal'
+            self.btn_make_apermap_slits['state'] = 'normal'
+
+            #### save the y positions into a file
+            dirname = os.path.join(self.folder_trace, 'slits_file')
+            filename = self.filename_trace.split('_')[2]+'_bundles.txt'
 
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
