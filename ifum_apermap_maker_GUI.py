@@ -62,6 +62,16 @@ class IFUM_AperMap_Maker:
         self.UNKNOWN = IFUM_UNIT('unknown')
         self.ifu_type = self.UNKNOWN
 
+        #### menubar
+        self.menubar = tk.Menu(self.window)
+        self.window.config(menu=self.menubar)
+        self.menu_file = tk.Menu(self.menubar, tearoff=0)
+        self.menu_file.add_command(label="Load Curve", command=self.load_curve_file)
+        self.menu_file.add_command(label="Save Curve", command=self.save_curve_file)
+        #self.menu_file.add_command(label="Save as", command=self.save_file_as)
+        self.menu_file.add_command(label="Exit", command=self.window.quit)
+        self.menubar.add_cascade(label="File", menu=self.menu_file)
+
         #### frames
         self.frame1 = tk.Frame(self.window, relief=tk.RAISED, bd=2, bg=BG_COLOR)
         self.frame1.grid(row=0, column=0, sticky="ns")
@@ -84,6 +94,7 @@ class IFUM_AperMap_Maker:
 
         self.folder_rawdata = "./data_raw/"
         self.folder_trace   = "./data_trace/"
+        self.folder_curve   = "./curve_files/"
         self.path_MasterSlits = ' '
         self.labelname_mono   = "input_an_unique_label_name"
 
@@ -137,6 +148,64 @@ class IFUM_AperMap_Maker:
         self.refresh_folder()
         self.init_image1()
         self.init_image2()
+
+    def load_curve_file(self):
+        '''  load a curve file and update param_curve '''
+
+        #### open a txt file containing the curve parameters
+        pathname = filedialog.askopenfilename(initialdir=self.folder_curve, title="Select file", filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
+        dirname, filename = os.path.split(pathname)
+        if os.path.isfile(pathname) and filename.startswith("curve") and filename.endswith(".txt"):
+            file = np.loadtxt(pathname, dtype='str')
+            mask_bside = file[:, 0] == 'b'
+
+            #### update param_curve
+            popt = np.array([np.float64(file[mask_bside, 1]), np.float64(file[mask_bside, 2]), np.float64(file[mask_bside, 3])])
+            self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
+            self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
+            self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
+            self.param_curve_b = popt
+
+            popt = np.array([np.float64(file[~mask_bside, 1]), np.float64(file[~mask_bside, 2]), np.float64(file[~mask_bside, 3])])
+            self.txt_param_curve_A_r.set("%.3e"%(popt[0]))
+            self.txt_param_curve_B_r.set("%.1f"%(popt[1]))
+            self.txt_param_curve_C_r.set("%.1f"%(popt[2]))
+            self.param_curve_r = popt
+
+            #### update param_edges
+            self.param_edges_b = np.array([np.float64(file[mask_bside, 4]), np.float64(file[mask_bside, 4])+np.float64(file[mask_bside, 5]), np.float64(file[mask_bside, 5])])
+            self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
+            self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
+            self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
+            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
+
+            self.param_edges_r = np.array([np.float64(file[~mask_bside, 4]), np.float64(file[~mask_bside, 4])+np.float64(file[~mask_bside, 5]), np.float64(file[~mask_bside, 5])])
+            self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
+            self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
+            self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
+            self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
+            
+            #### show message
+            info_temp = 'Loaded %s'%filename
+            self.popup_showinfo('File loaded', info_temp) 
+
+        #self.window.focus_set()
+
+    def save_curve_file(self):
+        '''  save the curve parameters '''
+
+        today_temp = datetime.today().strftime('%y%m%d')
+        filename = "curve_%s_%s_%s.txt"%("IFU", self.lbl_file_edges['text'], today_temp)
+        pathname = os.path.join(self.folder_curve, filename)
+        file = open(pathname, 'w')
+        file.write("#side A B C X1 dX\n")
+        file.write("b %.3e %.1f %.1f %.0f %.0f\n"%(self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], self.param_edges_b[0], self.param_edges_b[2]))
+        file.write("r %.3e %.1f %.1f %.0f %.0f\n"%(self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], self.param_edges_r[0], self.param_edges_r[2]))
+        file.close()
+        
+        #### show message
+        info_temp = 'Saved %s'%pathname
+        self.popup_showinfo('File saved', info_temp)
 
     def create_widgets_files(self):
         start, lines = 0, 2
