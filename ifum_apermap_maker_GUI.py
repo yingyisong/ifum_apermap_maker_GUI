@@ -852,10 +852,10 @@ class IFUM_AperMap_Maker:
                 mask_diff_temp = ap_diff_temp>thresh_diff*ap_diff_med_temp
                 if np.sum(mask_diff_temp)>0:
                     if i%2==0:
-                        idx_temp = np.where(mask_diff_temp)[-1]
+                        idx_temp = np.where(mask_diff_temp)[0][-1]
                         ap_id_add_temp = ap_id_temp[idx_temp+1] - ap_diff_med_temp
                     else:
-                        idx_temp = np.where(mask_diff_temp)[0]
+                        idx_temp = np.where(mask_diff_temp)[0][0]
                         ap_id_add_temp = ap_id_temp[idx_temp] + ap_diff_med_temp
                     ap_id_add = np.sort( np.append(ap_id_add, ap_id_add_temp) )
                     ap_id_temp = np.sort( np.append(ap_id_temp, ap_id_add_temp) )
