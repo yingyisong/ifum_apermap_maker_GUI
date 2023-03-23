@@ -1895,7 +1895,8 @@ class IFUM_AperMap_Maker:
         self.update_image(shoe='both', uniform=True)
 
         #### write the fits file
-        fname = self.lbl_file_mono['text']+'_'+self.ent_labelname_mono.get()
+        temp_name = self.lbl_file_mono['text'].split('_')
+        fname = temp_name[0]+'_'+self.ent_labelname_mono.get()+'_'+temp_name[1]
         cut_apermap(self.data_full, self.hdr_b, self.folder_apermap, 'apb_'+fname)
         cut_apermap(self.data_full2, self.hdr_r, self.folder_apermap, 'apr_'+fname)
 

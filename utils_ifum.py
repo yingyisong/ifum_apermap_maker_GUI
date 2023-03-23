@@ -470,7 +470,7 @@ def write_trace_file(data, header, dirname, filename):
     X2 = len(data[0])/2
     Y2 = len(data)/2
 
-    hdu_full = fits.PrimaryHDU(data,header=header)
+    hdu_full = fits.PrimaryHDU(np.int32(data),header=header)
     hdul_full = fits.HDUList([hdu_full])
     hdr_full  = hdul_full[0].header
     if ('BIASSEC' in hdr_full):
@@ -506,7 +506,7 @@ def cut_apermap(data, header, dirname, filename):
     #X2 = len(data[0])/2
     #Y2 = len(data)/2
 
-    hdu_full = fits.PrimaryHDU(data,header=header)
+    hdu_full = fits.PrimaryHDU(np.int32(data),header=header)
     hdul_full = fits.HDUList([hdu_full])
     #hdr_full  = hdul_full[0].header
     #if ('BIASSEC' in hdr_full):
