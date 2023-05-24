@@ -5,6 +5,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+from datetime import datetime
+
 from astropy import units as u
 from astropy import constants
 from astropy.io import fits
@@ -429,7 +431,7 @@ def write_aperMap(path_MasterSlits, IFU_type, Channel, file_name, file_date, N_x
 
     hdu_map.writeto(file_name+'_'+file_date+'.fits',overwrite=True)
 
-def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
+def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     dirname_output = os.path.join(dirname, 'pypeit_file')
     filename_output = filename+'.pypeit'
     filename_fits = filename+'.fits'
@@ -441,7 +443,13 @@ def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
     file.write("spectrograph = magellan_m2fs_blue\n")
     file.write("[calibrations]\n")
     file.write("    [[slitedges]]\n")
+    if pca=='off':
+        file.write("        auto_pca = False\n")
+    else:
+        file.write("        auto_pca = True\n")
     file.write("        smash_range = %s\n"%smash_range)
+    file.write("        length_range = 0.9\n")
+    file.write("        edge_thresh = 3.0\n")
     file.write("\n")
     file.write("# Setup\n")
     file.write("setup read\n")
@@ -456,3 +464,78 @@ def write_pypeit_file(dirname, filename, smash_range="0.4,0.6"):
     file.write("data end\n")
     file.write("\n")
     file.close()
+
+def write_trace_file(data, header, dirname, filename):
+    #### write to a fits file
+    X2 = len(data[0])/2
+    Y2 = len(data)/2
+
+    hdu_full = fits.PrimaryHDU(np.int32(data),header=header)
+    hdul_full = fits.HDUList([hdu_full])
+    hdr_full  = hdul_full[0].header
+    if ('BIASSEC' in hdr_full):
+        del hdr_full['BIASSEC']
+        del hdr_full['DATASEC']
+        del hdr_full['TRIMSEC']
+    if ('NOVERSCN' in hdr_full):
+        del hdr_full['NOVERSCN']
+    if ('NBIASLNS' in hdr_full):
+        del hdr_full['NBIASLNS']
+    #if (flag_egain):
+    #    hdr_full['ENOISE'] = np.mean(enoise_full)
+    hdr_full['NOPAMPS'] = 1
+    hdr_full['OPAMP'] = 1
+    hdr_full['FILENAME'] = (filename,'')
+    hdr_full['DATASEC'] = ('[1:%d,1:%d]'%(X2*2,Y2*2),'NOAO: data section')
+    hdr_full['CCDSEC'] = '[1:%d,1:%d]'%(X2*2,Y2*2)
+    hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
+
+    #### save trace file
+    path_trace = os.path.join(dirname, filename+'.fits')
+    hdul_full.writeto(path_trace,overwrite=True)
+
+    #### save backup file
+    dir_backup = os.path.join(dirname, "backup_trace")
+    if not os.path.exists(dir_backup):
+        os.mkdir(dir_backup)
+    path_backup = os.path.join(dir_backup, "%s_trace_%s.fits"%(filename[0:5], datetime.today().strftime('%y%m%d_%H%M')))
+    hdul_full.writeto(path_backup,overwrite=False)
+
+def cut_apermap(data, header, dirname, filename):
+    #### write to a fits file
+    #X2 = len(data[0])/2
+    #Y2 = len(data)/2
+
+    hdu_full = fits.PrimaryHDU(np.int32(data),header=header)
+    hdul_full = fits.HDUList([hdu_full])
+    #hdr_full  = hdul_full[0].header
+    #if ('BIASSEC' in hdr_full):
+    #    del hdr_full['BIASSEC']
+    #    del hdr_full['DATASEC']
+    #    del hdr_full['TRIMSEC']
+    #if ('NOVERSCN' in hdr_full):
+    #    del hdr_full['NOVERSCN']
+    #if ('NBIASLNS' in hdr_full):
+    #    del hdr_full['NBIASLNS']
+    ##if (flag_egain):
+    ##    hdr_full['ENOISE'] = np.mean(enoise_full)
+    #hdr_full['NOPAMPS'] = 1
+    #hdr_full['OPAMP'] = 1
+    #hdr_full['FILENAME'] = (filename,'')
+    #hdr_full['DATASEC'] = ('[1:%d,1:%d]'%(X2*2,Y2*2),'NOAO: data section')
+    #hdr_full['CCDSEC'] = '[1:%d,1:%d]'%(X2*2,Y2*2)
+    #hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
+
+    #### save trace file
+    today_temp = datetime.today().strftime("%y%m%d")
+    today_backup = datetime.today().strftime("%y%m%d_%H%M")
+    
+    path_trace = os.path.join(dirname, filename+'_%s_3000.fits'%today_temp)
+    hdul_full.writeto(path_trace,overwrite=True)
+
+    #### save backup file
+    dir_backup = os.path.join(dirname, "backup_aperMap")
+    if not os.path.exists(dir_backup):
+        os.mkdir(dir_backup)
+    path_backup = os.path.join(dir_backup, "%s_%s.fits"%(filename, today_backup))
+    hdul_full.writeto(path_backup,overwrite=False)
