@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+curve_files/
 
 # C extensions
 *.so
