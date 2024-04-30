@@ -489,6 +489,7 @@ def write_trace_file(data, header, dirname, filename):
     hdr_full['DATASEC'] = ('[1:%d,1:%d]'%(X2*2,Y2*2),'NOAO: data section')
     hdr_full['CCDSEC'] = '[1:%d,1:%d]'%(X2*2,Y2*2)
     hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
+    hdr_full['OBJECT'] = ('Trace file', 'object name')
 
     #### save trace file
     path_trace = os.path.join(dirname, filename+'.fits')
