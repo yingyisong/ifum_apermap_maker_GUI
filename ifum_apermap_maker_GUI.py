@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 from datetime import datetime
 
 from astropy.io import fits
+import numpy.polynomial.polynomial as poly
 from scipy.optimize import curve_fit
 
 from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
@@ -494,7 +495,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_slits.grid(row=rows[3], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_slits, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_slits_v2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_slits.grid(row=rows[3], column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_mono(self):
@@ -801,7 +802,122 @@ class IFUM_AperMap_Maker:
             return self.HR
         else:
             return self.UNKNOWN
-    
+
+    def make_file_apermap_slits_v2(self):
+        #### get the correct number of slits
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        shoe = self.lbl_file_apermap['text'][2]
+
+        #### load the slits coefs
+        dirname_coefs = os.path.join(self.folder_trace, 'trace_coefs')
+        filename_coefs = self.lbl_file_apermap['text'].split('_')[0][2:]+'_coefs.txt'
+        path_coefs = os.path.join(dirname_coefs, filename_coefs)
+        trace_coefs = np.loadtxt(path_coefs, delimiter=',')
+        N_sl = len(trace_coefs)
+
+        x_middle = np.int32(len(self.data_full[0])/2)
+        y_middle = np.zeros(N_sl, dtype=np.int32)
+        for i_sl in range(N_sl):
+            y_middle[i_sl] = np.round( poly.polyval(x_middle, trace_coefs[i_sl]) ).astype(np.int32)
+
+        #### load missing slits file
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_slits = self.lbl_file_apermap['text'].split('_')[0][3:]+'_slits_'+shoe+'.txt'
+        path_slits = os.path.join(dirname_slits, filename_slits)
+        if os.path.isfile(path_slits):
+            y_missing = np.int32(readFloat_space(path_slits, 0))
+        else:
+            y_missing = np.array([])
+
+        #### add missing slits and make new AperMap
+        y_middle_new = np.append(y_middle, y_missing)
+        y_middle_new = np.sort(y_middle_new)
+        N_new = len(y_middle_new)
+
+        if N_new>N_ap:
+            print('!!! Warning: More bad fibers are added. !!!')
+        elif N_new<N_ap:
+            print('!!! Warning: Less bad fibers are added. !!!')
+        else:
+            print('All %d fibers are found.'%N_ap)
+
+        
+        #### make a new AperMap
+        map_ap = np.zeros((len(self.data_full),len(self.data_full[0])), dtype=np.int32)
+        x_trace = np.arange(len(self.data_full[0]))
+        aper_half_width = 4
+        for i_ap in range(N_new):
+            ap_num = i_ap+1
+            y_middle_temp = y_middle_new[i_ap]
+
+            temp_index = np.where(y_middle==y_middle_temp)[0]
+            if len(temp_index)==1:
+                i_temp = temp_index[0]
+                y_temp = np.round( poly.polyval(x_trace, trace_coefs[i_temp]) ).astype(np.int32)
+                for j in range(len(x_trace)):
+                    map_ap[y_temp[j]-aper_half_width:y_temp[j]+aper_half_width, x_trace[j]] = np.int32(ap_num)
+            else:
+                print('!!! Now adding the %d-th fiber. !!!'%ap_num)
+
+                #### insert a missing slit using the nearest slit
+                dist_temp = np.abs(y_middle-y_middle_temp)
+                i_temp = np.where(dist_temp==np.min(dist_temp))[0][0]
+                shift_temp = y_middle_temp-y_middle[i_temp]
+                print('Fake', ap_num, 'acording to', i_temp+1)
+
+                y_temp = np.round( poly.polyval(x_trace, trace_coefs[i_temp]) ).astype(np.int32)
+                for j in range(len(x_trace)):
+                    map_ap[y_temp[j]+shift_temp-aper_half_width:y_temp[j]+shift_temp+aper_half_width, x_trace[j]] = np.int32(ap_num)
+        
+        #### cut data
+        map_ap = self.cut_data_by_edges(map_ap, shoe)
+
+        #### find the maximum number of pixels in all slits
+        num_ap = np.zeros(N_ap, dtype=np.int32)
+        for i_ap in range(N_ap):
+            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+        num_max = np.max(num_ap)
+
+        #### save AperMap
+        #### the following header params may require modifying
+        hdu_map = fits.PrimaryHDU(map_ap)
+        hdr_map = hdu_map.header
+        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_new, 'number of slits')
+        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+        hdr_map['BINNING'] = ('1x1', 'binning')
+        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+
+        today_temp = datetime.today().strftime('%y%m%d')
+        today_backup = datetime.today().strftime('%y%m%d_%H%M')
+        dir_aperMap = self.ent_folder_trace.get()
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
+        if not os.path.exists(dir_aperMap):
+            os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
+
+        #self.btn_select_slits['state'] = 'disabled'
+        #self.btn_select_slits['state'] = 'disabled'
+
+        ####
+        self.clear_image()
+        self.file_current = '%s (Nslits=%d)'%(self.lbl_file_apermap['text'], N_new)
+        self.update_image_single(map_ap, self.file_current, shoe='b', uniform=True)
+
+        info_temp = 'Saved as %s'%path_aperMap
+        self.popup_showinfo('aperMap', info_temp)
+        print('\n++++\n++++ %s\n++++\n'%(info_temp))
+
+        self.window.focus_set()
+
     def make_file_apermap_slits(self):
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
