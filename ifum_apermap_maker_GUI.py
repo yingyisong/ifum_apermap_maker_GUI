@@ -717,7 +717,7 @@ class IFUM_AperMap_Maker:
         print('++++\n++++ Saved an AperMap file: %s\n++++\n'%path_aperMap)
 
         self.window.focus_set()
-        
+
     def make_file_pypeit(self):
         dirname = self.ent_folder_trace.get()
         filename = self.lbl_file_pypeit['text']
@@ -1446,51 +1446,51 @@ class IFUM_AperMap_Maker:
         dirname, filename = os.path.split(pathname)
 
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
-            #### first check if the corresponding MasterSlits file exists
             str_temp = filename.split('_')
             fnum_temp = str_temp[0][2]+str_temp[2]
-            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%fnum_temp)
 
-            if os.path.isfile(path_MasterSlits_temp):
+            #### load Apermap
+            #hdul_temp = cached_fits_open(pathname)
+            hdul_temp = fits.open(pathname)
+            N_slits_file = hdul_temp[0].header['NSLITS']
+            self.ifu_type = self.get_ifu_type(N_slits_file)
+            self.data_full = np.float32(hdul_temp[0].data)
+
+            #### update paths and file names
+            self.folder_trace = dirname
+            self.ent_folder_trace.delete(0, tk.END)
+            self.ent_folder_trace.insert(tk.END, self.folder_trace)
+
+            self.filename_trace = filename
+            file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
+            self.lbl_file_apermap['text'] = file_temp
+            self.file_current = file_temp+" (Nslits=%s)"%N_slits_file
+            self.shoe.set(file_temp[2])
+
+            #### handle other widegts
+            self.gray_all_lbl_file()
+            self.lbl_file_apermap.config(bg='yellow')
+            self.disable_dependent_btns()
+            self.btn_select_bundles['state'] = 'normal'
+            self.btn_make_apermap_bundles['state'] = 'normal'
+            self.btn_select_slits['state'] = 'normal'
+            self.btn_make_apermap_slits['state'] = 'normal'
+
+            #### show the fits image
+            self.clear_image()
+            self.remove_image(shoe='r')
+            #self.update_image(uniform=True)
+            self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
+
+            #### first check if the corresponding MasterSlits file exists
+            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%fnum_temp)
+            if False: #os.path.isfile(path_MasterSlits_temp):
                 #### update paths and file names
                 self.path_MasterSlits = path_MasterSlits_temp
                 N_slits = self.check_file_MasterSlits()
-
-                ####
-                #hdul_temp = cached_fits_open(pathname)
-                hdul_temp = fits.open(pathname)
-                N_slits_file = hdul_temp[0].header['NSLITS']
-
-                #if N_slits==N_slits_file:
-                self.folder_trace = dirname
-                self.ent_folder_trace.delete(0, tk.END)
-                self.ent_folder_trace.insert(tk.END, self.folder_trace)
-
-                self.filename_trace = filename
-                file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
-                self.lbl_file_apermap['text'] = file_temp
-                self.file_current = file_temp+" (Nslits=%s)"%N_slits_file 
-                self.shoe.set(file_temp[2])
-
-                #### handle other widegts
-                self.gray_all_lbl_file()
-                self.lbl_file_apermap.config(bg='yellow')
-                self.disable_dependent_btns()
-                self.btn_select_bundles['state'] = 'normal'
-                self.btn_make_apermap_bundles['state'] = 'normal'
-                self.btn_select_slits['state'] = 'normal'
-                self.btn_make_apermap_slits['state'] = 'normal'
-
-                #### load Apermap
-                #hdul_temp = cached_fits_open(pathname)
-                hdul_temp = fits.open(pathname)
-                self.data_full = np.float32(hdul_temp[0].data)
-
-                #### show the fits image
-                self.clear_image()
-                self.remove_image(shoe='r')
-                #self.update_image(uniform=True)
-                self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
+            else:
+                #### trace file was made using new method not using pypeit
+                self.path_MasterSlits = None
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
             self.filename_trace = "apx0000_0000.fits"
