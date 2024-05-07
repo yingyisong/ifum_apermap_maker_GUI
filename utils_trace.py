@@ -144,20 +144,20 @@ def do_trace(trace, curve_params, trace_params=None, verbose=False):
 def create_apermap(trace, curve_params, traces_coefs, aper_half_width, verbose=False):
     """Create aperture map. """
 
-    aper_map_full = np.zeros_like(trace.data, dtype=int)
+    aper_map_full = np.zeros_like(trace.data, dtype=np.int32)
     x_middle = int(trace.data.shape[1]/2)
     x_trace = np.arange(trace.data.shape[1])
 
-    y_middle = np.array([], dtype=int)
+    y_middle = np.array([], dtype=np.int32)
     for i in range(len(traces_coefs)):
-        y_middle = np.append(y_middle, np.round(poly.polyval(x_middle, traces_coefs[i])).astype(int))
+        y_middle = np.append(y_middle, np.round(poly.polyval(x_middle, traces_coefs[i])).astype(np.int32))
         y_trace = poly.polyval(x_trace, traces_coefs[i])
-        y_trace = np.round(y_trace).astype(int)
+        y_trace = np.round(y_trace).astype(np.int32)
         for j in range(len(y_trace)):
             aper_map_full[y_trace[j]-aper_half_width:y_trace[j]+aper_half_width, x_trace[j]] = i+1
 
     # trim the aperture map according to the curvature
-    aper_map_trim = np.zeros_like(trace.data, dtype=int)
+    aper_map_trim = np.zeros_like(trace.data, dtype=np.int32)
     for y_idx in range(aper_map_full.shape[0]):
         x_1 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3])
         x_2 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3]+curve_params[4])
