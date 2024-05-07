@@ -834,6 +834,7 @@ class IFUM_AperMap_Maker:
         y_middle_new = np.sort(y_middle_new)
         N_new = len(y_middle_new)
 
+        print('To add %d fibers'%N_new)
         if N_new>N_ap:
             print('!!! Warning: More bad fibers are added. !!!')
         elif N_new<N_ap:
