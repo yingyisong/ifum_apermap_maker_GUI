@@ -15,7 +15,7 @@ from datetime import datetime
 from astropy.io import fits
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
+from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
 
 import subprocess
 from multiprocessing import Process
