@@ -16,6 +16,7 @@ from astropy.io import fits
 from scipy.optimize import curve_fit
 
 from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
+from utils_trace import load_trace, reshape_trace_by_curvature, do_trace, create_apermap
 
 import subprocess
 from multiprocessing import Process
@@ -447,7 +448,7 @@ class IFUM_AperMap_Maker:
         self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
         self.shoe2.grid(row=rows[2], column=5, sticky='w')
 
-        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_run_pypeit.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### step 4c save the AperMap
@@ -624,6 +625,99 @@ class IFUM_AperMap_Maker:
             self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
             self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
+    def get_curve_params(self, shoe):
+        if shoe=='b':
+            return np.array([self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], self.param_edges_b[0], self.param_edges_b[2]])
+        elif shoe=='r':
+            return np.array([self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], self.param_edges_r[0], self.param_edges_r[2]])
+
+    def run_trace(self):
+        shoe = self.shoe.get()
+        dirname = self.ent_folder_trace.get()
+        filename = shoe+self.lbl_file_pypeit['text']
+        coef_temp = self.get_curve_params(shoe)
+
+        # load the trace file and reshape according to the curvature
+        path_traceFile = os.path.join(dirname, filename+'.fits')
+        data_trace = load_trace(path_traceFile)
+        data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
+
+        # trace the resahped data and create an apermap
+        trace_array, trace_coefs, N_sl, aper_half_width = do_trace(data_reshaped, coef_temp)
+        map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
+        print(len(y_middle), y_middle)
+        print(np.diff(y_middle))
+
+        #### check the number of slits
+        self.ifu_type = self.get_ifu_type(N_sl)
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        if N_ap>N_sl:
+            print('!!! Warning: Missing %d fiber(s). Expected to find %d fibers !!!'%(N_ap-N_sl, N_ap))
+        elif N_ap<N_sl:
+            print('!!! Warning: Found %d more fiber(s). Expected to find %d fibers. !!!'%(N_sl-N_ap, N_ap))
+        else:
+            print('Found all %d fibers.'%N_ap)
+
+        # find the maximum number of pixels in all slits
+        num_ap = np.zeros(N_ap, dtype=np.int32)
+        for i_ap in range(N_ap):
+            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+        num_max = np.max(num_ap)
+
+        #### save AperMap
+        #### the following header params may require modifying
+        hdu_map = fits.PrimaryHDU(map_ap)
+        hdr_map = hdu_map.header
+        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_sl, 'number of slits')
+        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+        hdr_map['BINNING'] = ('1x1', 'binning')
+        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+
+        today_temp = datetime.today().strftime("%y%m%d")
+        today_backup = datetime.today().strftime("%y%m%d_%H%M")
+        dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
+        if not os.path.exists(dir_aperMap):
+            os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
+        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
+        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
+        path_aperMap = os.path.join(dir_aperMap, file_aperMap)
+        path_backup = os.path.join(dir_backup, file_backup)
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
+
+        #### save slits file
+        dir_slits = os.path.join(dir_aperMap, 'slits')
+        if not os.path.exists(dir_slits):
+            os.mkdir(dir_slits)
+        file_slits = filename.split('_')[0]+'_slits.txt'
+        path_slits = os.path.join(dir_slits, file_slits)
+        np.savetxt(path_slits, y_middle, fmt='%d', delimiter=' ', header='# y_pos (x=middle)', comments='')
+
+        #### save the trace coefs
+        dir_coefs = os.path.join(dir_aperMap, 'trace_coefs')
+        if not os.path.exists(dir_coefs):
+            os.mkdir(dir_coefs)
+        file_coefs = filename.split('_')[0]+'_coefs.txt'
+        path_coefs = os.path.join(dir_coefs, file_coefs)
+        np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='')
+
+        #### show apermap
+        self.clear_image(shoe=shoe)
+
+        fname = filename.split('_')[0]+'_apermap'
+        title = '%s (N_sl=%d)'%(fname,N_sl)
+        self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
+        print('++++\n++++ Saved an AperMap file: %s\n++++\n'%path_aperMap)
+
+        self.window.focus_set()
+        
     def make_file_pypeit(self):
         dirname = self.ent_folder_trace.get()
         filename = self.lbl_file_pypeit['text']
