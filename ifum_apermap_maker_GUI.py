@@ -644,7 +644,7 @@ class IFUM_AperMap_Maker:
         data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
 
         # trace the resahped data and create an apermap
-        trace_array, trace_coefs, N_sl, aper_half_width = do_trace(data_reshaped, coef_temp)
+        trace_array, trace_coefs, N_sl, aper_half_width = do_trace(data_reshaped, coef_temp, verbose=True)
         map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
         print(len(y_middle), y_middle)
         print(np.diff(y_middle))
@@ -707,7 +707,7 @@ class IFUM_AperMap_Maker:
             os.mkdir(dir_coefs)
         file_coefs = filename.split('_')[0]+'_coefs.txt'
         path_coefs = os.path.join(dir_coefs, file_coefs)
-        np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='')
+        np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='# aper_half_width = %d\n'%aper_half_width)
 
         #### show apermap
         self.clear_image(shoe=shoe)
@@ -815,6 +815,11 @@ class IFUM_AperMap_Maker:
         trace_coefs = np.loadtxt(path_coefs, delimiter=',')
         N_sl = len(trace_coefs)
 
+        # load path_coefs the first line and get aper_half_width
+        with open(path_coefs, 'r') as f:
+            line = f.readline()
+            aper_half_width = int(line.split('# aper_half_width = ')[1])
+
         x_middle = np.int32(len(self.data_full[0])/2)
         y_middle = np.zeros(N_sl, dtype=np.int32)
         for i_sl in range(N_sl):
@@ -846,7 +851,6 @@ class IFUM_AperMap_Maker:
         #### make a new AperMap
         map_ap = np.zeros((len(self.data_full),len(self.data_full[0])), dtype=np.int32)
         x_trace = np.arange(len(self.data_full[0]))
-        aper_half_width = 4
         for i_ap in range(N_new):
             ap_num = i_ap+1
             y_middle_temp = y_middle_new[i_ap]
