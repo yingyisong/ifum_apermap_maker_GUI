@@ -485,7 +485,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_bundles, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2_v2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_bundles.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### select y positions of all missing slits
@@ -1058,6 +1058,98 @@ class IFUM_AperMap_Maker:
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
         self.window.focus_set()
+
+    def make_file_apermap_fix2_v2(self):
+        '''
+        For LSB, STD and HR, pick 5, 6 and 8 bundle centers, respectively
+        '''
+        #### get file names and shoe
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        shoe = self.lbl_file_apermap['text'][2]
+
+        #### load the slits coefs
+        dirname_coefs = os.path.join(self.folder_trace, 'trace_coefs')
+        filename_coefs = self.lbl_file_apermap['text'].split('_')[0][2:]+'_coefs.txt'
+        path_coefs = os.path.join(dirname_coefs, filename_coefs)
+        trace_coefs = np.loadtxt(path_coefs, delimiter=',')
+        N_sl = len(trace_coefs)
+
+        x_middle = np.int32(len(self.data_full[0])/2)
+        y_middle = np.zeros(N_sl, dtype=np.int32)
+        for i_sl in range(N_sl):
+            y_middle[i_sl] = np.round( poly.polyval(x_middle, trace_coefs[i_sl]) ).astype(np.int32)
+
+        #### load bundle centers
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_bundles = self.filename_trace.split('_')[2]+'_bundles_'+shoe+'.txt'
+        path_bundles = os.path.join(dirname_slits, filename_bundles)
+        if os.path.isfile(path_bundles):
+            pts_pick = np.int32(readFloat_space(path_bundles, 0))
+        else:
+            pts_pick = np.array([])
+        n_pick = len(pts_pick)
+
+        ####
+        if N_ap>N_sl:
+            print('!!! Warning: Missing %d fiber(s). !!!'%(N_ap-N_sl))
+        elif N_ap<N_sl:
+            print('!!! Warning: Found %d more fiber(s) than expected. !!!'%(N_sl-N_ap))
+
+        print("Loaded in %d bundle centers, %s has %d bundle centers"%(n_pick, self.ifu_type.label, self.ifu_type.Ny/4))
+        if len(pts_pick)!=self.ifu_type.Ny/4:
+            return 0
+
+        #### add missing slits
+        y_middle_add = np.array([], dtype=np.int32)
+
+        pts_diff = np.diff(pts_pick)
+        pts_gap = pts_pick[0:-1] + pts_diff/2.
+        pts_all = np.append(pts_pick, pts_gap)
+        pts_all = np.append(pts_all, np.array([0, len(self.data_full[0])]))
+        pts_all = np.sort(pts_all)
+        for i in range(n_pick*2):
+            mask_id_temp = np.logical_and(y_middle>pts_all[i], y_middle<=pts_all[i+1])
+            y_middle_temp = y_middle[mask_id_temp]
+            y_diff_med_temp = np.median( np.diff(y_middle_temp) )
+
+            y_middle_temp = np.append(pts_all[i], y_middle_temp)
+            y_middle_temp = np.append(y_middle_temp, pts_all[i+1])
+            y_diff_temp = np.diff(y_middle_temp)
+
+            print('Working on %d/%d to add %d fiber(s)'%(i+1, n_pick*2, self.ifu_type.Nx-len(y_diff_temp)+1))
+            print('==== diff_med', y_diff_med_temp)
+            while len(y_diff_temp)<=self.ifu_type.Nx:
+                mask_diff_temp = y_diff_temp>y_diff_med_temp+np.sqrt(y_diff_med_temp)
+                if np.sum(mask_diff_temp)>0:
+                    if i%2==0:
+                        idx_temp = np.where(mask_diff_temp)[0][-1]
+                        y_middle_add_temp = y_middle_temp[idx_temp] + y_diff_med_temp
+                    else:
+                        idx_temp = np.where(mask_diff_temp)[0][0]
+                        y_middle_add_temp = y_middle_temp[idx_temp+1] - y_diff_med_temp
+                    y_middle_add = np.sort( np.append(y_middle_add, y_middle_add_temp) )
+                    y_middle_temp = np.sort( np.append(y_middle_temp, y_middle_add_temp) )
+                    y_diff_temp = np.diff(y_middle_temp)
+                    print(len(y_middle_add), y_middle_add_temp)
+
+            y_middle = np.sort( np.append(y_middle[~mask_id_temp], y_middle_temp) )
+
+        ####
+        print("Auto-fix found %d fiber(s) to add"%len(y_middle_add))
+
+        #### save new y_middle positions into a file
+        dirname = os.path.join(self.folder_trace, 'slits_file')
+        filename = self.filename_trace.split('_')[2]+'_slits_'+shoe+'.txt'
+
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+
+        file = open(os.path.join(dirname, filename), 'w')
+        for temp in y_middle_add:
+            file.write("%d\n"%temp)
+        file.close()
+
+        self.make_file_apermap_slits_v2()
 
     def make_file_apermap_fix2(self):
         '''
