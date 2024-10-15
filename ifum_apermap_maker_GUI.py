@@ -640,11 +640,13 @@ class IFUM_AperMap_Maker:
 
         # load the trace file and reshape according to the curvature
         path_traceFile = os.path.join(dirname, filename+'.fits')
-        data_trace = load_trace(path_traceFile)
+        data_trace, ifu_type_trace, bin_y_trace = load_trace(path_traceFile)
         data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
 
         # trace the resahped data and create an apermap
-        trace_array, trace_coefs, N_sl, aper_half_width = do_trace_v2(data_reshaped, coef_temp, verbose=True)
+        trace_array, trace_coefs, N_sl, aper_half_width \
+            = do_trace_v2(data_reshaped, coef_temp,                          
+                          shoe, ifu_type_trace, bin_y_trace, verbose=True)
         map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
         print(len(y_middle), y_middle)
         print(np.diff(y_middle))

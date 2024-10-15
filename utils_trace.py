@@ -20,7 +20,12 @@ def load_trace(file_path):
     trace.mask = np.zeros_like(trace.data, dtype=bool)
     trace.uncertainty = np.ones_like(trace.data, dtype=float) 
 
-    return trace
+    # get the ifu type from the header
+    ifu_type = trace.meta['IFU']
+    naxis2 = trace.meta['NAXIS2']
+    bin_y = 4112./naxis2
+
+    return trace, ifu_type, bin_y
 
 
 def reshape_trace_by_curvature(trace, curve_params):
@@ -112,7 +117,7 @@ def preanalyze_columnspec_array(columnspec_array):
     return aper_half_width, width_cut, distance_cut, prominence_cut
 
 
-def get_aligned_peaks_array(columnspec_array, aper_half_width, 
+def align_peaks_array(columnspec_array, aper_half_width, 
                             width_cut, distance_cut, prominence_cut,
                             verbose=False):
     """Align peaks into apertures. """
@@ -196,12 +201,13 @@ def get_aligned_peaks_array(columnspec_array, aper_half_width,
             ).reshape(n_temp, -1)
 
     if verbose:
-        print("peaks_array.shape: ", peaks_array.shape)
+        print("---- After aligning the peaks into apertures.")
+        print("---- peaks_array.shape: ", peaks_array.shape)
 
     return peaks_array
 
 
-def clean_peaks_array(peaks_array, percentile=0.2):
+def clean_peaks_array(peaks_array, percentile=0.2, verbose=False):
     """
     Clean peaks array by 
     1) removing short traces, and 
@@ -212,7 +218,7 @@ def clean_peaks_array(peaks_array, percentile=0.2):
 
     # remove short traces
     row_ids = []
-    for i in range(len(peaks_array)):
+    for i in range(len(peaks_array[0])):
         y = peaks_array[:, i]
         mask_nan = np.isnan(y)
         if np.sum(mask_nan) > percentile*len(y):
@@ -229,14 +235,17 @@ def clean_peaks_array(peaks_array, percentile=0.2):
     mask_nan = np.isnan(peaks_array[column_max])
     peaks_array = peaks_array[:, ~mask_nan]
 
+    if verbose:
+        print("---- After cleaning the peaks array.")
+        print("---- peaks_array.shape: ", peaks_array.shape)
+        print("---- column_max: ", column_max)
+
     return peaks_array, column_max
 
 
-def get_group_gaps_from_template(template_path, peak_diff_cut=1.5, bin_y=1):
+def get_group_gaps_from_template(peaks_template, peak_diff_cut=1.5, 
+                                 verbose=False):
     """Get the group gaps from a IFU template file. """
-
-   # load_template_fiber_positions
-    peaks_template = np.loadtxt(template_path)
 
     # get the difference between the peaks
     diff_template = np.diff(peaks_template, axis=0)
@@ -250,19 +259,22 @@ def get_group_gaps_from_template(template_path, peak_diff_cut=1.5, bin_y=1):
     peaks_gap_template = peaks_template[:-1][mask]
     peaks_gap_template = np.append(peaks_template[0], peaks_gap_template)
     peaks_gap_template = np.append(peaks_gap_template, peaks_template[-1])
-    peaks_gap_template = peaks_gap_template/bin_y
 
     min_diff_gap = np.min(np.diff(peaks_gap_template))
 
-    return peaks_template, peaks_gap_template, min_diff_gap
+    if verbose:
+        print("---- peaks_gap_template: ", 
+              len(peaks_gap_template), peaks_gap_template)
+        print("---- min_diff_gap: ", min_diff_gap)
+
+    return peaks_gap_template, min_diff_gap
 
 
-def get_group_gaps_from_column_max(peaks_array, column_max, min_diff_gap, 
-                                   peak_diff_cut=1.5, bin_y=1, verbose=False):
+def get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
+                                   peak_diff_cut=1.5, verbose=False):
     """Get the group gaps from the column max. """
 
     # get the difference between the peaks
-    peaks_cmax = peaks_array[column_max]
     diff_cmax = np.diff(peaks_cmax)
     med_diff_cmax = np.median(diff_cmax)
 
@@ -279,10 +291,15 @@ def get_group_gaps_from_column_max(peaks_array, column_max, min_diff_gap,
         if diff_gap_cmax[i] < min_diff_gap*0.9:
             peaks_gap_cmax = np.delete(peaks_gap_cmax, i+1)
             diff_gap_cmax = np.diff(peaks_gap_cmax)
+            if verbose:
+                print("---- i: ", i, diff_gap_cmax)
         else:
             i += 1
+    
+    if verbose:
+        print("---- peaks_gap_cmax: ", len(peaks_gap_cmax), peaks_gap_cmax)
 
-    return peaks_cmax, peaks_gap_cmax
+    return peaks_gap_cmax
 
 
 def fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax, 
@@ -301,7 +318,7 @@ def fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
     return coefs, peaks_template_cmax
 
 
-def find_missing_fibers(y_pred, y_data):
+def find_missing_fibers(y_data, y_pred):
     """find missing fibers in the column max. """
 
     count_add = 0
@@ -319,24 +336,23 @@ def find_missing_fibers(y_pred, y_data):
         else:
             y_new[i_pred] = y_data[i_data]
     
-    return y_new, ids
+    return ids
 
 
-def add_missing_fibers_to_peaks_array(peaks_array, peaks_cmax, 
-                                      peaks_template_cmax, peaks_template, 
-                                      order=4, verbose=False):
+def add_missing_fibers(peaks_array, peaks_template, ids,
+                       order=4, verbose=False):
     """Add missing fibers to peaks array. """
 
-    if verbose:
-        print("!!!! Start to add missing fibers to the peaks array.")
-        print("---- peaks_array.shape: ", peaks_array.shape)
-        print("---- peaks_template.shape: ", peaks_template.shape)
-        n_missing = len(peaks_template) - len(peaks_array[0])
-        print("---- # of missing fibers: ", n_missing)
+    #if verbose:
+    #    print("!!!! Start to add missing fibers to the peaks array.")
+    #    print("---- peaks_array.shape: ", peaks_array.shape)
+    #    print("---- peaks_template.shape: ", peaks_template.shape)
+    #    n_missing = len(peaks_template) - len(peaks_array[0])
+    #    print("---- # of missing fibers: ", n_missing)
 
-    # find the missing fibers
-    peaks_cmax_new, ids = find_missing_fibers(peaks_template_cmax, peaks_cmax)
-    print("++++ add # of fibers: ", len(ids))
+    ## find the missing fibers
+    #peaks_cmax_new, ids = find_missing_fibers(peaks_template_cmax, peaks_cmax)
+    #print("++++ add # of fibers: ", len(ids))
 
     # add the missing fibers to the peaks_array
     peaks_array_new = peaks_array.copy()
@@ -359,6 +375,39 @@ def add_missing_fibers_to_peaks_array(peaks_array, peaks_cmax,
         print("---- peaks_array_new.shape: ", peaks_array_new.shape)
 
     return peaks_array_new
+
+
+def find_missing_fibers_LSB(y_data, y_template, 
+                           peak_diff_cut=1.5, verbose=False):
+    """Add missing fibers to peaks array for LSB. """
+
+    # analyze peaks_template
+    diff_template = np.diff(y_template, axis=0)
+    max_diff_template = np.max(diff_template, axis=0)
+
+    # find the missing fibers
+    diff_data = np.diff(y_data)
+    med_diff_data = np.median(diff_data)
+
+    # add negative values to gaps in y_data
+    y_data_new = y_data.copy()
+    idx, cts = 0, 0
+    while idx < len(y_data)-1:
+        if (np.abs(y_data_new[idx+cts+1]) \
+              - np.abs(y_data_new[idx+cts])) \
+              > max_diff_template*peak_diff_cut:
+            y_data_new = np.insert(
+                y_data_new, 
+                idx+cts+1, 
+                -(np.abs(y_data_new[idx+cts]) + med_diff_data)
+                )
+            cts += 1
+        else:
+            idx += 1
+
+    ids = np.where(y_data_new < 0)[0] + 1
+
+    return ids 
 
 
 def fit_aperture_traces(peaks_array, col_centers, curve_params, 
@@ -386,7 +435,9 @@ def fit_aperture_traces(peaks_array, col_centers, curve_params,
     return traces_array, traces_coefs
 
 
-def do_trace_v2(trace, curve_params, trace_params=None, verbose=False):
+def do_trace_v2(trace, curve_params, 
+                shoe, ifu_type, bin_y,
+                trace_params=None, verbose=False):
     """Do trace. """
 
     # get the columnspec array from the trace data
@@ -435,34 +486,50 @@ def do_trace_v2(trace, curve_params, trace_params=None, verbose=False):
     print("++++ prominence_cut: ", prominence_cut)
 
     # get the aligned peaks array
-    peaks_array = get_aligned_peaks_array(columnspec_array, aper_half_width, 
+    peaks_array = align_peaks_array(columnspec_array, aper_half_width, 
                                           width_cut, distance_cut, 
-                                          prominence_cut)
+                                          prominence_cut, verbose=True)
 
     # clean the peaks array
-    peaks_array, column_max = clean_peaks_array(peaks_array)
-    print("++++ peaks_array.shape: ", peaks_array.shape)
-    print("++++ column_max: ", column_max)
+    peaks_array, column_max = clean_peaks_array(peaks_array, verbose=True)
+    peaks_cmax = peaks_array[column_max]
 
-    # get the group gaps from the template
-    template_path = './template_files/template_HR_b_c27.txt'
-    peaks_template, peaks_gap_template, min_diff_gap \
-        = get_group_gaps_from_template(template_path)
+    # get the peaks template
+    template_path = './template_files/template_%s_%s.txt'%(ifu_type, shoe)
+    if ifu_type == 'HR':
+        bin_y_template = 1.0
+    else:   # ifu_type == 'STD' or ifu_type == 'LSB'
+        bin_y_template = 2.0
+    bin_ratio = bin_y_template/bin_y
+    peaks_template = np.loadtxt(template_path)*bin_ratio
 
-    # get the group gaps from the column max
-    peaks_cmax, peaks_gap_cmax \
-        = get_group_gaps_from_column_max(peaks_array, column_max, min_diff_gap)
+    # find the missing fibers
+    if ifu_type == 'HR' or ifu_type == 'STD':
+        # get the group gaps from the template
+        peaks_gap_template, min_diff_gap \
+            = get_group_gaps_from_template(peaks_template, verbose=True)
 
-    # transfer the template to the column max
-    coefs, peaks_template_cmax \
-        = fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
-                                     peaks_template)
+        # get the group gaps from the column max
+        peaks_gap_cmax \
+            = get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
+                                             verbose=True)
+
+        # transfer the template to the column max
+        coefs, peaks_template_cmax \
+            = fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
+                                         peaks_template)
+
+        # find the missing fibers
+        ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax)
+    else:   
+        # i.e., ifu_type == 'LSB'
+        # LSB has no distingushed group gaps, so use the template directly
+        ids_add = find_missing_fibers_LSB(peaks_cmax, peaks_template, verbose=True)
+    print("++++ add # of fibers: ", len(ids_add))
 
     # add missing fibers to the peaks array
-    peaks_array \
-        = add_missing_fibers_to_peaks_array(peaks_array, peaks_cmax, 
-                                            peaks_template_cmax, peaks_template,
-                                            verbose=True)
+    peaks_array = add_missing_fibers(peaks_array, peaks_template, 
+                                     ids_add, verbose=True)
 
     # fit the aperture traces
     traces_array, traces_coefs \
