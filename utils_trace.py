@@ -4,6 +4,8 @@ import numpy.polynomial.polynomial as poly
 import scipy.stats as stats
 import scipy.signal as signal
 
+import matplotlib.pyplot as plt
+
 from collections import Counter
 from astropy.nddata import CCDData
 
@@ -409,6 +411,40 @@ def find_missing_fibers_LSB(y_data, y_template,
 
     return ids 
 
+def plt_gaps(peaks_cmax, peaks_template, ids_add=None):
+    """Plot a view of gaps of the column max vs. the template. """
+
+    x_gap = np.arange(len(peaks_template)-1)+1
+    diff_template = np.diff(peaks_template)
+    diff_cmax = np.diff(peaks_cmax)
+
+    # plot the gaps
+    fig = plt.figure(figsize=(12, 6))
+    fig.clf()
+    ax = fig.add_subplot(111)
+    ax.plot(x_gap, diff_template, 'ko', label='template')
+    ax.plot(x_gap, diff_cmax, 'rx', label='current data')
+
+    if ids_add is not None:
+        for i, id in enumerate(ids_add):
+            # add a vertical dashed line to the plot
+            if i==0:
+                ax.axvline(x=id, color='b', linestyle='--', 
+                           label='added fibers')
+            else:
+                ax.axvline(x=id, color='b', linestyle='--')
+
+    ax.legend()
+    ax.set_xlabel('Gap #')
+    ax.set_ylabel('Gap size (pixels)')
+
+    # tight the figure
+    plt.tight_layout()
+    plt.show()
+
+    # save the plot
+    #plt.savefig('gaps.png')
+
 
 def fit_aperture_traces(peaks_array, col_centers, curve_params, 
                         order=4, verbose=False):
@@ -437,7 +473,7 @@ def fit_aperture_traces(peaks_array, col_centers, curve_params,
 
 def do_trace_v2(trace, curve_params, 
                 shoe, ifu_type, bin_y,
-                trace_params=None, verbose=False):
+                trace_params=None, verbose=False, plot=True):
     """Do trace. """
 
     # get the columnspec array from the trace data
@@ -526,10 +562,15 @@ def do_trace_v2(trace, curve_params,
         # LSB has no distingushed group gaps, so use the template directly
         ids_add = find_missing_fibers_LSB(peaks_cmax, peaks_template, verbose=True)
     print("++++ add # of fibers: ", len(ids_add))
+    print("++++ all added fiber ids: ", ids_add)
 
     # add missing fibers to the peaks array
     peaks_array = add_missing_fibers(peaks_array, peaks_template, 
                                      ids_add, verbose=True)
+
+    # plot a view of gaps of the column max vs. the template
+    if plot:
+        plt_gaps(peaks_array[column_max], peaks_template, ids_add)
 
     # fit the aperture traces
     traces_array, traces_coefs \
