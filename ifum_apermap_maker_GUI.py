@@ -415,28 +415,29 @@ class IFUM_AperMap_Maker:
         self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_pypeit.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
-        #### step 4a make a PypeIt file
-        lbl_step4a = tk.Label(self.frame1, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
-        #lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
-        #lbl_smash.grid(row=rows[1], column=4, columnspan=2, sticky="e")
+        ##### step 4a make a PypeIt file
+        #lbl_step4a = tk.Label(self.frame1, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
+        ##lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
+        ##lbl_smash.grid(row=rows[1], column=4, columnspan=2, sticky="e")
 
-        lbl_pca = tk.Label(self.frame1, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_pca.grid(row=rows[1], column=4, sticky="w")
+        #lbl_pca = tk.Label(self.frame1, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_pca.grid(row=rows[1], column=4, sticky="w")
 
-        self.pca1 = tk.Radiobutton(self.frame1, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
-        self.pca1.grid(row=rows[1], column=4, sticky='e')
-        self.pca2 = tk.Radiobutton(self.frame1, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
-        self.pca2.grid(row=rows[1], column=5, sticky='w')
+        #self.pca1 = tk.Radiobutton(self.frame1, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca1.grid(row=rows[1], column=4, sticky='e')
+        #self.pca2 = tk.Radiobutton(self.frame1, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca2.grid(row=rows[1], column=5, sticky='w')
 
-        self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range, state='normal')
-        self.ent_smash_range.grid(row=rows[1], column=6, sticky="ew")
+        #self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range, state='normal')
+        #self.ent_smash_range.grid(row=rows[1], column=6, sticky="ew")
 
-        self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=5, pady=5)
+        #self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
+        #self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=5, pady=5)
 
         #### step 4b run PypeIt
-        lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4b = tk.Label(self.frame1, text="Choose a side to trace", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4b.grid(row=rows[2], column=1, columnspan=3, sticky="w")
 
 
@@ -562,8 +563,8 @@ class IFUM_AperMap_Maker:
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
 
-        self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
-        self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
+        #self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
+        #self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
 
         self.ent_labelname_mono.bind('<Return>', self.refresh_labelname_mono)
         self.ent_labelname_mono.bind('<KP_Enter>', self.refresh_labelname_mono) # unique for macOS
@@ -1466,7 +1467,7 @@ class IFUM_AperMap_Maker:
         #    txt_edit.insert(tk.END, text)
 
     def disable_make_apermap(self):
-        self.btn_make_pypeit['state'] = 'disabled'
+        #self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
         self.btn_select_bundles['state'] = 'disabled'
         self.btn_make_apermap_bundles['state'] = 'disabled'
@@ -1521,7 +1522,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_edges_b['state'] = 'disabled'
         self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
-        self.btn_make_pypeit['state'] = 'disabled'
+        #self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
         self.btn_select_bundles['state'] = 'disabled'
         self.btn_make_apermap_bundles['state'] = 'disabled'
@@ -1598,7 +1599,8 @@ class IFUM_AperMap_Maker:
             self.gray_all_lbl_file()
             self.lbl_file_pypeit.config(bg='yellow')
             self.disable_dependent_btns()
-            self.btn_make_pypeit['state'] = 'normal'
+            #self.btn_make_pypeit['state'] = 'normal'
+            self.btn_run_pypeit['state'] = 'normal'
 
             #### show the fits image
             self.clear_image()
@@ -2067,8 +2069,8 @@ class IFUM_AperMap_Maker:
         self.box_files['state'] = 'normal'
         self.shoe1['state'] = 'normal'
         self.shoe2['state'] = 'normal'
-        self.pca1['state'] = 'normal'
-        self.pca2['state'] = 'normal'
+        #self.pca1['state'] = 'normal'
+        #self.pca2['state'] = 'normal'
 
         self.btn_load_curve['state'] = 'normal'
         self.btn_load_edges['state'] = 'normal'
@@ -2093,7 +2095,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_X1_r['state'] = 'normal'
         self.ent_param_edges_dX_r['state'] = 'normal'
 
-        self.ent_smash_range['state'] = 'normal'
+        #self.ent_smash_range['state'] = 'normal'
         self.ent_labelname_mono['state'] = 'normal'
 
         self.ent_folder_trace['state'] = 'normal'
@@ -2106,8 +2108,8 @@ class IFUM_AperMap_Maker:
         self.box_files['state'] = 'disabled'
         self.shoe1['state'] = 'disabled'
         self.shoe2['state'] = 'disabled'
-        self.pca1['state'] = 'disabled'
-        self.pca2['state'] = 'disabled'
+        #self.pca1['state'] = 'disabled'
+        #self.pca2['state'] = 'disabled'
 
         self.btn_load_curve['state'] = 'disabled'
         self.btn_load_edges['state'] = 'disabled'
@@ -2132,7 +2134,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_X1_r['state'] = 'disabled'
         self.ent_param_edges_dX_r['state'] = 'disabled'
 
-        self.ent_smash_range['state'] = 'disabled'
+        #self.ent_smash_range['state'] = 'disabled'
         self.ent_labelname_mono['state'] = 'disabled'
 
         self.ent_folder_trace['state'] = 'disabled'
