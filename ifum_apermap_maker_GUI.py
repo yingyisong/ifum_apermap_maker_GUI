@@ -649,8 +649,8 @@ class IFUM_AperMap_Maker:
             = do_trace_v2(data_reshaped, coef_temp,                          
                           shoe, ifu_type_trace, bin_y_trace, verbose=True)
         map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
-        print(len(y_middle), y_middle)
-        print(np.diff(y_middle))
+        #print(len(y_middle), y_middle)
+        #print(np.diff(y_middle))
 
         #### check the number of slits
         self.ifu_type = self.get_ifu_type(N_sl)
