@@ -41,7 +41,7 @@ def check_appearance():
 
 #print(check_appearance())
 if check_appearance():
-    LABEL_COLOR = 'limegreen'
+    LABEL_COLOR = 'mediumseagreen'
     BG_COLOR = 'black'
 else:
     LABEL_COLOR = 'black'
