@@ -332,8 +332,14 @@ def fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
     return coefs, peaks_template_cmax
 
 
-def find_missing_fibers(y_data, y_pred):
+def find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
     """find missing fibers in the column max. """
+
+    if verbose:
+        print("!!!! Finding missing fibers for HR and STD")
+        print("!!!! # of default fibers: ", len(y_pred))
+        n_missing = len(y_pred) - len(y_data)
+        print("!!!! # of missing fibers: ", n_missing)
 
     count_add = 0
     count_del = 0
@@ -341,12 +347,13 @@ def find_missing_fibers(y_data, y_pred):
     y_new = np.zeros_like(y_pred)
     for i_pred in range(len(y_pred)):
         i_data = i_pred-count_add+count_del
-        if np.abs(y_data[i_data] - y_pred[i_pred]) > 3:
-            print(i_pred+1, y_data[i_data], y_pred[i_pred])
+        if np.abs(y_data[i_data] - y_pred[i_pred]) > delta_y:
             y_new[i_pred] = y_pred[i_pred]
-            print(i_pred+1, y_new[i_pred], y_pred[i_pred])
             count_add += 1
             ids.append(i_pred+1)
+
+            if verbose:
+                print('!!!! Missing', i_pred+1, y_data[i_data], y_pred[i_pred])
         else:
             y_new[i_pred] = y_data[i_data]
     
@@ -356,17 +363,6 @@ def find_missing_fibers(y_data, y_pred):
 def add_missing_fibers(peaks_array, peaks_template, ids,
                        order=4, verbose=False):
     """Add missing fibers to peaks array. """
-
-    #if verbose:
-    #    print("!!!! Start to add missing fibers to the peaks array.")
-    #    print("---- peaks_array.shape: ", peaks_array.shape)
-    #    print("---- peaks_template.shape: ", peaks_template.shape)
-    #    n_missing = len(peaks_template) - len(peaks_array[0])
-    #    print("---- # of missing fibers: ", n_missing)
-
-    ## find the missing fibers
-    #peaks_cmax_new, ids = find_missing_fibers(peaks_template_cmax, peaks_cmax)
-    #print("++++ add # of fibers: ", len(ids))
 
     # add the missing fibers to the peaks_array
     peaks_array_new = peaks_array.copy()
@@ -392,7 +388,7 @@ def add_missing_fibers(peaks_array, peaks_template, ids,
 
 
 def find_missing_fibers_LSB(y_data, y_template, 
-                           peak_diff_cut=1.5, verbose=False):
+                           rel_delta_y=1.5, verbose=False):
     """Add missing fibers to peaks array for LSB. """
 
     # analyze peaks_template
@@ -409,7 +405,7 @@ def find_missing_fibers_LSB(y_data, y_template,
     while idx < len(y_data)-1:
         if (np.abs(y_data_new[idx+cts+1]) \
               - np.abs(y_data_new[idx+cts])) \
-              > max_diff_template*peak_diff_cut:
+              > max_diff_template*rel_delta_y:
             y_data_new = np.insert(
                 y_data_new, 
                 idx+cts+1, 
@@ -554,13 +550,15 @@ def do_trace_v2(trace, curve_params,
                                          peaks_template)
 
         # find the missing fibers
-        ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax)
+        ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax,
+                                      delta_y=3.0, verbose=True)
     else:   
         # i.e., ifu_type == 'LSB'
         # LSB has no distingushed group gaps, so use the template directly
-        ids_add = find_missing_fibers_LSB(peaks_cmax, peaks_template, verbose=True)
-    print("++++ add # of fibers: ", len(ids_add))
-    print("++++ all added fiber ids: ", ids_add)
+        ids_add = find_missing_fibers_LSB(peaks_cmax, peaks_template, 
+                                          rel_delta_y=1.5, verbose=True)
+    print("++++ # of added fibers: ", len(ids_add))
+    print("++++ Added IDs: ", ids_add)
 
     # add missing fibers to the peaks array
     peaks_array = add_missing_fibers(peaks_array, peaks_template, 
