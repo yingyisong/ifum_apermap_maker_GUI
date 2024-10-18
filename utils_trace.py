@@ -420,7 +420,7 @@ def find_missing_fibers_LSB(y_data, y_template,
     return ids 
 
 
-def plt_gaps(peaks_cmax, peaks_template, ids_add=None):
+def plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
     """Plot a view of gaps of the column max vs. the template. """
 
     x_gap = np.arange(len(peaks_template)-1)+1
@@ -443,7 +443,10 @@ def plt_gaps(peaks_cmax, peaks_template, ids_add=None):
             else:
                 ax.axvline(x=id, color='b', linestyle='--')
 
-    ax.legend()
+    ax.legend(loc='upper right')
+    ax.text(0.05, 0.95, '%s_%s'%(shoe.lower(), ifu_type.upper()), fontsize=20,
+            horizontalalignment='left', verticalalignment='top',
+            transform=ax.transAxes)
     ax.set_xlabel('Gap #')
     ax.set_ylabel('Gap size (pixels)')
 
@@ -566,7 +569,8 @@ def do_trace_v2(trace, curve_params,
 
     # plot a view of gaps of the column max vs. the template
     if plot:
-        plt_gaps(peaks_array[column_max], peaks_template, ids_add)
+        plt_gaps(peaks_array[column_max], peaks_template, ids_add, 
+                 shoe, ifu_type)
 
     # fit the aperture traces
     traces_array, traces_coefs \
