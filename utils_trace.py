@@ -72,22 +72,6 @@ def determine_signal_height(columnspec_array, min_height=100.):
     return signal_height
 
 
-def get_peaks_in_one_column(columnspec_array, column, 
-                            prominence, width, distance):
-    """Get peaks in one column. """
-
-    spec = columnspec_array[column].spec
-    _, properties = signal.find_peaks(spec, prominence=prominence, 
-                                          width=width, distance=distance)
-    
-    # use the center of left_ips and right_ips as the peak
-    peaks_left = properties['left_ips']
-    peaks_right = properties['right_ips']
-    peaks = (peaks_left + peaks_right)/2
-
-    return peaks
-
-
 def preanalyze_columnspec_array(columnspec_array):
     """Preanalyze columnspec array. """
 
@@ -120,19 +104,54 @@ def preanalyze_columnspec_array(columnspec_array):
     return aper_half_width, width_cut, distance_cut, prominence_cut
 
 
-def align_peaks_array(columnspec_array, aper_half_width, 
-                            width_cut, distance_cut, prominence_cut,
-                            verbose=False):
+def get_peaks_in_one_column(columnspec_array, column, distance, prominence, 
+                            width, rel_height=0.5):
+    """Get peaks in one column. """
+
+    spec = columnspec_array[column].spec
+    _, properties = signal.find_peaks(spec, distance=distance, 
+                                      prominence=prominence, width=width, 
+                                      rel_height=rel_height)
+    
+    # use the center of left_ips and right_ips as the peak
+    peaks_left = properties['left_ips']
+    peaks_right = properties['right_ips']
+    peaks = (peaks_left + peaks_right)/2
+
+    return peaks
+
+
+def get_peaks_array(columnspec_array, distance, prominence, width, 
+                    rel_height=0.5, verbose=False):
+    """Get peaks array. """
+
+    peaks_array = []
+    for column in range(len(columnspec_array)):
+        peaks = get_peaks_in_one_column(
+            columnspec_array, column, distance, prominence, width, rel_height
+            )
+        peaks_array.append(peaks)
+
+    if verbose:
+        print("---- Initial peaks array")
+
+        n_min, n_max = len(peaks_array[0]), len(peaks_array[0])
+        for i in range(1, len(peaks_array)):
+            n_min = np.min([n_min, len(peaks_array[i])])
+            n_max = np.max([n_max, len(peaks_array[i])])
+        print("---- n_min, n_max: ", n_min, n_max)
+
+    return peaks_array
+
+
+def align_peaks_array(peaks_array_raw, verbose=False):
     """Align peaks into apertures. """
 
-    peaks_col0 = get_peaks_in_one_column(
-        columnspec_array, 0, 
-        prominence_cut, width_cut, distance_cut
-        )
+    peaks_col0 = peaks_array_raw[0] 
     peaks_array = np.array([peaks_col0], dtype=float).reshape(1, -1)
 
     # add right column one-by-one to the peaks_array
-    for col in range(1, len(columnspec_array)):
+    for col in range(1, len(peaks_array_raw)):
         #if col > 2:
         #    break
 
@@ -141,16 +160,8 @@ def align_peaks_array(columnspec_array, aper_half_width,
         len_left = len(peaks_left)
 
         # get the peaks in the right column
-        peaks_right = get_peaks_in_one_column(
-            columnspec_array, col, 
-            prominence_cut, width_cut, distance_cut
-            )
+        peaks_right = peaks_array_raw[col]
         len_right = len(peaks_right)
-        
-        # 
-        diff0 = np.abs(peaks_left[0] - peaks_right[0])
-        len_max = np.max([len_left, len_right])
-        #print(col, len_left, len_right)
 
         # align the peaks in the left and right columns
         i_left = 0
@@ -412,6 +423,7 @@ def find_missing_fibers_LSB(y_data, y_template,
 
     return ids 
 
+
 def plt_gaps(peaks_cmax, peaks_template, ids_add=None):
     """Plot a view of gaps of the column max vs. the template. """
 
@@ -500,10 +512,17 @@ def do_trace_v2(trace, curve_params,
     print("++++ distance_cut: ", distance_cut)
     print("++++ prominence_cut: ", prominence_cut)
 
+    rel_height_cut = 0.5
+    print("++++ rel_height_cut: ", rel_height_cut)
+
+    # get the inital peaks array
+    peaks_array_raw = get_peaks_array(columnspec_array, distance_cut,
+                                        prominence_cut, width_cut, 
+                                        rel_height=rel_height_cut, 
+                                        verbose=True)
+
     # get the aligned peaks array
-    peaks_array = align_peaks_array(columnspec_array, aper_half_width, 
-                                          width_cut, distance_cut, 
-                                          prominence_cut, verbose=True)
+    peaks_array = align_peaks_array(peaks_array_raw, verbose=True)
 
     # clean the peaks array
     peaks_array, column_max = clean_peaks_array(peaks_array, verbose=True)
