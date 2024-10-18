@@ -219,7 +219,7 @@ class IFUM_AperMap_Maker:
         self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_rawdata]))
         self.ent_folder.grid(row=rows[0], column=1, columnspan=5, sticky="ew")
 
-        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
+        self.btn_folder = tk.Button(self.frame1, width=6, text="Raw DIR...", command=self.open_folder, highlightbackground=BG_COLOR)
         self.btn_folder.grid(row=rows[0], column=6, sticky="e", padx=5, pady=5)
 
         self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, highlightbackground=BG_COLOR)
@@ -393,10 +393,10 @@ class IFUM_AperMap_Maker:
         self.ent_folder_trace = tk.Entry(self.frame1, textvariable=self.txt_folder_trace, state='normal')
         self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=5, sticky="ew")
 
-        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
+        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Output DIR...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_folder_trace.grid(row=rows[1], column=6, sticky="ew", pady=5)
 
-        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Make", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_trace.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_pypeit(self):
