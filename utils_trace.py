@@ -565,23 +565,28 @@ def do_trace(trace, curve_params, trace_params=None, verbose=False):
     if trace_params is None:
         trace_step=20 
         n_lines=11
-        columnspec_continuum_rejection_low=-5.
-        columnspec_continuum_rejection_high=1.
-        columnspec_continuum_rejection_iterations=10
-        columnspec_continuum_rejection_order=1
-        window=4
-        threshold_factor=25.
+        #columnspec_continuum_rejection_low=-5.
+        #columnspec_continuum_rejection_high=1.
+        #columnspec_continuum_rejection_iterations=10
+        #columnspec_continuum_rejection_order=1
+        #window=4
+        #threshold_factor=25.
     else:
         trace_step = trace_params['trace_step']
         n_lines = trace_params['n_lines']
-        columnspec_continuum_rejection_low = trace_params['columnspec_continuum_rejection_low']
-        columnspec_continuum_rejection_high = trace_params['columnspec_continuum_rejection_high']
-        columnspec_continuum_rejection_iterations = trace_params['columnspec_continuum_rejection_iterations']
-        columnspec_continuum_rejection_order = trace_params['columnspec_continuum_rejection_order']
-        window = trace_params['window']
-        threshold_factor = trace_params['threshold_factor']
+        #columnspec_continuum_rejection_low = trace_params['columnspec_continuum_rejection_low']
+        #columnspec_continuum_rejection_high = trace_params['columnspec_continuum_rejection_high']
+        #columnspec_continuum_rejection_iterations = trace_params['columnspec_continuum_rejection_iterations']
+        #columnspec_continuum_rejection_order = trace_params['columnspec_continuum_rejection_order']
+        #window = trace_params['window']
+        #threshold_factor = trace_params['threshold_factor']
 
-    columnspec_array = m2fs.get_columnspec(trace, trace_step,n_lines,columnspec_continuum_rejection_low,columnspec_continuum_rejection_high,columnspec_continuum_rejection_iterations,columnspec_continuum_rejection_order,threshold_factor,window)
+    columnspec_array = get_columnspec(trace, trace_step,n_lines)
+                                      #columnspec_continuum_rejection_low,
+                                      #columnspec_continuum_rejection_high,
+                                      #columnspec_continuum_rejection_iterations,
+                                      #columnspec_continuum_rejection_order,
+                                      #threshold_factor,window)
 
     col_centers = np.array([np.median(columnspec_array[i].columns) for i in range(len(columnspec_array))])
 
