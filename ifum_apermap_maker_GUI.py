@@ -41,9 +41,11 @@ def check_appearance():
 
 #print(check_appearance())
 if check_appearance():
+    STEP_LABEL_COLOR = 'yellow'
     LABEL_COLOR = 'mediumseagreen'
     BG_COLOR = 'black'
 else:
+    STEP_LABEL_COLOR = 'blue'
     LABEL_COLOR = 'black'
     BG_COLOR='lightgray'
 
@@ -250,9 +252,12 @@ class IFUM_AperMap_Maker:
         start, lines = 2, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step1 = tk.Label(self.frame1, text="Step 1:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step1 = tk.Label(self.frame1, text="Step 1:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=0, sticky="w")
-        lbl_step1 = tk.Label(self.frame1, text="fit curvature using ARC/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step1 = tk.Label(self.frame1,
+                             text="Fit curvature using ARC/TWI files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -314,9 +319,12 @@ class IFUM_AperMap_Maker:
         start, lines = 6, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step2 = tk.Label(self.frame1, text="Step 2:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=0, sticky="w")
-        lbl_step2 = tk.Label(self.frame1, text="select spectral spans using SCI/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step2 = tk.Label(self.frame1,
+                             text="Determine spectral spans using SCI/TWI files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -378,9 +386,12 @@ class IFUM_AperMap_Maker:
         start, lines = 10, 2
         rows = np.arange(start, start+lines)
 
-        lbl_step3 = tk.Label(self.frame1, text="Step 3:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step3 = tk.Label(self.frame1, text="Step 3:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=rows[0], column=0, sticky="w")
-        lbl_step3 = tk.Label(self.frame1, text="make TRACE files using LED files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step3 = tk.Label(self.frame1,
+                             text="Make TRACE files using LED files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -404,9 +415,12 @@ class IFUM_AperMap_Maker:
         start, lines = 12, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step4 = tk.Label(self.frame1, text="Step 4:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4 = tk.Label(self.frame1, text="Step 4:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=rows[0], column=0, sticky="w")
-        lbl_step4 = tk.Label(self.frame1, text="make AperMap files using TRACE files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4 = tk.Label(self.frame1,
+                             text="Make AperMap files using TRACE files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=rows[0], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000_trace", fg=LABEL_COLOR)
@@ -464,9 +478,12 @@ class IFUM_AperMap_Maker:
         start, lines = 16, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step5 = tk.Label(self.frame1, text="Step 5:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step5 = tk.Label(self.frame1, text="Step 5:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=0, sticky="w")
-        lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap",fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step5 = tk.Label(self.frame1,
+                             text="(optional) Add missing slits to an AperMap",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
@@ -504,17 +521,24 @@ class IFUM_AperMap_Maker:
         start, lines = 20, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step6 = tk.Label(self.frame1, text="Step 6:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6 = tk.Label(self.frame1, text="Step 6:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=0, sticky="w")
-        lbl_step6 = tk.Label(self.frame1, text="(optional) make monochromatic AperMap files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6 = tk.Label(self.frame1,
+                             text="(optional) Make monochromatic AperMap files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         #### step 6a
-        lbl_step6a = tk.Label(self.frame1, text="6a. Use Step 2 to select spans", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6a.grid(row=rows[0], column=6, columnspan=2, sticky="w")
+        lbl_step6a = tk.Label(self.frame1,
+                              text="6b. Determine monochromatic spans (using functions in Step 2)",
+                              fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6a.grid(row=rows[2], column=1, columnspan=6, sticky="w")
 
         #### step 6b
-        lbl_step6b = tk.Label(self.frame1, text="6b. Load raw AperMap files (ap*.fits)", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6b = tk.Label(self.frame1,
+                              text="6a. Load raw AperMap files (ap*.fits)",
+                              fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_mono = tk.Label(self.frame1, relief=tk.SUNKEN, text="XXX_0000", fg=LABEL_COLOR)
