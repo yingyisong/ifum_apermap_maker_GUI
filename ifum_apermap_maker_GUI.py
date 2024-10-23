@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from genericpath import exists
 import os
 import tkinter as tk
 from tkinter import ttk
@@ -17,10 +16,10 @@ import numpy.polynomial.polynomial as poly
 from scipy.optimize import curve_fit
 
 from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
-from utils_trace import load_trace, reshape_trace_by_curvature, do_trace, do_trace_v2, create_apermap
+from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v2, create_apermap
 
 import subprocess
-from multiprocessing import Process
+#from multiprocessing import Process
 
 
 def main():
@@ -593,7 +592,7 @@ class IFUM_AperMap_Maker:
         self.ent_labelname_mono.bind('<Return>', self.refresh_labelname_mono)
         self.ent_labelname_mono.bind('<KP_Enter>', self.refresh_labelname_mono) # unique for macOS
 
-        self.window.bind_all('<1>', lambda event: event.widget.focus_set())
+        #self.window.bind_all('<1>', lambda event: event.widget.focus_set())
 
     def refresh_smash_range(self, *args):
         self.window.focus_set()
