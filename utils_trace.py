@@ -1,19 +1,13 @@
-import sys
 import numpy as np
 import numpy.polynomial.polynomial as poly
 import scipy.stats as stats
 import scipy.signal as signal
-
 import matplotlib.pyplot as plt
 
-from collections import Counter
 from astropy.nddata import CCDData
 
 from utils_io import func_parabola
 from columnspec import get_columnspec
-
-#sys.path.append('../m2fs')
-#import m2fs_process as m2fs
 
 
 def load_trace(file_path):
@@ -576,92 +570,6 @@ def do_trace_v2(trace, curve_params,
     traces_array, traces_coefs \
         = fit_aperture_traces(peaks_array, col_centers, curve_params)
     n_aper = len(traces_array[0])
-
-    return traces_array, traces_coefs, n_aper, aper_half_width
-
-
-def do_trace(trace, curve_params, trace_params=None, verbose=False):
-    """Do trace. """
-
-    if trace_params is None:
-        trace_step=20 
-        n_lines=11
-        #columnspec_continuum_rejection_low=-5.
-        #columnspec_continuum_rejection_high=1.
-        #columnspec_continuum_rejection_iterations=10
-        #columnspec_continuum_rejection_order=1
-        #window=4
-        #threshold_factor=25.
-    else:
-        trace_step = trace_params['trace_step']
-        n_lines = trace_params['n_lines']
-        #columnspec_continuum_rejection_low = trace_params['columnspec_continuum_rejection_low']
-        #columnspec_continuum_rejection_high = trace_params['columnspec_continuum_rejection_high']
-        #columnspec_continuum_rejection_iterations = trace_params['columnspec_continuum_rejection_iterations']
-        #columnspec_continuum_rejection_order = trace_params['columnspec_continuum_rejection_order']
-        #window = trace_params['window']
-        #threshold_factor = trace_params['threshold_factor']
-
-    columnspec_array = get_columnspec(trace, trace_step,n_lines)
-                                      #columnspec_continuum_rejection_low,
-                                      #columnspec_continuum_rejection_high,
-                                      #columnspec_continuum_rejection_iterations,
-                                      #columnspec_continuum_rejection_order,
-                                      #threshold_factor,window)
-
-    col_centers = np.array([np.median(columnspec_array[i].columns) for i in range(len(columnspec_array))])
-
-    #### Find the number of apertures and possible aperture half width
-    # find the number of peaks in each column
-    signal_height = determine_signal_height(columnspec_array)
-
-    peaks_array = []
-    for column in range(len(columnspec_array)):
-        spec = columnspec_array[column].spec
-        peaks = signal.find_peaks(spec, height=signal_height)
-        peaks_array.append(peaks[0])
-    peaks_num = [len(peaks_array[i]) for i in range(len(peaks_array))]
-
-    # find n_aper by getting the most common number in peaks_num except 0
-    peaks_num_counter = Counter(peaks_num)
-    peaks_num_counter.pop(0, None)
-    n_aper = peaks_num_counter.most_common(1)[0][0]
-
-    # find aper_half_width by getting the median of the difference between the peaks
-    peaks_diff_array = []
-    for i in range(len(peaks_array)):
-        if len(peaks_array[i]) == n_aper:
-            peaks_diff = np.diff(peaks_array[i])
-            peaks_diff_array.append(peaks_diff)
-    peaks_diff_array = np.array(peaks_diff_array)
-    aper_half_width = int(np.median(peaks_diff_array)/2)
-
-    if verbose:
-        print('The number of apertures is: ', n_aper)
-        print('The possible aperture half width is: ', aper_half_width)
-
-    #### Find the traces by fitting a second order polynomial
-    traces_array = []
-    for i, peaks in enumerate(peaks_array):
-        if len(peaks) == n_aper:
-            traces_col = col_centers[i] + func_parabola(peaks, curve_params[0], curve_params[1], curve_params[3]) 
-            traces_val = peaks
-            traces_array.append([traces_col, traces_val])
-    traces_array = np.array(traces_array)
-    
-    if verbose:
-        print("traces_array.shape: ", traces_array.shape)
-
-    traces_coefs = []
-    for  i in range(len(traces_array[0, 0, :])):
-        traces_col = traces_array[:, 0, i]
-        traces_val = traces_array[:, 1, i]
-        temp_coefs = poly.polyfit(traces_col, traces_val, 2)
-        traces_coefs.append(temp_coefs)
-    traces_coefs = np.array(traces_coefs)
-
-    if verbose:
-        print("traces_coefs.shape: ", traces_coefs.shape)
 
     return traces_array, traces_coefs, n_aper, aper_half_width
 
