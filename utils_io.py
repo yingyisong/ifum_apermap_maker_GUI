@@ -1,29 +1,12 @@
 #!/usr/bin/env python
 import os
-import sys
-import time
 import numpy as np
-import matplotlib.pyplot as plt
-
 from datetime import datetime
 
-from astropy import units as u
-from astropy import constants
 from astropy.io import fits
-from astropy.time import Time
-from astropy.table import Table
-from astropy.coordinates import SkyCoord, SkyOffsetFrame, EarthLocation
-from astropy.stats import median_absolute_deviation
-from astropy.stats import biweight
-
-#from scipy import interpolate
-#from scipy import optimize
-#from scipy.optimize import least_squares
-#from scipy.optimize import minimize
-#from scipy.interpolate import UnivariateSpline
-#import scipy.integrate as integrate
 
 _cache = {}
+
 
 def cached_fits_open(f):
     global _cache
@@ -56,9 +39,9 @@ class IFUM_UNIT:
         self.Ntotal = self.Nx*self.Ny
             
 
-
 def func_parabola(x, a, b, c):
     return a*(x-b)**2+c
+
 
 def readString_symbol(fileName, column1, symbol): #column number starts from 0
     x0 = []
@@ -76,6 +59,7 @@ def readString_symbol(fileName, column1, symbol): #column number starts from 0
         x0.append(x)
     return np.array(x0)
 
+
 def readFloat_space(fileName, column1): #column number starts from 0
     x0 = []
     for line in open(fileName, 'r'):
@@ -92,6 +76,7 @@ def readFloat_space(fileName, column1): #column number starts from 0
         x0.append(x)
     return np.array(x0, dtype='float64')
 
+
 def mask_img(raw_data,mask_file):
     new_data = np.zeros_like(raw_data)
     for line in open(mask_file,'r'):
@@ -106,6 +91,7 @@ def mask_img(raw_data,mask_file):
             print("Warning: img_mask file has an error!!!")
 
     return new_data
+
 
 def pack_4fits_simple(name_file, dir_input, shoe): #,dir_output,flag_img_mask,path_img_mask,config_img_mask):
     data_full = np.array([])
@@ -192,6 +178,7 @@ def pack_4fits_simple(name_file, dir_input, shoe): #,dir_output,flag_img_mask,pa
     # 1 2
     data_full = np.append(data_half2, data_half1, axis=0)
     return data_full, hdr_c1
+
 
 def pack_4fits(name_file,dir_input,dir_output,flag_img_mask,path_img_mask,config_img_mask):
     data_full = np.array([])
@@ -431,6 +418,7 @@ def write_aperMap(path_MasterSlits, IFU_type, Channel, file_name, file_date, N_x
 
     hdu_map.writeto(file_name+'_'+file_date+'.fits',overwrite=True)
 
+
 def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     dirname_output = os.path.join(dirname, 'pypeit_file')
     filename_output = filename+'.pypeit'
@@ -465,6 +453,7 @@ def write_pypeit_file(dirname, filename, pca='off', smash_range="0.4,0.6"):
     file.write("\n")
     file.close()
 
+
 def write_trace_file(data, header, dirname, filename):
     #### write to a fits file
     X2 = len(data[0])/2
@@ -492,7 +481,8 @@ def write_trace_file(data, header, dirname, filename):
     hdr_full['OBJECT'] = ('Trace file', 'object name')
 
     #### save trace file
-    path_trace = os.path.join(dirname, filename+'.fits')
+    filename_temp = "%s_%s_trace.fits"%(filename[0:5], datetime.today().strftime('%y%m%d')) 
+    path_trace = os.path.join(dirname, filename_temp)
     hdul_full.writeto(path_trace,overwrite=True)
 
     #### save backup file
@@ -501,6 +491,7 @@ def write_trace_file(data, header, dirname, filename):
         os.mkdir(dir_backup)
     path_backup = os.path.join(dir_backup, "%s_trace_%s.fits"%(filename[0:5], datetime.today().strftime('%y%m%d_%H%M')))
     hdul_full.writeto(path_backup,overwrite=False)
+
 
 def cut_apermap(data, header, dirname, filename):
     #### write to a fits file
