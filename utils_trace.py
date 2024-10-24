@@ -347,7 +347,10 @@ def find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
             ids.append(i_pred+1)
 
             if verbose:
-                print('!!!! Missing', i_pred+1, y_data[i_data], y_pred[i_pred])
+                print('!!!! Missing %d: %.2f - %.2f = %.2f'%
+                      (i_pred+1, y_data[i_data], y_pred[i_pred],
+                       y_data[i_data]-y_pred[i_pred])
+                       )
         else:
             y_new[i_pred] = y_data[i_data]
     
@@ -362,7 +365,6 @@ def add_missing_fibers(peaks_array, peaks_template, ids,
     peaks_array_new = peaks_array.copy()
     for id in ids:
         peaks_array_new = np.insert(peaks_array_new, id-1, np.nan, axis=1)
-
 
     # fill the missing fibers by fitting with the template
     for i in range(peaks_array_new.shape[0]):
@@ -417,16 +419,18 @@ def find_missing_fibers_LSB(y_data, y_template,
 def plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
     """Plot a view of gaps of the column max vs. the template. """
 
-    x_gap = np.arange(len(peaks_template)-1)+1
+    x_gap_template = np.arange(len(peaks_template)-1)+1
     diff_template = np.diff(peaks_template)
+
+    x_gap_cmax = np.arange(len(peaks_cmax)-1)+1
     diff_cmax = np.diff(peaks_cmax)
 
     # plot the gaps
     fig = plt.figure(figsize=(12, 6))
     fig.clf()
     ax = fig.add_subplot(111)
-    ax.plot(x_gap, diff_template, 'ko', label='template')
-    ax.plot(x_gap, diff_cmax, 'rx', label='current data')
+    ax.plot(x_gap_template, diff_template, 'ko', label='template')
+    ax.plot(x_gap_cmax, diff_cmax, 'rx', label='current data')
 
     if ids_add is not None:
         for i, id in enumerate(ids_add):
@@ -548,7 +552,7 @@ def do_trace_v2(trace, curve_params,
 
         # find the missing fibers
         ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax,
-                                      delta_y=3.0, verbose=True)
+                                      delta_y=5.0, verbose=True)
     else:   
         # i.e., ifu_type == 'LSB'
         # LSB has no distingushed group gaps, so use the template directly
