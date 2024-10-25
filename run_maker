@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# this script wraps the running of the GUI within its container and sets up the X windows configuration so
+# the graphics windows work properly. 
+
+xhost + 127.0.0.1 > /dev/null 2>&1
+
+docker compose up --build
+
+xhost - 127.0.0.1 > /dev/null 2>&1

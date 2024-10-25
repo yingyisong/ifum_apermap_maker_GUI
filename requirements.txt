@@ -1,0 +1,6 @@
+numpy~=1.26.4
+scipy~=1.13.0
+matplotlib~=3.8.4
+astropy~=6.0.1
+ccdproc~=2.4.1
+specutils~=1.18.0
