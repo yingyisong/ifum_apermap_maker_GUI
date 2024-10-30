@@ -1805,7 +1805,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
             else:
-                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(self.data_full, percent))
             self.ax.set_title("b%s"%self.file_current)
             self.fig.set_tight_layout(True)
             self.canvas.draw_idle()
@@ -1813,7 +1813,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
             else:
-                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(self.data_full2, percent))
             self.ax2.set_title("r%s"%self.file_current)
             self.fig2.set_tight_layout(True)
             self.canvas2.draw_idle()
@@ -1823,7 +1823,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
             else:
-                self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+                self.ax.imshow(data, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(data, percent))
             self.ax.set_title(title)
             self.fig.set_tight_layout(True)
             self.canvas.draw_idle()
@@ -1831,7 +1831,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
             else:
-                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(data, percent))
             self.ax2.set_title(title)
             self.fig2.set_tight_layout(True)
             self.canvas2.draw_idle()
