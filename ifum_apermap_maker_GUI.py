@@ -163,26 +163,28 @@ class IFUM_AperMap_Maker:
             mask_bside = file[:, 0] == 'b'
 
             #### update param_curve
-            popt = np.array([np.float64(file[mask_bside, 1]), np.float64(file[mask_bside, 2]), np.float64(file[mask_bside, 3])])
+            popt = file[mask_bside, 1:4].astype(np.float64).flatten()
             self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
             self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
             self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
             self.param_curve_b = popt
 
-            popt = np.array([np.float64(file[~mask_bside, 1]), np.float64(file[~mask_bside, 2]), np.float64(file[~mask_bside, 3])])
+            popt = file[~mask_bside, 1:4].astype(np.float64).flatten()
             self.txt_param_curve_A_r.set("%.3e"%(popt[0]))
             self.txt_param_curve_B_r.set("%.1f"%(popt[1]))
             self.txt_param_curve_C_r.set("%.1f"%(popt[2]))
             self.param_curve_r = popt
 
             #### update param_edges
-            self.param_edges_b = np.array([np.float64(file[mask_bside, 4]), np.float64(file[mask_bside, 4])+np.float64(file[mask_bside, 5]), np.float64(file[mask_bside, 5])])
+            temp = file[mask_bside, 4:6].astype(np.float64).flatten()
+            self.param_edges_b = np.array([temp[0], temp[0]+temp[1], temp[1]])
             self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
             self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
             self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
             self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
 
-            self.param_edges_r = np.array([np.float64(file[~mask_bside, 4]), np.float64(file[~mask_bside, 4])+np.float64(file[~mask_bside, 5]), np.float64(file[~mask_bside, 5])])
+            temp = file[~mask_bside, 4:6].astype(np.float64).flatten()
+            self.param_edges_r = np.array([temp[0], temp[0]+temp[1], temp[1]])
             self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
             self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
             self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
