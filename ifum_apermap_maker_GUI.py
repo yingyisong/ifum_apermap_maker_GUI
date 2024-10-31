@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from genericpath import exists
 import os
 import tkinter as tk
 from tkinter import ttk
@@ -13,12 +12,14 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 from datetime import datetime
 
 from astropy.io import fits
+import numpy.polynomial.polynomial as poly
 from scipy.optimize import curve_fit
 
-from utils_ifum import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
+from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
+from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v2, create_apermap
 
 import subprocess
-from multiprocessing import Process
+#from multiprocessing import Process
 
 
 def main():
@@ -39,9 +40,11 @@ def check_appearance():
 
 #print(check_appearance())
 if check_appearance():
-    LABEL_COLOR = 'limegreen'
+    STEP_LABEL_COLOR = 'yellow'
+    LABEL_COLOR = 'mediumseagreen'
     BG_COLOR = 'black'
 else:
+    STEP_LABEL_COLOR = 'blue'
     LABEL_COLOR = 'black'
     BG_COLOR='lightgray'
 
@@ -160,26 +163,28 @@ class IFUM_AperMap_Maker:
             mask_bside = file[:, 0] == 'b'
 
             #### update param_curve
-            popt = np.array([np.float64(file[mask_bside, 1]), np.float64(file[mask_bside, 2]), np.float64(file[mask_bside, 3])])
+            popt = file[mask_bside, 1:4].astype(np.float64).flatten()
             self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
             self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
             self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
             self.param_curve_b = popt
 
-            popt = np.array([np.float64(file[~mask_bside, 1]), np.float64(file[~mask_bside, 2]), np.float64(file[~mask_bside, 3])])
+            popt = file[~mask_bside, 1:4].astype(np.float64).flatten()
             self.txt_param_curve_A_r.set("%.3e"%(popt[0]))
             self.txt_param_curve_B_r.set("%.1f"%(popt[1]))
             self.txt_param_curve_C_r.set("%.1f"%(popt[2]))
             self.param_curve_r = popt
 
             #### update param_edges
-            self.param_edges_b = np.array([np.float64(file[mask_bside, 4]), np.float64(file[mask_bside, 4])+np.float64(file[mask_bside, 5]), np.float64(file[mask_bside, 5])])
+            temp = file[mask_bside, 4:6].astype(np.float64).flatten()
+            self.param_edges_b = np.array([temp[0], temp[0]+temp[1], temp[1]])
             self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
             self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
             self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
             self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
 
-            self.param_edges_r = np.array([np.float64(file[~mask_bside, 4]), np.float64(file[~mask_bside, 4])+np.float64(file[~mask_bside, 5]), np.float64(file[~mask_bside, 5])])
+            temp = file[~mask_bside, 4:6].astype(np.float64).flatten()
+            self.param_edges_r = np.array([temp[0], temp[0]+temp[1], temp[1]])
             self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
             self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
             self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
@@ -217,7 +222,7 @@ class IFUM_AperMap_Maker:
         self.ent_folder = tk.Entry(self.frame1, textvariable=tk.StringVar(value=[self.folder_rawdata]))
         self.ent_folder.grid(row=rows[0], column=1, columnspan=5, sticky="ew")
 
-        self.btn_folder = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder, highlightbackground=BG_COLOR)
+        self.btn_folder = tk.Button(self.frame1, width=6, text="Raw DIR...", command=self.open_folder, highlightbackground=BG_COLOR)
         self.btn_folder.grid(row=rows[0], column=6, sticky="e", padx=5, pady=5)
 
         self.btn_refresh = tk.Button(self.frame1, width=6, text="Refresh", command=self.refresh_folder, highlightbackground=BG_COLOR)
@@ -248,9 +253,12 @@ class IFUM_AperMap_Maker:
         start, lines = 2, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step1 = tk.Label(self.frame1, text="Step 1:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step1 = tk.Label(self.frame1, text="Step 1:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=0, sticky="w")
-        lbl_step1 = tk.Label(self.frame1, text="fit curvature using ARC/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step1 = tk.Label(self.frame1,
+                             text="Fit curvature using ARC/TWI files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_curve = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -312,9 +320,12 @@ class IFUM_AperMap_Maker:
         start, lines = 6, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step2 = tk.Label(self.frame1, text="Step 2:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step2 = tk.Label(self.frame1, text="Step 2:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=0, sticky="w")
-        lbl_step2 = tk.Label(self.frame1, text="select spectral spans using SCI/TWI files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step2 = tk.Label(self.frame1,
+                             text="Determine spectral spans using SCI/TWI files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_edges = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -376,9 +387,12 @@ class IFUM_AperMap_Maker:
         start, lines = 10, 2
         rows = np.arange(start, start+lines)
 
-        lbl_step3 = tk.Label(self.frame1, text="Step 3:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step3 = tk.Label(self.frame1, text="Step 3:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=rows[0], column=0, sticky="w")
-        lbl_step3 = tk.Label(self.frame1, text="make TRACE files using LED files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step3 = tk.Label(self.frame1,
+                             text="Make TRACE files using LED files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step3.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_trace = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000", fg=LABEL_COLOR)
@@ -391,10 +405,10 @@ class IFUM_AperMap_Maker:
         self.ent_folder_trace = tk.Entry(self.frame1, textvariable=self.txt_folder_trace, state='normal')
         self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=5, sticky="ew")
 
-        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Browse...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
+        self.btn_folder_trace = tk.Button(self.frame1, width=6, text="Output DIR...", command=self.open_folder_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_folder_trace.grid(row=rows[1], column=6, sticky="ew", pady=5)
 
-        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Make", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_trace = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_trace.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_pypeit(self):
@@ -402,9 +416,12 @@ class IFUM_AperMap_Maker:
         start, lines = 12, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step4 = tk.Label(self.frame1, text="Step 4:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4 = tk.Label(self.frame1, text="Step 4:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=rows[0], column=0, sticky="w")
-        lbl_step4 = tk.Label(self.frame1, text="make AperMap files using TRACE files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4 = tk.Label(self.frame1,
+                             text="Make AperMap files using TRACE files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step4.grid(row=rows[0], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_pypeit = tk.Label(self.frame1, relief=tk.SUNKEN, text="0000_trace", fg=LABEL_COLOR)
@@ -413,28 +430,29 @@ class IFUM_AperMap_Maker:
         self.btn_load_pypeit = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_trace, state='normal', highlightbackground=BG_COLOR)
         self.btn_load_pypeit.grid(row=rows[0], column=7, sticky="e", padx=5, pady=5)
 
-        #### step 4a make a PypeIt file
-        lbl_step4a = tk.Label(self.frame1, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
-        #lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
-        #lbl_smash.grid(row=rows[1], column=4, columnspan=2, sticky="e")
+        ##### step 4a make a PypeIt file
+        #lbl_step4a = tk.Label(self.frame1, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
+        ##lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
+        ##lbl_smash.grid(row=rows[1], column=4, columnspan=2, sticky="e")
 
-        lbl_pca = tk.Label(self.frame1, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_pca.grid(row=rows[1], column=4, sticky="w")
+        #lbl_pca = tk.Label(self.frame1, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_pca.grid(row=rows[1], column=4, sticky="w")
 
-        self.pca1 = tk.Radiobutton(self.frame1, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
-        self.pca1.grid(row=rows[1], column=4, sticky='e')
-        self.pca2 = tk.Radiobutton(self.frame1, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
-        self.pca2.grid(row=rows[1], column=5, sticky='w')
+        #self.pca1 = tk.Radiobutton(self.frame1, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca1.grid(row=rows[1], column=4, sticky='e')
+        #self.pca2 = tk.Radiobutton(self.frame1, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca2.grid(row=rows[1], column=5, sticky='w')
 
-        self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range, state='normal')
-        self.ent_smash_range.grid(row=rows[1], column=6, sticky="ew")
+        #self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range, state='normal')
+        #self.ent_smash_range.grid(row=rows[1], column=6, sticky="ew")
 
-        self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=5, pady=5)
+        #self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
+        #self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=5, pady=5)
 
         #### step 4b run PypeIt
-        lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4b = tk.Label(self.frame1, text="Choose a side to trace", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4b.grid(row=rows[2], column=1, columnspan=3, sticky="w")
 
 
@@ -447,7 +465,7 @@ class IFUM_AperMap_Maker:
         self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
         self.shoe2.grid(row=rows[2], column=5, sticky='w')
 
-        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_pypeit, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_run_pypeit.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### step 4c save the AperMap
@@ -461,9 +479,12 @@ class IFUM_AperMap_Maker:
         start, lines = 16, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step5 = tk.Label(self.frame1, text="Step 5:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step5 = tk.Label(self.frame1, text="Step 5:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=0, sticky="w")
-        lbl_step5 = tk.Label(self.frame1, text="(optional) add missing slits to an AperMap",fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step5 = tk.Label(self.frame1,
+                             text="(optional) Add missing slits to an AperMap",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
@@ -483,7 +504,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_bundles = tk.Button(self.frame1, width=6, text="Select", command=self.pick_bundles, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_bundles = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_fix2_v2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_bundles.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
 
         #### select y positions of all missing slits
@@ -493,7 +514,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_slits = tk.Button(self.frame1, width=6, text="Select", command=self.pick_slits, state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_slits.grid(row=rows[3], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_slits, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_slits_v2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_slits.grid(row=rows[3], column=7, sticky='e', padx=5, pady=5)
 
     def create_widgets_mono(self):
@@ -501,17 +522,24 @@ class IFUM_AperMap_Maker:
         start, lines = 20, 4
         rows = np.arange(start, start+lines)
 
-        lbl_step6 = tk.Label(self.frame1, text="Step 6:", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6 = tk.Label(self.frame1, text="Step 6:",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=0, sticky="w")
-        lbl_step6 = tk.Label(self.frame1, text="(optional) make monochromatic AperMap files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6 = tk.Label(self.frame1,
+                             text="(optional) Make monochromatic AperMap files",
+                             fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         #### step 6a
-        lbl_step6a = tk.Label(self.frame1, text="6a. Use Step 2 to select spans", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6a.grid(row=rows[0], column=6, columnspan=2, sticky="w")
+        lbl_step6a = tk.Label(self.frame1,
+                              text="6b. Determine monochromatic spans (using functions in Step 2)",
+                              fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6a.grid(row=rows[2], column=1, columnspan=6, sticky="w")
 
         #### step 6b
-        lbl_step6b = tk.Label(self.frame1, text="6b. Load raw AperMap files (ap*.fits)", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6b = tk.Label(self.frame1,
+                              text="6a. Load raw AperMap files (ap*.fits)",
+                              fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
 
         self.lbl_file_mono = tk.Label(self.frame1, relief=tk.SUNKEN, text="XXX_0000", fg=LABEL_COLOR)
@@ -560,13 +588,13 @@ class IFUM_AperMap_Maker:
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
 
-        self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
-        self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
+        #self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
+        #self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
 
         self.ent_labelname_mono.bind('<Return>', self.refresh_labelname_mono)
         self.ent_labelname_mono.bind('<KP_Enter>', self.refresh_labelname_mono) # unique for macOS
 
-        self.window.bind_all('<1>', lambda event: event.widget.focus_set())
+        #self.window.bind_all('<1>', lambda event: event.widget.focus_set())
 
     def refresh_smash_range(self, *args):
         self.window.focus_set()
@@ -623,6 +651,101 @@ class IFUM_AperMap_Maker:
             self.param_edges_r[1] = np.float32(self.ent_param_edges_X1_r.get())+np.float32(self.ent_param_edges_dX_r.get())
             self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
             self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
+
+    def get_curve_params(self, shoe):
+        if shoe=='b':
+            return np.array([self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], self.param_edges_b[0], self.param_edges_b[2]])
+        elif shoe=='r':
+            return np.array([self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], self.param_edges_r[0], self.param_edges_r[2]])
+
+    def run_trace(self):
+        shoe = self.shoe.get()
+        dirname = self.ent_folder_trace.get()
+        filename = shoe+self.lbl_file_pypeit['text']
+        coef_temp = self.get_curve_params(shoe)
+
+        # load the trace file and reshape according to the curvature
+        path_traceFile = os.path.join(dirname, filename+'.fits')
+        data_trace, ifu_type_trace, bin_y_trace = load_trace(path_traceFile)
+        data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
+
+        # trace the resahped data and create an apermap
+        trace_array, trace_coefs, N_sl, aper_half_width \
+            = do_trace_v2(data_reshaped, coef_temp,                          
+                          shoe, ifu_type_trace, bin_y_trace, verbose=True)
+        map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
+        #print(len(y_middle), y_middle)
+        #print(np.diff(y_middle))
+
+        #### check the number of slits
+        self.ifu_type = self.get_ifu_type(N_sl)
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        if N_ap>N_sl:
+            print('!!! Warning: Missing %d fiber(s). Expected to find %d fibers !!!'%(N_ap-N_sl, N_ap))
+        elif N_ap<N_sl:
+            print('!!! Warning: Found %d more fiber(s). Expected to find %d fibers. !!!'%(N_sl-N_ap, N_ap))
+        else:
+            print('Found all %d fibers.'%N_ap)
+
+        # find the maximum number of pixels in all slits
+        num_ap = np.zeros(N_ap, dtype=np.int32)
+        for i_ap in range(N_ap):
+            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+        num_max = np.max(num_ap)
+
+        #### save AperMap
+        #### the following header params may require modifying
+        hdu_map = fits.PrimaryHDU(map_ap)
+        hdr_map = hdu_map.header
+        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_sl, 'number of slits')
+        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+        hdr_map['BINNING'] = ('1x1', 'binning')
+        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+
+        today_temp = datetime.today().strftime("%y%m%d")
+        today_backup = datetime.today().strftime("%y%m%d_%H%M")
+        dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
+        if not os.path.exists(dir_aperMap):
+            os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
+        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
+        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
+        path_aperMap = os.path.join(dir_aperMap, file_aperMap)
+        path_backup = os.path.join(dir_backup, file_backup)
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
+
+        #### save slits file
+        dir_slits = os.path.join(dir_aperMap, 'slits')
+        if not os.path.exists(dir_slits):
+            os.mkdir(dir_slits)
+        file_slits = filename.split('_')[0]+'_slits.txt'
+        path_slits = os.path.join(dir_slits, file_slits)
+        np.savetxt(path_slits, y_middle, fmt='%d', delimiter=' ', header='# y_pos (x=middle)', comments='')
+
+        #### save the trace coefs
+        dir_coefs = os.path.join(dir_aperMap, 'trace_coefs')
+        if not os.path.exists(dir_coefs):
+            os.mkdir(dir_coefs)
+        file_coefs = filename.split('_')[0]+'_coefs.txt'
+        path_coefs = os.path.join(dir_coefs, file_coefs)
+        np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='# aper_half_width = %d\n'%aper_half_width)
+
+        #### show apermap
+        self.clear_image(shoe=shoe)
+
+        fname = filename.split('_')[0]+'_apermap'
+        title = '%s (N_sl=%d)'%(fname,N_sl)
+        self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
+        print('++++\n++++ Saved an AperMap file: %s\n++++\n'%path_aperMap)
+
+        self.window.focus_set()
 
     def make_file_pypeit(self):
         dirname = self.ent_folder_trace.get()
@@ -707,7 +830,127 @@ class IFUM_AperMap_Maker:
             return self.HR
         else:
             return self.UNKNOWN
-    
+
+    def make_file_apermap_slits_v2(self):
+        #### get the correct number of slits
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        shoe = self.lbl_file_apermap['text'][2]
+
+        #### load the slits coefs
+        dirname_coefs = os.path.join(self.folder_trace, 'trace_coefs')
+        filename_coefs = self.lbl_file_apermap['text'].split('_')[0][2:]+'_coefs.txt'
+        path_coefs = os.path.join(dirname_coefs, filename_coefs)
+        trace_coefs = np.loadtxt(path_coefs, delimiter=',')
+        N_sl = len(trace_coefs)
+
+        # load path_coefs the first line and get aper_half_width
+        with open(path_coefs, 'r') as f:
+            line = f.readline()
+            aper_half_width = int(line.split('# aper_half_width = ')[1])
+
+        x_middle = np.int32(len(self.data_full[0])/2)
+        y_middle = np.zeros(N_sl, dtype=np.int32)
+        for i_sl in range(N_sl):
+            y_middle[i_sl] = np.round( poly.polyval(x_middle, trace_coefs[i_sl]) ).astype(np.int32)
+
+        #### load missing slits file
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_slits = self.lbl_file_apermap['text'].split('_')[0][3:]+'_slits_'+shoe+'.txt'
+        path_slits = os.path.join(dirname_slits, filename_slits)
+        if os.path.isfile(path_slits):
+            y_missing = np.int32(readFloat_space(path_slits, 0))
+        else:
+            y_missing = np.array([])
+
+        #### add missing slits and make new AperMap
+        y_middle_new = np.append(y_middle, y_missing)
+        y_middle_new = np.sort(y_middle_new)
+        N_new = len(y_middle_new)
+
+        print('To add %d fibers'%N_new)
+        if N_new>N_ap:
+            print('!!! Warning: More bad fibers are added. !!!')
+        elif N_new<N_ap:
+            print('!!! Warning: Less bad fibers are added. !!!')
+        else:
+            print('All %d fibers are found.'%N_ap)
+
+        
+        #### make a new AperMap
+        map_ap = np.zeros((len(self.data_full),len(self.data_full[0])), dtype=np.int32)
+        x_trace = np.arange(len(self.data_full[0]))
+        for i_ap in range(N_new):
+            ap_num = i_ap+1
+            y_middle_temp = y_middle_new[i_ap]
+
+            temp_index = np.where(y_middle==y_middle_temp)[0]
+            if len(temp_index)==1:
+                i_temp = temp_index[0]
+                y_temp = np.round( poly.polyval(x_trace, trace_coefs[i_temp]) ).astype(np.int32)
+                for j in range(len(x_trace)):
+                    map_ap[y_temp[j]-aper_half_width:y_temp[j]+aper_half_width, x_trace[j]] = np.int32(ap_num)
+            else:
+                print('!!! Now adding the %d-th fiber. !!!'%ap_num)
+
+                #### insert a missing slit using the nearest slit
+                dist_temp = np.abs(y_middle-y_middle_temp)
+                i_temp = np.where(dist_temp==np.min(dist_temp))[0][0]
+                shift_temp = y_middle_temp-y_middle[i_temp]
+                print('Fake', ap_num, 'acording to', i_temp+1)
+
+                y_temp = np.round( poly.polyval(x_trace, trace_coefs[i_temp]) ).astype(np.int32)
+                for j in range(len(x_trace)):
+                    map_ap[y_temp[j]+shift_temp-aper_half_width:y_temp[j]+shift_temp+aper_half_width, x_trace[j]] = np.int32(ap_num)
+        
+        #### cut data
+        map_ap = self.cut_data_by_edges(map_ap, shoe)
+
+        #### find the maximum number of pixels in all slits
+        num_ap = np.zeros(N_ap, dtype=np.int32)
+        for i_ap in range(N_ap):
+            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+        num_max = np.max(num_ap)
+
+        #### save AperMap
+        #### the following header params may require modifying
+        hdu_map = fits.PrimaryHDU(map_ap)
+        hdr_map = hdu_map.header
+        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_new, 'number of slits')
+        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+        hdr_map['BINNING'] = ('1x1', 'binning')
+        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+
+        today_temp = datetime.today().strftime('%y%m%d')
+        today_backup = datetime.today().strftime('%y%m%d_%H%M')
+        dir_aperMap = self.ent_folder_trace.get()
+        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
+        if not os.path.exists(dir_aperMap):
+            os.mkdir(dir_aperMap)
+        if not os.path.exists(dir_backup):
+            os.mkdir(dir_backup)
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        hdu_map.writeto(path_aperMap,overwrite=True)
+        os.system('cp %s %s'%(path_aperMap, path_backup))
+
+        #self.btn_select_slits['state'] = 'disabled'
+        #self.btn_select_slits['state'] = 'disabled'
+
+        ####
+        self.clear_image()
+        self.file_current = '%s (Nslits=%d)'%(self.lbl_file_apermap['text'], N_new)
+        self.update_image_single(map_ap, self.file_current, shoe='b', uniform=True)
+
+        info_temp = 'Saved as %s'%path_aperMap
+        self.popup_showinfo('aperMap', info_temp)
+        print('\n++++\n++++ %s\n++++\n'%(info_temp))
+
+        self.window.focus_set()
+
     def make_file_apermap_slits(self):
         #### load MasterSlits file
         N_ap = np.int32(self.ifu_type.Ntotal/2)
@@ -847,6 +1090,98 @@ class IFUM_AperMap_Maker:
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
         self.window.focus_set()
+
+    def make_file_apermap_fix2_v2(self):
+        '''
+        For LSB, STD and HR, pick 5, 6 and 8 bundle centers, respectively
+        '''
+        #### get file names and shoe
+        N_ap = np.int32(self.ifu_type.Ntotal/2)
+        shoe = self.lbl_file_apermap['text'][2]
+
+        #### load the slits coefs
+        dirname_coefs = os.path.join(self.folder_trace, 'trace_coefs')
+        filename_coefs = self.lbl_file_apermap['text'].split('_')[0][2:]+'_coefs.txt'
+        path_coefs = os.path.join(dirname_coefs, filename_coefs)
+        trace_coefs = np.loadtxt(path_coefs, delimiter=',')
+        N_sl = len(trace_coefs)
+
+        x_middle = np.int32(len(self.data_full[0])/2)
+        y_middle = np.zeros(N_sl, dtype=np.int32)
+        for i_sl in range(N_sl):
+            y_middle[i_sl] = np.round( poly.polyval(x_middle, trace_coefs[i_sl]) ).astype(np.int32)
+
+        #### load bundle centers
+        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+        filename_bundles = self.filename_trace.split('_')[2]+'_bundles_'+shoe+'.txt'
+        path_bundles = os.path.join(dirname_slits, filename_bundles)
+        if os.path.isfile(path_bundles):
+            pts_pick = np.int32(readFloat_space(path_bundles, 0))
+        else:
+            pts_pick = np.array([])
+        n_pick = len(pts_pick)
+
+        ####
+        if N_ap>N_sl:
+            print('!!! Warning: Missing %d fiber(s). !!!'%(N_ap-N_sl))
+        elif N_ap<N_sl:
+            print('!!! Warning: Found %d more fiber(s) than expected. !!!'%(N_sl-N_ap))
+
+        print("Loaded in %d bundle centers, %s has %d bundle centers"%(n_pick, self.ifu_type.label, self.ifu_type.Ny/4))
+        if len(pts_pick)!=self.ifu_type.Ny/4:
+            return 0
+
+        #### add missing slits
+        y_middle_add = np.array([], dtype=np.int32)
+
+        pts_diff = np.diff(pts_pick)
+        pts_gap = pts_pick[0:-1] + pts_diff/2.
+        pts_all = np.append(pts_pick, pts_gap)
+        pts_all = np.append(pts_all, np.array([0, len(self.data_full[0])]))
+        pts_all = np.sort(pts_all)
+        for i in range(n_pick*2):
+            mask_id_temp = np.logical_and(y_middle>pts_all[i], y_middle<=pts_all[i+1])
+            y_middle_temp = y_middle[mask_id_temp]
+            y_diff_med_temp = np.median( np.diff(y_middle_temp) )
+
+            y_middle_temp = np.append(pts_all[i], y_middle_temp)
+            y_middle_temp = np.append(y_middle_temp, pts_all[i+1])
+            y_diff_temp = np.diff(y_middle_temp)
+
+            print('Working on %d/%d to add %d fiber(s)'%(i+1, n_pick*2, self.ifu_type.Nx-len(y_diff_temp)+1))
+            print('==== diff_med', y_diff_med_temp)
+            while len(y_diff_temp)<=self.ifu_type.Nx:
+                mask_diff_temp = y_diff_temp>y_diff_med_temp+np.sqrt(y_diff_med_temp)
+                if np.sum(mask_diff_temp)>0:
+                    if i%2==0:
+                        idx_temp = np.where(mask_diff_temp)[0][-1]
+                        y_middle_add_temp = y_middle_temp[idx_temp] + y_diff_med_temp
+                    else:
+                        idx_temp = np.where(mask_diff_temp)[0][0]
+                        y_middle_add_temp = y_middle_temp[idx_temp+1] - y_diff_med_temp
+                    y_middle_add = np.sort( np.append(y_middle_add, y_middle_add_temp) )
+                    y_middle_temp = np.sort( np.append(y_middle_temp, y_middle_add_temp) )
+                    y_diff_temp = np.diff(y_middle_temp)
+                    print(len(y_middle_add), y_middle_add_temp)
+
+            y_middle = np.sort( np.append(y_middle[~mask_id_temp], y_middle_temp) )
+
+        ####
+        print("Auto-fix found %d fiber(s) to add"%len(y_middle_add))
+
+        #### save new y_middle positions into a file
+        dirname = os.path.join(self.folder_trace, 'slits_file')
+        filename = self.filename_trace.split('_')[2]+'_slits_'+shoe+'.txt'
+
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+
+        file = open(os.path.join(dirname, filename), 'w')
+        for temp in y_middle_add:
+            file.write("%d\n"%temp)
+        file.close()
+
+        self.make_file_apermap_slits_v2()
 
     def make_file_apermap_fix2(self):
         '''
@@ -1157,7 +1492,7 @@ class IFUM_AperMap_Maker:
         #    txt_edit.insert(tk.END, text)
 
     def disable_make_apermap(self):
-        self.btn_make_pypeit['state'] = 'disabled'
+        #self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
         self.btn_select_bundles['state'] = 'disabled'
         self.btn_make_apermap_bundles['state'] = 'disabled'
@@ -1212,7 +1547,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_edges_b['state'] = 'disabled'
         self.btn_select_edges_r['state'] = 'disabled'
         self.btn_make_trace['state'] = 'disabled'
-        self.btn_make_pypeit['state'] = 'disabled'
+        #self.btn_make_pypeit['state'] = 'disabled'
         self.btn_run_pypeit['state'] = 'disabled'
         self.btn_select_bundles['state'] = 'disabled'
         self.btn_make_apermap_bundles['state'] = 'disabled'
@@ -1289,7 +1624,8 @@ class IFUM_AperMap_Maker:
             self.gray_all_lbl_file()
             self.lbl_file_pypeit.config(bg='yellow')
             self.disable_dependent_btns()
-            self.btn_make_pypeit['state'] = 'normal'
+            #self.btn_make_pypeit['state'] = 'normal'
+            self.btn_run_pypeit['state'] = 'normal'
 
             #### show the fits image
             self.clear_image()
@@ -1352,51 +1688,51 @@ class IFUM_AperMap_Maker:
         dirname, filename = os.path.split(pathname)
 
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
-            #### first check if the corresponding MasterSlits file exists
             str_temp = filename.split('_')
             fnum_temp = str_temp[0][2]+str_temp[2]
-            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%fnum_temp)
 
-            if os.path.isfile(path_MasterSlits_temp):
+            #### load Apermap
+            #hdul_temp = cached_fits_open(pathname)
+            hdul_temp = fits.open(pathname)
+            N_slits_file = hdul_temp[0].header['NSLITS']
+            self.ifu_type = self.get_ifu_type(N_slits_file)
+            self.data_full = np.float32(hdul_temp[0].data)
+
+            #### update paths and file names
+            self.folder_trace = dirname
+            self.ent_folder_trace.delete(0, tk.END)
+            self.ent_folder_trace.insert(tk.END, self.folder_trace)
+
+            self.filename_trace = filename
+            file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
+            self.lbl_file_apermap['text'] = file_temp
+            self.file_current = file_temp+" (Nslits=%s)"%N_slits_file
+            self.shoe.set(file_temp[2])
+
+            #### handle other widegts
+            self.gray_all_lbl_file()
+            self.lbl_file_apermap.config(bg='yellow')
+            self.disable_dependent_btns()
+            self.btn_select_bundles['state'] = 'normal'
+            self.btn_make_apermap_bundles['state'] = 'normal'
+            self.btn_select_slits['state'] = 'normal'
+            self.btn_make_apermap_slits['state'] = 'normal'
+
+            #### show the fits image
+            self.clear_image()
+            self.remove_image(shoe='r')
+            #self.update_image(uniform=True)
+            self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
+
+            #### first check if the corresponding MasterSlits file exists
+            path_MasterSlits_temp = os.path.join(os.path.dirname(dirname), 'pypeit_file/Masters/MasterSlits_%s_trace.fits.gz'%fnum_temp)
+            if False: #os.path.isfile(path_MasterSlits_temp):
                 #### update paths and file names
                 self.path_MasterSlits = path_MasterSlits_temp
                 N_slits = self.check_file_MasterSlits()
-
-                ####
-                #hdul_temp = cached_fits_open(pathname)
-                hdul_temp = fits.open(pathname)
-                N_slits_file = hdul_temp[0].header['NSLITS']
-
-                #if N_slits==N_slits_file:
-                self.folder_trace = dirname
-                self.ent_folder_trace.delete(0, tk.END)
-                self.ent_folder_trace.insert(tk.END, self.folder_trace)
-
-                self.filename_trace = filename
-                file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
-                self.lbl_file_apermap['text'] = file_temp
-                self.file_current = file_temp+" (Nslits=%s)"%N_slits_file 
-                self.shoe.set(file_temp[2])
-
-                #### handle other widegts
-                self.gray_all_lbl_file()
-                self.lbl_file_apermap.config(bg='yellow')
-                self.disable_dependent_btns()
-                self.btn_select_bundles['state'] = 'normal'
-                self.btn_make_apermap_bundles['state'] = 'normal'
-                self.btn_select_slits['state'] = 'normal'
-                self.btn_make_apermap_slits['state'] = 'normal'
-
-                #### load Apermap
-                #hdul_temp = cached_fits_open(pathname)
-                hdul_temp = fits.open(pathname)
-                self.data_full = np.float32(hdul_temp[0].data)
-
-                #### show the fits image
-                self.clear_image()
-                self.remove_image(shoe='r')
-                #self.update_image(uniform=True)
-                self.update_image_single(self.data_full, self.file_current, shoe='b', uniform=True)
+            else:
+                #### trace file was made using new method not using pypeit
+                self.path_MasterSlits = None
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
             self.filename_trace = "apx0000_0000.fits"
@@ -1471,7 +1807,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.min(self.data_full)+1)
             else:
-                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=np.min(self.data_full), vmax=np.percentile(self.data_full, percent))
+                self.ax.imshow(self.data_full, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(self.data_full, percent))
             self.ax.set_title("b%s"%self.file_current)
             self.fig.set_tight_layout(True)
             self.canvas.draw_idle()
@@ -1479,7 +1815,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.min(self.data_full2)+1)
             else:
-                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=np.min(self.data_full2), vmax=np.percentile(self.data_full2, percent))
+                self.ax2.imshow(self.data_full2, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(self.data_full2, percent))
             self.ax2.set_title("r%s"%self.file_current)
             self.fig2.set_tight_layout(True)
             self.canvas2.draw_idle()
@@ -1489,7 +1825,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
             else:
-                self.ax.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+                self.ax.imshow(data, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(data, percent))
             self.ax.set_title(title)
             self.fig.set_tight_layout(True)
             self.canvas.draw_idle()
@@ -1497,7 +1833,7 @@ class IFUM_AperMap_Maker:
             if uniform:
                 self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.min(data)+1)
             else:
-                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=np.min(data), vmax=np.percentile(data, percent))
+                self.ax2.imshow(data, origin='lower', cmap='gray', vmin=0.0, vmax=np.percentile(data, percent))
             self.ax2.set_title(title)
             self.fig2.set_tight_layout(True)
             self.canvas2.draw_idle()
@@ -1758,8 +2094,8 @@ class IFUM_AperMap_Maker:
         self.box_files['state'] = 'normal'
         self.shoe1['state'] = 'normal'
         self.shoe2['state'] = 'normal'
-        self.pca1['state'] = 'normal'
-        self.pca2['state'] = 'normal'
+        #self.pca1['state'] = 'normal'
+        #self.pca2['state'] = 'normal'
 
         self.btn_load_curve['state'] = 'normal'
         self.btn_load_edges['state'] = 'normal'
@@ -1784,7 +2120,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_X1_r['state'] = 'normal'
         self.ent_param_edges_dX_r['state'] = 'normal'
 
-        self.ent_smash_range['state'] = 'normal'
+        #self.ent_smash_range['state'] = 'normal'
         self.ent_labelname_mono['state'] = 'normal'
 
         self.ent_folder_trace['state'] = 'normal'
@@ -1797,8 +2133,8 @@ class IFUM_AperMap_Maker:
         self.box_files['state'] = 'disabled'
         self.shoe1['state'] = 'disabled'
         self.shoe2['state'] = 'disabled'
-        self.pca1['state'] = 'disabled'
-        self.pca2['state'] = 'disabled'
+        #self.pca1['state'] = 'disabled'
+        #self.pca2['state'] = 'disabled'
 
         self.btn_load_curve['state'] = 'disabled'
         self.btn_load_edges['state'] = 'disabled'
@@ -1823,7 +2159,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_X1_r['state'] = 'disabled'
         self.ent_param_edges_dX_r['state'] = 'disabled'
 
-        self.ent_smash_range['state'] = 'disabled'
+        #self.ent_smash_range['state'] = 'disabled'
         self.ent_labelname_mono['state'] = 'disabled'
 
         self.ent_folder_trace['state'] = 'disabled'
