@@ -387,6 +387,12 @@ def find_missing_fibers_LSB(y_data, y_template,
                            rel_delta_y=1.5, verbose=False):
     """Add missing fibers to peaks array for LSB. """
 
+    if verbose:
+        print("!!!! Finding missing fibers for LSB")
+        print("!!!! # of default fibers: ", len(y_template))
+        n_missing = len(y_template) - len(y_data)
+        print("!!!! # of missing fibers: ", n_missing)
+
     # analyze peaks_template
     diff_template = np.diff(y_template, axis=0)
     max_diff_template = np.max(diff_template, axis=0)
@@ -395,13 +401,19 @@ def find_missing_fibers_LSB(y_data, y_template,
     diff_data = np.diff(y_data)
     med_diff_data = np.median(diff_data)
 
+    if verbose:
+        print("!!!! med_diff_data:", max_diff_template)
+        print("!!!! cut: ", max_diff_template*rel_delta_y)
+
     # add negative values to gaps in y_data
     y_data_new = y_data.copy()
     idx, cts = 0, 0
     while idx < len(y_data)-1:
-        if (np.abs(y_data_new[idx+cts+1]) \
-              - np.abs(y_data_new[idx+cts])) \
-              > max_diff_template*rel_delta_y:
+        temp_diff = np.abs(y_data_new[idx+cts+1]) - np.abs(y_data_new[idx+cts])
+        if temp_diff > max_diff_template*rel_delta_y:
+            if verbose:
+                print("!!!! :", idx+1, temp_diff)
+
             y_data_new = np.insert(
                 y_data_new, 
                 idx+cts+1, 
@@ -411,6 +423,15 @@ def find_missing_fibers_LSB(y_data, y_template,
         else:
             idx += 1
 
+    # if the last element is missing, add it
+    # Note that the last element is not checked in the while loop
+    while len(y_data_new) < len(y_template):
+        y_data_new = np.append(
+            y_data_new,
+            -(np.abs(y_data_new[-1]) + med_diff_data)
+            )
+
+    # get the added ids
     ids = np.where(y_data_new < 0)[0] + 1
 
     return ids 
