@@ -3,8 +3,11 @@
 # this script wraps the running of the GUI within its container and sets up the X windows configuration so
 # the graphics windows work properly. 
 
+echo "Starting the GUI"
 xhost + 127.0.0.1 > /dev/null 2>&1
 
 docker compose up --build
 
+echo "Stopping the GUI"
 xhost - 127.0.0.1 > /dev/null 2>&1
+echo "GUI stopped"

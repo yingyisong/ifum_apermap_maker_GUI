@@ -7,7 +7,7 @@
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
 ARG PYTHON_VERSION=3.11.9
-FROM python:${PYTHON_VERSION}-slim as base
+FROM python:${PYTHON_VERSION} as base
 
 # Download Package Information and Install Tkinter
 RUN apt-get update -y && apt-get install tk -y
