@@ -1,8 +1,15 @@
+# my gitignore files
+.DS_store
+curve_files/*
+data_raw/*
+data_trace/*
+data_trace/aperMap/*
+!data_trace/aperMap
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-curve_files/
 
 # C extensions
 *.so
@@ -26,9 +33,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-.DS_store
-data_raw/
-data_trace/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
