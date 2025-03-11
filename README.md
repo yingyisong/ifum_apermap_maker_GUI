@@ -1,19 +1,28 @@
 # ifum_apermap_maker_GUI
 Tkinter GUI that creates the AperMap for the IFUM quicklook GUI
 
-Require: PypeIt_m2fs (forked from https://pypeit.readthedocs.io/en/release/index.html, v1.8.2dev)
+## Start the GUI using Docker
+Require: [Docker](https://www.docker.com/get-started/), [XQuartz](https://www.xquartz.org/) for macOS
 
-Install PypeIt_m2fs:
-```sh
-# Setup a clean python environment (recommend)
-conda create -n pypeit_m2fs python=3.9
-conda activate pypeit_m2fs
+Steps:
+1. (macOS) Setup XQuartz
+   a. Start XQuartz
+   b. Open Settings, go to Security and check both items
+   c. Quit and restart XQuartz
+2. Clone the repo using the terminal command:
+   ```bash
+   git clone https://github.com/yingyisong/ifum_apermap_maker_GUI.git
+   ```
+3. Start Docker Desktop
+4. Start the GUI using the terminal command:
+   ```bash
+   ./run_maker
+   ```
 
-# In the directory to install PypeIt_m2fs
-git clone https://github.com/yingyisong/PypeIt_m2fs.git
-cd PypeIt_m2fs
-pip install -e ".[dev,pyqt5]"
+## Alternatively, start the GUI without using Docker:
+Require: [astropy](https://www.astropy.org/), [ccdproc](https://ccdproc.readthedocs.io/en/latest/install.html), [specutils](https://specutils.readthedocs.io/en/stable/installation.html)
+
+Start the GUI using the terminal command:
+```bash
+python ifum_apermap_maker_GUI.py
 ```
-
-Usage:
-  Run as `python ifum_apermap_maker_GUI.py`
