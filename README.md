@@ -1,20 +1,23 @@
 # ifum_apermap_maker_GUI
 Tkinter GUI that creates the AperMap for the IFUM quicklook GUI
 
+## Clone and intiatlize the GUI
+```bash
+git clone https://github.com/yingyisong/ifum_apermap_maker_GUI.git
+cd ifum_apermap_maker_GUI
+./create_folders
+```
+
 ## Start the GUI using Docker
 Require: [Docker](https://www.docker.com/get-started/), [XQuartz](https://www.xquartz.org/) for macOS
 
 Steps:
 1. (macOS) Setup XQuartz
-   a. Start XQuartz
-   b. Open Settings, go to Security and check both items
-   c. Quit and restart XQuartz
-2. Clone the repo using the terminal command:
-   ```bash
-   git clone https://github.com/yingyisong/ifum_apermap_maker_GUI.git
-   ```
-3. Start Docker Desktop
-4. Start the GUI using the terminal command:
+   1. Start XQuartz
+   1. Open Settings, go to Security and check both items
+   1. Quit and restart XQuartz
+1. Start Docker Desktop
+1. Start the GUI using the terminal command:
    ```bash
    ./run_maker
    ```
