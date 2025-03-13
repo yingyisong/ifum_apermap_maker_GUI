@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# this script is used to create the folders that are needed for the GUI to run properly
+mkdir -p data_raw
+mkdir -p data_trace
+mkdir -p data_trace/backup_trace
+mkdir -p data_trace/aperMap
+mkdir -p data_trace/aperMap/backup_aperMap
+mkdir -p data_trace/aperMap/slits
+mkdir -p data_trace/aperMap/trace_coefs
