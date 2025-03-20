@@ -27,5 +27,6 @@ Require: [astropy](https://www.astropy.org/), [ccdproc](https://ccdproc.readthed
 
 Start the GUI using the terminal command:
 ```bash
+conda activate pypeit
 python ifum_apermap_maker_GUI.py
 ```
