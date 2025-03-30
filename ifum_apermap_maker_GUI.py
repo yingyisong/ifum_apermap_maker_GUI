@@ -21,6 +21,9 @@ from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v2, cre
 import subprocess
 #from multiprocessing import Process
 
+# default window size of the GUI
+window_width = 1800
+window_height = 900
 
 def main():
     #### Create the entire GUI program
@@ -53,18 +56,91 @@ class IFUM_AperMap_Maker:
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("IFUM AperMap Maker")
-        self.window.rowconfigure(0, minsize=800, weight=1)
-        self.window.columnconfigure(1, minsize=600, weight=1)
-        self.window.columnconfigure(2, minsize=600, weight=1)
+        self.window.geometry(f"{window_width}x{window_height}")
 
-        #### IFUM units
-        self.LSB = IFUM_UNIT('LSB')
-        self.STD = IFUM_UNIT('STD')
-        self.HR = IFUM_UNIT('HR')
-        self.M2FS = IFUM_UNIT('M2FS')
-        self.UNKNOWN = IFUM_UNIT('unknown')
-        self.ifu_type = self.UNKNOWN
+        # Configure the main window grid
+        self.window.rowconfigure(0, weight=1)
+        self.window.columnconfigure(0, weight=1)
+        
+        # Create a container frame for the scrollable content
+        self.outer_frame = tk.Frame(self.window)
+        self.outer_frame.grid(row=0, column=0, sticky="nsew")
+        
+        # Configure the container frame grid
+        self.outer_frame.rowconfigure(1, weight=1)
+        self.outer_frame.columnconfigure(1, weight=1)
+        
+        # Create a canvas for scrolling
+        self.tk_canvas = tk.Canvas(self.outer_frame, bg=BG_COLOR)  # Changed from self.canvas
+        self.tk_canvas.grid(row=1, column=1, sticky="nsew")
 
+        # scroll bar style
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("Vertical.TScrollbar", gripcount=0,
+                background=BG_COLOR, darkcolor=LABEL_COLOR, lightcolor=LABEL_COLOR,
+                troughcolor="gray", bordercolor=BG_COLOR, arrowcolor="gray")
+        style.configure("Horizontal.TScrollbar", gripcount=0,
+                background=BG_COLOR, darkcolor=LABEL_COLOR, lightcolor=LABEL_COLOR,
+                troughcolor="gray", bordercolor=BG_COLOR, arrowcolor="gray")
+        
+        # Add vertical scrollbar
+        v_scrollbar = ttk.Scrollbar(self.outer_frame, orient="vertical", command=self.tk_canvas.yview)
+        v_scrollbar.grid(row=1, column=0, sticky="ns")
+        self.tk_canvas.configure(yscrollcommand=v_scrollbar.set)
+        
+        # Add horizontal scrollbar
+        h_scrollbar = ttk.Scrollbar(self.outer_frame, orient="horizontal", command=self.tk_canvas.xview)
+        h_scrollbar.grid(row=0, column=1, sticky="ew")
+        self.tk_canvas.configure(xscrollcommand=h_scrollbar.set)
+        
+        # Create a frame inside the canvas to hold all content
+        self.content_frame = tk.Frame(self.tk_canvas)
+        self.canvas_window = self.tk_canvas.create_window((0, 0), window=self.content_frame, anchor="nw")
+        
+        # Bind events to update the scroll region
+        self.content_frame.bind("<Configure>", self.on_frame_configure)
+        self.tk_canvas.bind("<Configure>", self.on_canvas_configure)
+
+        # initialize the rest of the GUI
+        self.initialize_gui()
+
+    def on_frame_configure(self, event):
+        """Update the scroll region to encompass the inner frame"""
+        # Force a minimum scroll region size regardless of window size
+        min_width = window_width
+        min_height = window_height
+
+        # Get the current content size
+        bbox = self.tk_canvas.bbox("all")
+        if bbox:  # Make sure we have a valid bounding box
+            # Set scroll region to minimum size or actual content size, whichever is larger
+            scroll_width = max(min_width, bbox[2] - bbox[0])
+            scroll_height = max(min_height, bbox[3] - bbox[1])
+            self.tk_canvas.configure(scrollregion=(0, 0, scroll_width, scroll_height))
+        else:
+            # If no bbox is available, set to minimum size
+            self.tk_canvas.configure(scrollregion=(0, 0, min_width, min_height))
+
+    def on_canvas_configure(self, event):
+        """Resize the main frame to fill the canvas width"""
+        # Don't resize content_frame smaller than our minimum width
+        min_width = window_width
+        self.content_frame.update_idletasks()  # Force layout update
+
+        # Ensure content always has at least the minimum width
+        self.content_frame.config(width=min_width, height=window_height)
+
+        # Keep the scroll region updated
+        self.on_frame_configure(None)
+        
+    def initialize_gui(self):
+        """Initialize the GUI components."""
+        # Configure the content frame grid
+        self.content_frame.rowconfigure(0, weight=1)
+        self.content_frame.columnconfigure(1, weight=1)
+        self.content_frame.columnconfigure(2, weight=1) 
+    
         #### menubar
         self.menubar = tk.Menu(self.window)
         self.window.config(menu=self.menubar)
@@ -76,14 +152,28 @@ class IFUM_AperMap_Maker:
         self.menubar.add_cascade(label="File", menu=self.menu_file)
 
         #### frames
-        self.frame1 = tk.Frame(self.window, relief=tk.RAISED, bd=2, bg=BG_COLOR)
+        self.frame1 = tk.Frame(self.content_frame, relief=tk.RAISED, bd=2, bg=BG_COLOR)
         self.frame1.grid(row=0, column=0, sticky="ns")
 
-        self.frame2 = tk.Frame(self.window)
+        self.frame2 = tk.Frame(self.content_frame)
         self.frame2.grid(row=0, column=1, sticky="nsew")
 
-        self.frame3 = tk.Frame(self.window)
+        self.frame3 = tk.Frame(self.content_frame)
         self.frame3.grid(row=0, column=2, sticky="nsew")
+
+        # initialize other widgets and values
+        self.initialize_widgets()
+
+        
+    def initialize_widgets(self):
+        """Initialize all widgets."""
+        #### IFUM units
+        self.LSB = IFUM_UNIT('LSB')
+        self.STD = IFUM_UNIT('STD')
+        self.HR = IFUM_UNIT('HR')
+        self.M2FS = IFUM_UNIT('M2FS')
+        self.UNKNOWN = IFUM_UNIT('unknown')
+        self.ifu_type = self.UNKNOWN
 
         #### global widgets
         self.ent_folder = None
@@ -151,6 +241,12 @@ class IFUM_AperMap_Maker:
         self.refresh_folder()
         self.init_image1()
         self.init_image2()
+
+        # Force the content frame to maintain minimum size
+        self.content_frame.config(width=window_width, height=window_height)
+        # Force update of scrollbars after all widgets are created
+        self.content_frame.update_idletasks()
+        self.on_frame_configure(None)
 
     def load_curve_file(self):
         '''  load a curve file and update param_curve '''
@@ -1758,6 +1854,7 @@ class IFUM_AperMap_Maker:
 
         # placing the canvas on the Tkinter window
         self.canvas.get_tk_widget().pack() #grid(row=0, column=0)
+        self.canvas.get_tk_widget().bind("<Configure>", lambda e: self.on_frame_configure(None))
 
         # creating the Matplotlib toolbar
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.frame2)
@@ -1778,6 +1875,7 @@ class IFUM_AperMap_Maker:
 
         # placing the canvas on the Tkinter window
         self.canvas2.get_tk_widget().pack() #grid(row=0, column=0)
+        self.canvas.get_tk_widget().bind("<Configure>", lambda e: self.on_frame_configure(None))
 
         # creating the Matplotlib toolbar
         self.toolbar2 = NavigationToolbar2Tk(self.canvas2, self.frame3)
