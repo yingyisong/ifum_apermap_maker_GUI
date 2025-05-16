@@ -152,14 +152,17 @@ class IFUM_AperMap_Maker:
         self.menubar.add_cascade(label="File", menu=self.menu_file)
 
         #### frames
+        # control panel
         self.frame1 = tk.Frame(self.content_frame, relief=tk.RAISED, bd=2, bg=BG_COLOR)
         self.frame1.grid(row=0, column=0, sticky="ns")
 
-        self.frame2 = tk.Frame(self.content_frame)
-        self.frame2.grid(row=0, column=1, sticky="nsew")
-
+        # r-side image
         self.frame3 = tk.Frame(self.content_frame)
-        self.frame3.grid(row=0, column=2, sticky="nsew")
+        self.frame3.grid(row=0, column=1, sticky="nsew")
+
+        # b-side image
+        self.frame2 = tk.Frame(self.content_frame)
+        self.frame2.grid(row=0, column=2, sticky="nsew")
 
         # initialize other widgets and values
         self.initialize_widgets()
@@ -236,7 +239,7 @@ class IFUM_AperMap_Maker:
         self.bind_widgets()
 
         #### initialize widgets
-        self.shoe.set('b')
+        self.shoe.set('r')
         self.pca.set('on')
         self.refresh_folder()
         self.init_image1()
@@ -367,49 +370,49 @@ class IFUM_AperMap_Maker:
         lbl_note_curve = tk.Label(self.frame1, text="Note: x-C = A*(y-B)^2; select 7 points", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
-        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_curve_b.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
-
         self.btn_select_curve_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_points_r, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_curve_r.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_curve_r.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
 
-        #### curve parameters (b-side)
-        lbl_param_curve_A_b = tk.Label(self.frame1, text="b:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_A_b.grid(row=rows[2], column=1, sticky="e")
-        self.ent_param_curve_A_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_b)
-        self.ent_param_curve_A_b.grid(row=rows[2], column=2, sticky="ew")
-
-        lbl_param_curve_B_b = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_B_b.grid(row=rows[2], column=3, sticky="e")
-        self.ent_param_curve_B_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B_b)
-        self.ent_param_curve_B_b.grid(row=rows[2], column=4, sticky="ew")
-
-        lbl_param_curve_C_b = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_C_b.grid(row=rows[2], column=5, sticky="e")
-        self.ent_param_curve_C_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_b)
-        self.ent_param_curve_C_b.grid(row=rows[2], column=6, sticky="ew")
-
-        self.btn_update_curve_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_curve_b, highlightbackground=BG_COLOR)
-        self.btn_update_curve_b.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (r-side)
         lbl_param_curve_A_r = tk.Label(self.frame1, text="r:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_A_r.grid(row=rows[3], column=1, sticky="e")
+        lbl_param_curve_A_r.grid(row=rows[2], column=1, sticky="e")
         self.ent_param_curve_A_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_r)
-        self.ent_param_curve_A_r.grid(row=rows[3], column=2, sticky="ew")
+        self.ent_param_curve_A_r.grid(row=rows[2], column=2, sticky="ew")
 
         lbl_param_curve_B_r = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_B_r.grid(row=rows[3], column=3, sticky="e")
+        lbl_param_curve_B_r.grid(row=rows[2], column=3, sticky="e")
         self.ent_param_curve_B_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B_r)
-        self.ent_param_curve_B_r.grid(row=rows[3], column=4, sticky="ew")
+        self.ent_param_curve_B_r.grid(row=rows[2], column=4, sticky="ew")
 
         lbl_param_curve_C_r = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_curve_C_r.grid(row=rows[3], column=5, sticky="e")
+        lbl_param_curve_C_r.grid(row=rows[2], column=5, sticky="e")
         self.ent_param_curve_C_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_r)
-        self.ent_param_curve_C_r.grid(row=rows[3], column=6, sticky="ew")
+        self.ent_param_curve_C_r.grid(row=rows[2], column=6, sticky="ew")
 
         self.btn_update_curve_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_curve_r, highlightbackground=BG_COLOR)
-        self.btn_update_curve_r.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
+        self.btn_update_curve_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+
+        #### curve parameters (b-side)
+        lbl_param_curve_A_b = tk.Label(self.frame1, text="b:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A_b.grid(row=rows[3], column=1, sticky="e")
+        self.ent_param_curve_A_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_b)
+        self.ent_param_curve_A_b.grid(row=rows[3], column=2, sticky="ew")
+
+        lbl_param_curve_B_b = tk.Label(self.frame1, text="B =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_B_b.grid(row=rows[3], column=3, sticky="e")
+        self.ent_param_curve_B_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_B_b)
+        self.ent_param_curve_B_b.grid(row=rows[3], column=4, sticky="ew")
+
+        lbl_param_curve_C_b = tk.Label(self.frame1, text="C =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_C_b.grid(row=rows[3], column=5, sticky="e")
+        self.ent_param_curve_C_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_b)
+        self.ent_param_curve_C_b.grid(row=rows[3], column=6, sticky="ew")
+
+        self.btn_update_curve_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_curve_b, highlightbackground=BG_COLOR)
+        self.btn_update_curve_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_edges(self):
         """ step 2 select edges using a science or twilight file """
@@ -434,49 +437,49 @@ class IFUM_AperMap_Maker:
         lbl_note_edges = tk.Label(self.frame1, text="Note: select 2 points along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
-        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges_b, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_edges_b.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
-
         self.btn_select_edges_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_edges_r, state='disabled', highlightbackground=BG_COLOR)
-        self.btn_select_edges_r.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_edges_r.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
 
-        #### edge parameters (b-side)
-        lbl_param_edges_X1_b = tk.Label(self.frame1, text="b: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X1_b.grid(row=rows[2], column=1, sticky="e")
-        self.ent_param_edges_X1_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_b)
-        self.ent_param_edges_X1_b.grid(row=rows[2], column=2, sticky="ew")
-
-        lbl_param_edges_X2_b = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X2_b.grid(row=rows[2], column=3, sticky="e")
-        self.ent_param_edges_X2_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2_b, state='disable')
-        self.ent_param_edges_X2_b.grid(row=rows[2], column=4, sticky="ew")
-
-        lbl_param_edges_dX_b = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_dX_b.grid(row=rows[2], column=5, sticky="e")
-        self.ent_param_edges_dX_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_b)
-        self.ent_param_edges_dX_b.grid(row=rows[2], column=6, sticky="ew")
-
-        self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
-        self.btn_update_edges_b.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges_b, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (r-side)
         lbl_param_edges_X1_r = tk.Label(self.frame1, text="r: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X1_r.grid(row=rows[3], column=1, sticky="e")
+        lbl_param_edges_X1_r.grid(row=rows[2], column=1, sticky="e")
         self.ent_param_edges_X1_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_r)
-        self.ent_param_edges_X1_r.grid(row=rows[3], column=2, sticky="ew")
+        self.ent_param_edges_X1_r.grid(row=rows[2], column=2, sticky="ew")
 
         lbl_param_edges_X2_r = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_X2_r.grid(row=rows[3], column=3, sticky="e")
+        lbl_param_edges_X2_r.grid(row=rows[2], column=3, sticky="e")
         self.ent_param_edges_X2_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2_r, state='disable')
-        self.ent_param_edges_X2_r.grid(row=rows[3], column=4, sticky="ew")
+        self.ent_param_edges_X2_r.grid(row=rows[2], column=4, sticky="ew")
 
         lbl_param_edges_dX_r = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_param_edges_dX_r.grid(row=rows[3], column=5, sticky="e")
+        lbl_param_edges_dX_r.grid(row=rows[2], column=5, sticky="e")
         self.ent_param_edges_dX_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_r)
-        self.ent_param_edges_dX_r.grid(row=rows[3], column=6, sticky="ew")
+        self.ent_param_edges_dX_r.grid(row=rows[2], column=6, sticky="ew")
 
         self.btn_update_edges_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_edges_r, highlightbackground=BG_COLOR)
-        self.btn_update_edges_r.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
+        self.btn_update_edges_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+
+        #### edge parameters (b-side)
+        lbl_param_edges_X1_b = tk.Label(self.frame1, text="b: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1_b.grid(row=rows[3], column=1, sticky="e")
+        self.ent_param_edges_X1_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_b)
+        self.ent_param_edges_X1_b.grid(row=rows[3], column=2, sticky="ew")
+
+        lbl_param_edges_X2_b = tk.Label(self.frame1, text="X2 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X2_b.grid(row=rows[3], column=3, sticky="e")
+        self.ent_param_edges_X2_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X2_b, state='disable')
+        self.ent_param_edges_X2_b.grid(row=rows[3], column=4, sticky="ew")
+
+        lbl_param_edges_dX_b = tk.Label(self.frame1, text="dX =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_dX_b.grid(row=rows[3], column=5, sticky="e")
+        self.ent_param_edges_dX_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_b)
+        self.ent_param_edges_dX_b.grid(row=rows[3], column=6, sticky="ew")
+
+        self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
+        self.btn_update_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self):
         """ step 3 check and make a masked LED fits file for tracing """
@@ -556,10 +559,11 @@ class IFUM_AperMap_Maker:
         lbl_shoe = tk.Label(self.frame1, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_shoe.grid(row=rows[2], column=4, sticky="w")
 
-        self.shoe1 = tk.Radiobutton(self.frame1, text='b', variable=self.shoe, value='b', fg="cyan", bg=BG_COLOR)
-        self.shoe1.grid(row=rows[2], column=4, sticky='e')
         self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
-        self.shoe2.grid(row=rows[2], column=5, sticky='w')
+        self.shoe2.grid(row=rows[2], column=4, sticky='e')
+
+        self.shoe1 = tk.Radiobutton(self.frame1, text='b', variable=self.shoe, value='b', fg="cyan", bg=BG_COLOR)
+        self.shoe1.grid(row=rows[2], column=5, sticky='w')
 
         self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Run', command=self.run_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_run_pypeit.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
