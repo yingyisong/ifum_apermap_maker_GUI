@@ -46,10 +46,12 @@ if check_appearance():
     STEP_LABEL_COLOR = 'yellow'
     LABEL_COLOR = 'mediumseagreen'
     BG_COLOR = 'black'
+    FG_COLOR = 'white'
 else:
     STEP_LABEL_COLOR = 'blue'
     LABEL_COLOR = 'black'
-    BG_COLOR='lightgray'
+    BG_COLOR = 'lightgray'
+    FG_COLOR = 'black'
 
 class IFUM_AperMap_Maker:
 
@@ -1960,6 +1962,19 @@ class IFUM_AperMap_Maker:
             x2 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_edges_b[1])
             self.ax.plot(x2, yy, 'r--')
             self.update_image(shoe='b')
+
+            # check if any values in x1 and x2 are out of bounds, set the number in Step 2 to red
+            if np.any(x1 < 0) or np.any(x1 > len(self.data_full[0])):
+                self.ent_param_edges_X1_b.config(fg='red')
+            else:
+                self.ent_param_edges_X1_b.config(fg=FG_COLOR)
+
+            if np.any(x2 < 0) or np.any(x2 > len(self.data_full[0])):
+                self.ent_param_edges_dX_b.config(fg='red')
+            else:
+                self.ent_param_edges_dX_b.config(fg=FG_COLOR)
+
+
         if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
             x1 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[0])
@@ -1967,6 +1982,18 @@ class IFUM_AperMap_Maker:
             x2 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_edges_r[1])
             self.ax2.plot(x2, yy, 'r--')
             self.update_image(shoe='r')
+
+            # check if any values in x1 and x2 are out of bounds, set the number in Step 2 to red
+            if np.any(x1 < 0) or np.any(x1 > len(self.data_full2[0])):
+                self.ent_param_edges_X1_r.config(fg='red')
+            else:
+                self.ent_param_edges_X1_r.config(fg=FG_COLOR)
+
+            if np.any(x2 < 0) or np.any(x2 > len(self.data_full2[0])):
+                self.ent_param_edges_dX_r.config(fg='red')
+            else:
+                self.ent_param_edges_dX_r.config(fg=FG_COLOR)
+
 
     def add_instructions_on_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
