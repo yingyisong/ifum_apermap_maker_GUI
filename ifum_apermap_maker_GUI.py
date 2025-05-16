@@ -1968,11 +1968,28 @@ class IFUM_AperMap_Maker:
             self.ax2.plot(x2, yy, 'r--')
             self.update_image(shoe='r')
 
+    def add_instructions_on_image(self, shoe='both'):
+        if shoe=='b' or shoe=='both':
+            self.ax.text(0.04, 0.02, 'Right Click to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax.transAxes,
+                     fontsize=10, color='white', ha='left', va='bottom',
+                     bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+            self.ax.text(0.04, 0.98, 'Press ESC to quit without saving', transform=self.ax.transAxes,
+                     fontsize=10, color='white', ha='left', va='top',
+                     bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+        if shoe=='r' or shoe=='both':
+            self.ax2.text(0.04, 0.02, 'Right Click to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax2.transAxes,
+                     fontsize=10, color='white', ha='left', va='bottom',
+                     bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+            self.ax2.text(0.04, 0.98, 'Press ESC to quit without saving', transform=self.ax2.transAxes,
+                     fontsize=10, color='white', ha='left', va='top',
+                     bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+
     def pick_points_b(self):
         shoe = 'b'
         self.disable_others()
         self.btn_select_curve_b['state'] = 'active'
         self.clear_image(shoe=shoe)
+        self.add_instructions_on_image(shoe=shoe)
         self.update_image(shoe=shoe)
 
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
@@ -1983,6 +2000,7 @@ class IFUM_AperMap_Maker:
         self.disable_others()
         self.btn_select_curve_r['state'] = 'active'
         self.clear_image(shoe=shoe)
+        self.add_instructions_on_image(shoe=shoe)
         self.update_image(shoe=shoe)
 
         self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
@@ -1994,7 +2012,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_edges_b['state'] = 'active'
 
         self.clear_image(shoe=shoe)
-        self.update_image(shoe=shoe)
+        self.add_instructions_on_image(shoe=shoe)
         self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
         self.update_image(shoe=shoe)
         self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
@@ -2006,7 +2024,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_edges_r['state'] = 'active'
 
         self.clear_image(shoe=shoe)
-        self.update_image(shoe=shoe)
+        self.add_instructions_on_image(shoe=shoe)
         self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
         self.update_image(shoe=shoe)
         self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
