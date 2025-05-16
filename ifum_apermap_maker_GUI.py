@@ -359,7 +359,7 @@ class IFUM_AperMap_Maker:
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=0, sticky="w")
         lbl_step1 = tk.Label(self.frame1,
-                             text="Fit curvature using ARC/TWI files",
+                             text="Fit curvature using an ARC / Fibermap / TWI / SCI file",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step1.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
@@ -380,7 +380,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_curve_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (r-side)
-        lbl_param_curve_A_r = tk.Label(self.frame1, text="r:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A_r = tk.Label(self.frame1, text="r-side:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_param_curve_A_r.grid(row=rows[2], column=1, sticky="e")
         self.ent_param_curve_A_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_r)
         self.ent_param_curve_A_r.grid(row=rows[2], column=2, sticky="ew")
@@ -399,7 +399,7 @@ class IFUM_AperMap_Maker:
         self.btn_update_curve_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (b-side)
-        lbl_param_curve_A_b = tk.Label(self.frame1, text="b:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_curve_A_b = tk.Label(self.frame1, text="b-side:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_param_curve_A_b.grid(row=rows[3], column=1, sticky="e")
         self.ent_param_curve_A_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_A_b)
         self.ent_param_curve_A_b.grid(row=rows[3], column=2, sticky="ew")
@@ -426,7 +426,7 @@ class IFUM_AperMap_Maker:
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=0, sticky="w")
         lbl_step2 = tk.Label(self.frame1,
-                             text="Determine spectral spans using SCI/TWI files",
+                             text="Determine data regions using a Fibermap / TWI / SCI file",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step2.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
@@ -447,7 +447,7 @@ class IFUM_AperMap_Maker:
         self.btn_select_edges_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (r-side)
-        lbl_param_edges_X1_r = tk.Label(self.frame1, text="r: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1_r = tk.Label(self.frame1, text="r-side: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_param_edges_X1_r.grid(row=rows[2], column=1, sticky="e")
         self.ent_param_edges_X1_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_r)
         self.ent_param_edges_X1_r.grid(row=rows[2], column=2, sticky="ew")
@@ -466,7 +466,7 @@ class IFUM_AperMap_Maker:
         self.btn_update_edges_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (b-side)
-        lbl_param_edges_X1_b = tk.Label(self.frame1, text="b: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_X1_b = tk.Label(self.frame1, text="b-side: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_param_edges_X1_b.grid(row=rows[3], column=1, sticky="e")
         self.ent_param_edges_X1_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_X1_b)
         self.ent_param_edges_X1_b.grid(row=rows[3], column=2, sticky="ew")
@@ -483,6 +483,13 @@ class IFUM_AperMap_Maker:
 
         self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
         self.btn_update_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
+
+        #### offset parameters
+        lbl_param_edges_offset = tk.Label(self.frame1, text="(r - b) =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_offset.grid(row=rows[4], column=1, sticky="e")
+        self.ent_param_edges_offset = tk.Entry(self.frame1, width=6, 
+                                               textvariable=self.txt_param_edges_X1_b)
+        self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew")
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 3 check and make a masked LED fits file for tracing """
@@ -645,7 +652,7 @@ class IFUM_AperMap_Maker:
 
         #### step 6b
         lbl_step6b = tk.Label(self.frame1,
-                              text="a. Load raw AperMap files (ap*.fits)",
+                              text="a. Load the original AperMap files (i.e., ap*.fits)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
 
