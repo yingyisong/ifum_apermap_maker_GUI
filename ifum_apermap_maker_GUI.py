@@ -23,7 +23,7 @@ import subprocess
 
 # default window size of the GUI
 window_width = 1800
-window_height = 900
+window_height = 860
 
 def main():
     #### Create the entire GUI program
@@ -231,13 +231,13 @@ class IFUM_AperMap_Maker:
 
         #### create all widgets
         #self.my_counter = None  # All attributes should be initialize in init
-        self.create_widgets_files()
-        self.create_widgets_curve()  # step 1
-        self.create_widgets_edges()  # step 2
-        self.create_widgets_trace()  # step 3
-        self.create_widgets_pypeit() # step 4
-        self.create_widgets_add_slits()   # step 5
-        self.create_widgets_mono()   # step 6
+        self.create_widgets_files(line_start=0, line_num=2)  # step 0
+        self.create_widgets_curve(line_start=2, line_num=4)  # step 1
+        self.create_widgets_edges(line_start=6, line_num=5)  # step 2
+        self.create_widgets_trace(line_start=11, line_num=3)  # step 3
+        self.create_widgets_pypeit(line_start=14, line_num=4) # step 4
+        self.create_widgets_mono(line_start=18, line_num=4)   # step 6 (optional)
+        self.create_widgets_add_slits(line_start=22, line_num=4)   # step 5 (obsolete)
         self.bind_widgets()
 
         #### initialize widgets
@@ -313,8 +313,9 @@ class IFUM_AperMap_Maker:
         info_temp = 'Saved %s'%pathname
         self.popup_showinfo('File saved', info_temp)
 
-    def create_widgets_files(self):
-        start, lines = 0, 2
+    def create_widgets_files(self, line_start, line_num):
+        """ step 0 list raw data files """
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
         #### folder
         lbl_folder = tk.Label(self.frame1, text="Folder", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -349,9 +350,9 @@ class IFUM_AperMap_Maker:
         self.box_files.config(yscrollcommand=box_scrollbar.set)
         box_scrollbar.config(command=self.box_files.yview) 
 
-    def create_widgets_curve(self):
+    def create_widgets_curve(self, line_start, line_num):
         """ step 1 fit curvature using an arc or twilight file """
-        start, lines = 2, 4
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
         lbl_step1 = tk.Label(self.frame1, text="Step 1:",
@@ -416,9 +417,9 @@ class IFUM_AperMap_Maker:
         self.btn_update_curve_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_curve_b, highlightbackground=BG_COLOR)
         self.btn_update_curve_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
-    def create_widgets_edges(self):
+    def create_widgets_edges(self, line_start, line_num):
         """ step 2 select edges using a science or twilight file """
-        start, lines = 6, 4
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
         lbl_step2 = tk.Label(self.frame1, text="Step 2:",
@@ -483,9 +484,9 @@ class IFUM_AperMap_Maker:
         self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
         self.btn_update_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
-    def create_widgets_trace(self):
+    def create_widgets_trace(self, line_start, line_num):
         """ step 3 check and make a masked LED fits file for tracing """
-        start, lines = 10, 2
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
         lbl_step3 = tk.Label(self.frame1, text="Step 3:",
@@ -512,9 +513,13 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace = tk.Button(self.frame1, width=6, text="Save", command=self.make_file_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_trace.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
-    def create_widgets_pypeit(self):
+        # add a bottom divider line to this widget
+        self.divider = tk.Frame(self.frame1, height=2, bg='gray')
+        self.divider.grid(row=rows[2], column=0, columnspan=8, sticky="ew")
+
+    def create_widgets_pypeit(self, line_start, line_num):
         """ step 4 run pypeit for tracing and making the AperMap """
-        start, lines = 12, 4
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
         lbl_step4 = tk.Label(self.frame1, text="Step 4:",
@@ -576,16 +581,16 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         #self.lbl_slitnum.grid(row=rows[3], column=5, columnspan=2, sticky="e")
 
-    def create_widgets_add_slits(self):
+    def create_widgets_add_slits(self, line_start, line_num):
         """ step 5 add bad/missing slits """
-        start, lines = 16, 4
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step5 = tk.Label(self.frame1, text="Step 5:",
+        lbl_step5 = tk.Label(self.frame1, text="Add. 2:",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=0, sticky="w")
         lbl_step5 = tk.Label(self.frame1,
-                             text="(optional) Add missing slits to an AperMap",
+                             text="(obsolete) Add missing slits to an AperMap",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step5.grid(row=rows[0], column=1, columnspan=4, sticky="w")
 
@@ -619,12 +624,12 @@ class IFUM_AperMap_Maker:
         self.btn_make_apermap_slits = tk.Button(self.frame1, width=6, text='Run', command=self.make_file_apermap_slits_v2, state='disabled', highlightbackground=BG_COLOR)
         self.btn_make_apermap_slits.grid(row=rows[3], column=7, sticky='e', padx=5, pady=5)
 
-    def create_widgets_mono(self):
+    def create_widgets_mono(self, line_start, line_num):
         """ step 6 make monochromatic apermap """
-        start, lines = 20, 4
+        start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step6 = tk.Label(self.frame1, text="Step 6:",
+        lbl_step6 = tk.Label(self.frame1, text="Add. 1:",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=0, sticky="w")
         lbl_step6 = tk.Label(self.frame1,
@@ -634,13 +639,13 @@ class IFUM_AperMap_Maker:
 
         #### step 6a
         lbl_step6a = tk.Label(self.frame1,
-                              text="6b. Determine monochromatic spans (using functions in Step 2)",
+                              text="b. Determine monochromatic spans (using functions in Step 2)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6a.grid(row=rows[2], column=1, columnspan=6, sticky="w")
 
         #### step 6b
         lbl_step6b = tk.Label(self.frame1,
-                              text="6a. Load raw AperMap files (ap*.fits)",
+                              text="a. Load raw AperMap files (ap*.fits)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
 
@@ -651,7 +656,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_mono.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### step 6c
-        lbl_step6b = tk.Label(self.frame1, text="6c. Save to new files", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step6b = tk.Label(self.frame1, text="c. Save to new files", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step6b.grid(row=rows[3], column=1, columnspan=2, sticky="w")
 
         self.ent_labelname_mono = tk.Entry(self.frame1, textvariable=self.txt_labelname_mono, state='normal')
