@@ -214,6 +214,9 @@ class IFUM_AperMap_Maker:
         self.fit_files = tk.StringVar()
         self.shoe = tk.StringVar()
         self.pca = tk.StringVar()
+        self.state_edge_lock_r = tk.IntVar()
+        self.state_edge_lock_b = tk.IntVar()
+
         self.txt_param_curve_A_b = tk.StringVar(value=['%.3e'%self.param_curve_b[0]])
         self.txt_param_curve_B_b = tk.StringVar(value=['%.1f'%self.param_curve_b[1]])
         self.txt_param_curve_C_b = tk.StringVar(value=['%.1f'%self.param_curve_b[2]])
@@ -226,6 +229,10 @@ class IFUM_AperMap_Maker:
         self.txt_param_edges_X1_r = tk.StringVar(value=['%.0f'%self.param_edges_r[0]])
         self.txt_param_edges_X2_r = tk.StringVar(value=['%.0f'%self.param_edges_r[1]])
         self.txt_param_edges_dX_r = tk.StringVar(value=['%.0f'%self.param_edges_r[2]])
+        self.txt_param_edges_offset = tk.StringVar(
+            value=['%.0f'%(self.param_edges_r[0]-self.param_edges_b[0])]
+        )
+
         self.txt_folder_trace = tk.StringVar(value=[self.folder_trace])
         self.txt_smash_range = tk.StringVar(value=[self.param_smash_range])
         self.txt_labelname_mono = tk.StringVar(value=[self.labelname_mono])
@@ -244,6 +251,8 @@ class IFUM_AperMap_Maker:
         #### initialize widgets
         self.shoe.set('r')
         self.pca.set('on')
+        self.state_edge_lock_r.set(0)
+        self.state_edge_lock_b.set(0)
         self.refresh_folder()
         self.init_image1()
         self.init_image2()
@@ -291,6 +300,8 @@ class IFUM_AperMap_Maker:
             self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
             self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
             self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
+
+            self.txt_param_edges_offset.set("%.0f"%(self.param_edges_r[0]-self.param_edges_b[0]))
             
             #### show message
             info_temp = 'Loaded %s'%filename
@@ -486,11 +497,22 @@ class IFUM_AperMap_Maker:
         self.btn_update_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
         #### offset parameters
-        lbl_param_edges_offset = tk.Label(self.frame1, text="(r - b) =", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_param_edges_offset = tk.Label(self.frame1, text="dX1 (r - b) =", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_param_edges_offset.grid(row=rows[4], column=1, sticky="e")
-        self.ent_param_edges_offset = tk.Entry(self.frame1, width=6, 
-                                               textvariable=self.txt_param_edges_X1_b)
+        self.ent_param_edges_offset = tk.Entry(
+            self.frame1, width=6, textvariable=self.txt_param_edges_offset
+        )
         self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew")
+
+        #### lock one side of the edges
+        lbl_edge_lock = tk.Label(self.frame1, text="Lock", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_edge_lock.grid(row=rows[4], column=3, sticky="e")
+        self.cbtn_edge_lock_r = tk.Checkbutton(self.frame1, text='r-side', 
+                variable=self.state_edge_lock_r, onvalue=1, offvalue=0, fg='red', bg=BG_COLOR)
+        self.cbtn_edge_lock_r.grid(row=rows[4], column=4, sticky="e")
+        self.cbtn_edge_lock_b = tk.Checkbutton(self.frame1, text='b-side', 
+                variable=self.state_edge_lock_b, onvalue=1, offvalue=0, fg='cyan', bg=BG_COLOR)
+        self.cbtn_edge_lock_b.grid(row=rows[4], column=5, columnspan=2, sticky="w")
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 3 check and make a masked LED fits file for tracing """
@@ -566,19 +588,19 @@ class IFUM_AperMap_Maker:
 
         #### step 4b run PypeIt
         #lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4b = tk.Label(self.frame1, text="Choose a side to make", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4b = tk.Label(self.frame1, text="Choose a side to make:", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4b.grid(row=rows[2], column=1, columnspan=3, sticky="w")
 
 
         #### select shoe side
-        lbl_shoe = tk.Label(self.frame1, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_shoe.grid(row=rows[2], column=4, sticky="w")
+        #lbl_shoe = tk.Label(self.frame1, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_shoe.grid(row=rows[2], column=4, sticky="w")
 
-        self.shoe2 = tk.Radiobutton(self.frame1, text='r', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
+        self.shoe2 = tk.Radiobutton(self.frame1, text='r-side', variable=self.shoe, value='r', fg="red", bg=BG_COLOR)
         self.shoe2.grid(row=rows[2], column=4, sticky='e')
 
-        self.shoe1 = tk.Radiobutton(self.frame1, text='b', variable=self.shoe, value='b', fg="cyan", bg=BG_COLOR)
-        self.shoe1.grid(row=rows[2], column=5, sticky='w')
+        self.shoe1 = tk.Radiobutton(self.frame1, text='b-side', variable=self.shoe, value='b', fg="cyan", bg=BG_COLOR)
+        self.shoe1.grid(row=rows[2], column=5, columnspan=2, sticky='w')
 
         self.btn_run_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.run_trace, state='disabled', highlightbackground=BG_COLOR)
         self.btn_run_pypeit.grid(row=rows[2], column=7, sticky='e', padx=5, pady=5)
@@ -606,7 +628,7 @@ class IFUM_AperMap_Maker:
         lbl_step5 = tk.Label(self.frame1,
                              text="(obsolete) Add missing slits to an AperMap",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
-        lbl_step5.grid(row=rows[0], column=1, columnspan=4, sticky="w")
+        lbl_step5.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_apermap = tk.Label(self.frame1, relief=tk.SUNKEN, text="apx0000_0000",fg=LABEL_COLOR)
         self.lbl_file_apermap.grid(row=rows[0], column=5, columnspan=2, sticky="e")
@@ -661,7 +683,7 @@ class IFUM_AperMap_Maker:
         lbl_step6b = tk.Label(self.frame1,
                               text="a. Load the original AperMap files (i.e., ap*.fits)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6b.grid(row=rows[1], column=1, columnspan=4, sticky="w")
+        lbl_step6b.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_mono = tk.Label(self.frame1, relief=tk.SUNKEN, text="XXX_0000", fg=LABEL_COLOR)
         self.lbl_file_mono.grid(row=rows[1], column=4, columnspan=3, sticky="e")
@@ -705,6 +727,8 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_X1_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
         self.ent_param_edges_dX_r.bind('<Return>', self.update_edges_r)
         self.ent_param_edges_dX_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
+        self.ent_param_edges_offset.bind('<Return>', self.update_edges_offset)
+        self.ent_param_edges_offset.bind('<KP_Enter>', self.update_edges_offset) # unique for macOS
 
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
@@ -751,6 +775,13 @@ class IFUM_AperMap_Maker:
         self.plot_edges(shoe=shoe)
         self.window.focus_set()
 
+    def update_edges_offset(self, *args):
+        shoe = 'r'
+        self.refresh_param_edges(shoe='offset')
+        self.clear_image(shoe='b')
+        self.plot_edges(shoe='b')
+        self.window.focus_set()
+
     def refresh_param_curve(self, shoe, *args):
         if shoe=='b':
             self.param_curve_b[0] = np.float32(self.ent_param_curve_A_b.get())
@@ -764,14 +795,23 @@ class IFUM_AperMap_Maker:
     def refresh_param_edges(self, shoe, *args):
         if shoe=='b':
             self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
-            self.param_edges_b[1] = np.float32(self.ent_param_edges_X1_b.get())+np.float32(self.ent_param_edges_dX_b.get())
             self.param_edges_b[2] = np.float32(self.ent_param_edges_dX_b.get())
+            self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
             self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
         elif shoe=='r':
             self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
-            self.param_edges_r[1] = np.float32(self.ent_param_edges_X1_r.get())+np.float32(self.ent_param_edges_dX_r.get())
             self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
+            self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
             self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
+        elif shoe=='offset':
+            self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_r.get())-np.float32(self.ent_param_edges_offset.get())
+            self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
+            self.ent_param_edges_X1_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[0])
+            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])            
+
+        self.ent_param_edges_offset['textvariable'] = tk.StringVar(
+            value='%.0f'%(self.param_edges_r[0]-self.param_edges_b[0])
+        )
 
     def get_curve_params(self, shoe):
         if shoe=='b':
@@ -2242,6 +2282,10 @@ class IFUM_AperMap_Maker:
                     self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
                     self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
+                self.txt_param_edges_offset.set(
+                    "%.0f"%(self.param_edges_r[0]-self.param_edges_b[0])
+                )
+
                 #### plot the edges
                 self.plot_edges(shoe=shoe)
 
@@ -2277,6 +2321,9 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C_b['state'] = 'normal'
         self.ent_param_edges_X1_b['state'] = 'normal'
         self.ent_param_edges_dX_b['state'] = 'normal'
+        self.ent_param_edges_offset['state'] = 'normal'
+        self.cbtn_edge_lock_r['state'] = 'normal'
+        self.cbtn_edge_lock_b['state'] = 'normal'
 
         self.btn_update_curve_r['state'] = 'normal'
         self.btn_update_edges_r['state'] = 'normal'
@@ -2316,6 +2363,9 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C_b['state'] = 'disabled'
         self.ent_param_edges_X1_b['state'] = 'disabled'
         self.ent_param_edges_dX_b['state'] = 'disabled'
+        self.ent_param_edges_offset['state'] = 'disabled'
+        self.cbtn_edge_lock_r['state'] = 'disabled'
+        self.cbtn_edge_lock_b['state'] = 'disabled'
 
         self.btn_update_curve_r['state'] = 'disabled'
         self.btn_update_edges_r['state'] = 'disabled'
