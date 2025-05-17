@@ -186,7 +186,7 @@ class IFUM_AperMap_Maker:
         self.box_files = None
         self.lbl_file_curve = None
 
-        #### global values
+        #### backend values
         self.data_full = np.ones((4048, 4048), dtype=np.int32)
         self.data_full2 = np.ones((4048, 4048), dtype=np.int32)
         self.file_current = "0000"
@@ -204,13 +204,14 @@ class IFUM_AperMap_Maker:
         self.param_curve_r = np.array([1.53314740e-05, 2.12797487e+03, 6.75423701e+02]) #np.zeros(3)
         self.param_edges_b = np.array([418., 1250., 1250.-418.])#np.zeros(2)
         self.param_edges_r = np.array([426., 1258., 1258.-426.])#np.zeros(2)
+        self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
         #self.param_curve_b = np.array([-1.67977832e-05, 1.86465356e+03, 9.65048123e+02]) #np.zeros(3) for STD_b0107 Triplet
         #self.param_curve_r = np.array([-1.76051975e-05, 2.19290161e+03, 1.29282266e+03]) #np.zeros(3)
         #self.param_edges_b = np.array([603., 1571., 968.])#np.zeros(2)
         #self.param_edges_r = np.array([600., 1568., 968.])#np.zeros(2)
         self.param_smash_range = '0.45,0.55'
 
-        #### initialize string variables
+        #### initialize tk variables
         self.fit_files = tk.StringVar()
         self.shoe = tk.StringVar()
         self.pca = tk.StringVar()
@@ -292,14 +293,12 @@ class IFUM_AperMap_Maker:
             self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
             self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
             self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
-            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
 
             temp = file[~mask_bside, 4:6].astype(np.float64).flatten()
             self.param_edges_r = np.array([temp[0], temp[0]+temp[1], temp[1]])
             self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
             self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
             self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
-            self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
             self.txt_param_edges_offset.set("%.0f"%(self.param_edges_r[0]-self.param_edges_b[0]))
             
@@ -504,14 +503,18 @@ class IFUM_AperMap_Maker:
         )
         self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew")
 
-        #### lock one side of the edges
-        lbl_edge_lock = tk.Label(self.frame1, text="Lock", fg=LABEL_COLOR, bg=BG_COLOR)
+        #### lock on one side of the edges
+        lbl_edge_lock = tk.Label(self.frame1, text="Sync", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_edge_lock.grid(row=rows[4], column=3, sticky="e")
         self.cbtn_edge_lock_r = tk.Checkbutton(self.frame1, text='r-side', 
-                variable=self.state_edge_lock_r, onvalue=1, offvalue=0, fg='red', bg=BG_COLOR)
+                variable=self.state_edge_lock_r, onvalue=1, offvalue=0, 
+                command=lambda: self.lock_edge('r'), 
+                fg='red', bg=BG_COLOR)
         self.cbtn_edge_lock_r.grid(row=rows[4], column=4, sticky="e")
         self.cbtn_edge_lock_b = tk.Checkbutton(self.frame1, text='b-side', 
-                variable=self.state_edge_lock_b, onvalue=1, offvalue=0, fg='cyan', bg=BG_COLOR)
+                variable=self.state_edge_lock_b, onvalue=1, offvalue=0, 
+                command=lambda: self.lock_edge('b'),
+                fg='cyan', bg=BG_COLOR)
         self.cbtn_edge_lock_b.grid(row=rows[4], column=5, columnspan=2, sticky="w")
 
     def create_widgets_trace(self, line_start, line_num):
@@ -793,25 +796,98 @@ class IFUM_AperMap_Maker:
             self.param_curve_r[2] = np.float32(self.ent_param_curve_C_r.get())
 
     def refresh_param_edges(self, shoe, *args):
-        if shoe=='b':
-            self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
-            self.param_edges_b[2] = np.float32(self.ent_param_edges_dX_b.get())
-            self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
-            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
-        elif shoe=='r':
-            self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
-            self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
-            self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
-            self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
-        elif shoe=='offset':
-            self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_r.get())-np.float32(self.ent_param_edges_offset.get())
-            self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
-            self.ent_param_edges_X1_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[0])
-            self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])            
+        if self.state_edge_lock_r.get() == 0 and self.state_edge_lock_b.get() == 0:
+            # offset is not locked
+            if shoe=='b':
+                self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
+                self.param_edges_b[2] = np.float32(self.ent_param_edges_dX_b.get())
+                self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
+            elif shoe=='r':
+                self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
+                self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
+                self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
+            elif shoe=='offset':
+                self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_r.get())-np.float32(self.ent_param_edges_offset.get())
+                self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
 
-        self.ent_param_edges_offset['textvariable'] = tk.StringVar(
-            value='%.0f'%(self.param_edges_r[0]-self.param_edges_b[0])
-        )
+            self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+        else:
+            # offset is locked
+            self.param_edges_offset = np.float32(self.ent_param_edges_offset.get())
+
+            if self.state_edge_lock_r.get() == 1 and self.state_edge_lock_b.get() == 0:
+                # can only change r-side
+                self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
+                self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
+                self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
+
+                self.param_edges_b[0] = self.param_edges_r[0]-self.param_edges_offset
+                self.param_edges_b[2] = self.param_edges_r[2]
+                self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
+
+                # replot b-side
+                self.clear_image(shoe='b')
+                self.plot_edges(shoe='b')
+
+            elif self.state_edge_lock_r.get() == 0 and self.state_edge_lock_b.get() == 1:
+                # can only change b-side
+                self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
+                self.param_edges_b[2] = np.float32(self.ent_param_edges_dX_b.get())
+                self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
+
+                self.param_edges_r[0] = self.param_edges_b[0]+self.param_edges_offset
+                self.param_edges_r[2] = self.param_edges_b[2]
+                self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
+            
+                # replot r-side
+                self.clear_image(shoe='r')
+                self.plot_edges(shoe='r') 
+        
+        self.renew_param_edges()
+
+
+    def renew_param_edges(self):
+        """ copy the edge parameters from backend values to GUI """
+        self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
+        self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
+        self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
+        self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
+        self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
+        self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
+        self.txt_param_edges_offset.set("%.0f"%(self.param_edges_offset))
+
+    def renew_param_curve(self):
+        """ copy the curve parameters from backend values to GUI """
+        self.txt_param_curve_A_r.set("%.2f"%(self.param_curve_r[0]))
+        self.txt_param_curve_B_r.set("%.2f"%(self.param_curve_r[1]))
+        self.txt_param_curve_C_r.set("%.2f"%(self.param_curve_r[2]))
+        self.txt_param_curve_A_b.set("%.2f"%(self.param_curve_b[0]))
+        self.txt_param_curve_B_b.set("%.2f"%(self.param_curve_b[1]))
+        self.txt_param_curve_C_b.set("%.2f"%(self.param_curve_b[2]))
+
+
+    def lock_edge(self, side):
+        """ lock one side of the edges """
+        if side == 'r':
+            if self.state_edge_lock_r.get() == 1:
+                self.ent_param_edges_X1_b['state'] = 'disable'
+                self.ent_param_edges_dX_b['state'] = 'disable'
+                self.cbtn_edge_lock_b['state'] = 'disable'
+            else:
+                self.ent_param_edges_X1_b['state'] = 'normal'
+                self.ent_param_edges_dX_b['state'] = 'normal'
+                self.cbtn_edge_lock_b['state'] = 'normal'
+
+        elif side == 'b':
+            if self.state_edge_lock_b.get() == 1:
+                self.ent_param_edges_X1_r['state'] = 'disable'
+                self.ent_param_edges_dX_r['state'] = 'disable'
+                self.cbtn_edge_lock_r['state'] = 'disable'
+            else:
+                self.ent_param_edges_X1_r['state'] = 'normal'
+                self.ent_param_edges_dX_r['state'] = 'normal'
+                self.cbtn_edge_lock_r['state'] = 'normal'
+
 
     def get_curve_params(self, shoe):
         if shoe=='b':
@@ -2251,6 +2327,10 @@ class IFUM_AperMap_Maker:
                 self.break_mpl_connect(shoe=shoe)
 
     def on_click_edges(self, event, shoe):
+        # reset lock conditions
+        self.state_edge_lock_b.set(0)
+        self.state_edge_lock_r.set(0)
+
         if event.button is MouseButton.RIGHT:
             if len(self.points)<2 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
                 self.points.append([event.xdata, event.ydata])
@@ -2269,22 +2349,13 @@ class IFUM_AperMap_Maker:
                     self.param_edges_b = np.array([self.points[0][0], self.points[1][0]])
                     self.param_edges_b = np.sort(self.param_edges_b)
                     self.param_edges_b = np.append(self.param_edges_b, self.param_edges_b[1]-self.param_edges_b[0])
-                    self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
-                    self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
-                    self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
-                    self.ent_param_edges_X2_b['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_b[1])
                 elif shoe=='r':
                     self.param_edges_r = np.array([self.points[0][0], self.points[1][0]])
                     self.param_edges_r = np.sort(self.param_edges_r)
                     self.param_edges_r = np.append(self.param_edges_r, self.param_edges_r[1]-self.param_edges_r[0])
-                    self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
-                    self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
-                    self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
-                    self.ent_param_edges_X2_r['textvariable'] = tk.StringVar(value='%.0f'%self.param_edges_r[1])
 
-                self.txt_param_edges_offset.set(
-                    "%.0f"%(self.param_edges_r[0]-self.param_edges_b[0])
-                )
+                self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+                self.renew_param_edges()
 
                 #### plot the edges
                 self.plot_edges(shoe=shoe)
