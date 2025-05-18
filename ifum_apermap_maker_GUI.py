@@ -47,12 +47,11 @@ if check_appearance():
     STEP_LABEL_COLOR = 'yellow'
     LABEL_COLOR = 'mediumseagreen'
     BG_COLOR = 'black'
-    FG_COLOR = 'white'
 else:
     STEP_LABEL_COLOR = 'blue'
     LABEL_COLOR = 'black'
     BG_COLOR = 'lightgray'
-    FG_COLOR = 'black'
+
 
 class IFUM_AperMap_Maker:
 
@@ -257,6 +256,10 @@ class IFUM_AperMap_Maker:
         self.refresh_folder()
         self.init_image1()
         self.init_image2()
+
+        # get the default FG color of the entry
+        self.DEFAULT_FG = self.ent_folder.cget("fg")
+        self.DEFAULT_FG_DISABLED = self.ent_folder.cget("disabledforeground")
 
         # Force the content frame to maintain minimum size
         self.content_frame.config(width=window_width, height=window_height)
@@ -2100,14 +2103,14 @@ class IFUM_AperMap_Maker:
 
             # check if any values in x1 and x2 are out of bounds, set the number in Step 2 to red
             if np.any(x1 < 0) or np.any(x1 > len(self.data_full[0])):
-                self.ent_param_edges_X1_b.config(fg='red')
+                self.ent_param_edges_X1_b.config(fg='red', disabledforeground='red')
             else:
-                self.ent_param_edges_X1_b.config(fg=FG_COLOR)
+                self.ent_param_edges_X1_b.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
 
             if np.any(x2 < 0) or np.any(x2 > len(self.data_full[0])):
-                self.ent_param_edges_dX_b.config(fg='red')
+                self.ent_param_edges_dX_b.config(fg='red', disabledforeground='red')
             else:
-                self.ent_param_edges_dX_b.config(fg=FG_COLOR)
+                self.ent_param_edges_dX_b.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
 
 
         if shoe=='r' or shoe=='both':
@@ -2120,14 +2123,14 @@ class IFUM_AperMap_Maker:
 
             # check if any values in x1 and x2 are out of bounds, set the number in Step 2 to red
             if np.any(x1 < 0) or np.any(x1 > len(self.data_full2[0])):
-                self.ent_param_edges_X1_r.config(fg='red')
+                self.ent_param_edges_X1_r.config(fg='red', disabledforeground='red')
             else:
-                self.ent_param_edges_X1_r.config(fg=FG_COLOR)
+                self.ent_param_edges_X1_r.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
 
             if np.any(x2 < 0) or np.any(x2 > len(self.data_full2[0])):
-                self.ent_param_edges_dX_r.config(fg='red')
+                self.ent_param_edges_dX_r.config(fg='red', disabledforeground='red')
             else:
-                self.ent_param_edges_dX_r.config(fg=FG_COLOR)
+                self.ent_param_edges_dX_r.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
 
 
     def add_instructions_on_image(self, shoe='both'):
