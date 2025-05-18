@@ -280,53 +280,54 @@ class IFUM_AperMap_Maker:
 
             #### update param_curve
             popt = file[mask_bside, 1:4].astype(np.float64).flatten()
-            self.txt_param_curve_A_b.set("%.3e"%(popt[0]))
-            self.txt_param_curve_B_b.set("%.1f"%(popt[1]))
-            self.txt_param_curve_C_b.set("%.1f"%(popt[2]))
-            self.param_curve_b = popt
+            self.param_curve_b = np.array(popt)
 
             popt = file[~mask_bside, 1:4].astype(np.float64).flatten()
-            self.txt_param_curve_A_r.set("%.3e"%(popt[0]))
-            self.txt_param_curve_B_r.set("%.1f"%(popt[1]))
-            self.txt_param_curve_C_r.set("%.1f"%(popt[2]))
-            self.param_curve_r = popt
+            self.param_curve_r = np.array(popt)
+
+            self.renew_param_curve()
 
             #### update param_edges
             temp = file[mask_bside, 4:6].astype(np.float64).flatten()
             self.param_edges_b = np.array([temp[0], temp[0]+temp[1], temp[1]])
-            self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
-            self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
-            self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
 
             temp = file[~mask_bside, 4:6].astype(np.float64).flatten()
             self.param_edges_r = np.array([temp[0], temp[0]+temp[1], temp[1]])
-            self.txt_param_edges_X1_r.set("%.0f"%(self.param_edges_r[0]))
-            self.txt_param_edges_X2_r.set("%.0f"%(self.param_edges_r[1]))
-            self.txt_param_edges_dX_r.set("%.0f"%(self.param_edges_r[2]))
 
-            self.txt_param_edges_offset.set("%.0f"%(self.param_edges_r[0]-self.param_edges_b[0]))
-            
+            self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+
+            self.renew_param_edges()
+
             #### show message
-            info_temp = 'Loaded %s'%filename
+            info_temp = 'Steps 1 & 2 parameters loaded!\n\n Location: %s'%(pathname)
             self.popup_showinfo('File loaded', info_temp) 
 
-        #self.window.focus_force()
+        self.window.focus_force()
 
     def save_curve_file(self):
         '''  save the curve parameters '''
 
         today_temp = datetime.today().strftime('%y%m%d')
-        filename = "curve_%s_%s_%s.txt"%("IFU", self.lbl_file_edges['text'], today_temp)
+        filename = "curve_%s_%s_%s_%s_%s_%s_%s.txt"%(
+            self.ifu_type.label, self.HDR_CONFIG, self.HDR_BINNING,
+            self.HDR_SLITNAME, self.HDR_SLIDE,
+            self.lbl_file_trace['text'], today_temp)
         pathname = os.path.join(self.folder_curve, filename)
         file = open(pathname, 'w')
         file.write("#side A B C X1 dX\n")
-        file.write("b %.3e %.1f %.1f %.0f %.0f\n"%(self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], self.param_edges_b[0], self.param_edges_b[2]))
-        file.write("r %.3e %.1f %.1f %.0f %.0f\n"%(self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], self.param_edges_r[0], self.param_edges_r[2]))
+        file.write("b %.3e %.1f %.1f %.0f %.0f\n"%(
+            self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], 
+            self.param_edges_b[0], self.param_edges_b[2]))
+        file.write("r %.3e %.1f %.1f %.0f %.0f\n"%(
+            self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], 
+            self.param_edges_r[0], self.param_edges_r[2]))
         file.close()
         
         #### show message
-        info_temp = 'Saved %s'%pathname
+        info_temp = 'Steps 1 & 2 parameters saved!\n\n Location: %s'%pathname
         self.popup_showinfo('File saved', info_temp)
+
+        self.window.focus_force()
 
     def create_widgets_files(self, line_start, line_num):
         """ step 0 list raw data files """
@@ -532,6 +533,13 @@ class IFUM_AperMap_Maker:
                 command=lambda: self.lock_edge('b'),
                 fg='cyan', bg=BG_COLOR)
         self.cbtn_edge_lock_b.grid(row=rows[4], column=5, columnspan=2, sticky="w")
+
+        #### button to load the curve profile
+        self.btn_load_all_param = tk.Button(
+            self.frame1, width=6, text="Params", 
+            command=self.load_curve_file, 
+            state='normal', highlightbackground=BG_COLOR)
+        self.btn_load_all_param.grid(row=rows[4], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 3 check and make a masked LED fits file for tracing """
@@ -850,12 +858,12 @@ class IFUM_AperMap_Maker:
 
     def renew_param_curve(self):
         """ copy the curve parameters from backend values to GUI """
-        self.txt_param_curve_A_r.set("%.2f"%(self.param_curve_r[0]))
-        self.txt_param_curve_B_r.set("%.2f"%(self.param_curve_r[1]))
-        self.txt_param_curve_C_r.set("%.2f"%(self.param_curve_r[2]))
-        self.txt_param_curve_A_b.set("%.2f"%(self.param_curve_b[0]))
-        self.txt_param_curve_B_b.set("%.2f"%(self.param_curve_b[1]))
-        self.txt_param_curve_C_b.set("%.2f"%(self.param_curve_b[2]))
+        self.txt_param_curve_A_r.set("%.3e"%(self.param_curve_r[0]))
+        self.txt_param_curve_B_r.set("%.1f"%(self.param_curve_r[1]))
+        self.txt_param_curve_C_r.set("%.1f"%(self.param_curve_r[2]))
+        self.txt_param_curve_A_b.set("%.3e"%(self.param_curve_b[0]))
+        self.txt_param_curve_B_b.set("%.1f"%(self.param_curve_b[1]))
+        self.txt_param_curve_C_b.set("%.1f"%(self.param_curve_b[2]))
 
     def lock_edge(self, side):
         """ lock one side of the edges """
@@ -1753,6 +1761,9 @@ class IFUM_AperMap_Maker:
             fnum = self.box_files.get(idx)
             fname = os.path.join(dirname, "b%sc1.fits"%(fnum))
             if os.path.isfile(fname):
+                # get header info
+                tmp = self.get_header_info(fname)
+
                 self.data_full = None
                 self.hdr_c1_b = None
                 self.data_full, self.hdr_c1_b = pack_4fits_simple(fnum, dirname, 'b')
@@ -1768,6 +1779,19 @@ class IFUM_AperMap_Maker:
                 return fnum #shoe_i+fnum
         else:
             return '0000'
+
+    def get_header_info(self, pathname):
+        """Get header info from the fits file."""
+        if os.path.isfile(pathname):
+            hdr_tmp = fits.open(pathname)[0].header
+            self.ifu_type = IFUM_UNIT(hdr_tmp['IFU'])
+            self.HDR_BINNING = hdr_tmp['BINNING']
+            self.HDR_CONFIG = hdr_tmp['CONFIGFL']
+            self.HDR_SLIDE = hdr_tmp['SLIDE']
+            self.HDR_SLITNAME = hdr_tmp['SLITNAME']
+            return 1
+        else:
+            return 0
 
     def disable_dependent_btns(self):
         self.btn_select_curve_b['state'] = 'disabled'
@@ -2500,6 +2524,13 @@ class IFUM_AperMap_Maker:
 
         #### control widgets
         self.btn_make_trace['state'] = 'disabled'
+
+        #### save the curve profile
+        self.save_curve_file()
+
+        #### show info
+        info_temp = "Trace files made!\n\n Go straightly to Step 4"
+        self.popup_showinfo("Trace file saved", info_temp)
 
         #### load the newly saved trace file
         self.load_fits_trace(path_trace_r)
