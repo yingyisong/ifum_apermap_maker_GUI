@@ -310,7 +310,7 @@ class IFUM_AperMap_Maker:
             info_temp = 'Loaded %s'%filename
             self.popup_showinfo('File loaded', info_temp) 
 
-        #self.window.focus_set()
+        #self.window.focus_force()
 
     def save_curve_file(self):
         '''  save the curve parameters '''
@@ -761,17 +761,17 @@ class IFUM_AperMap_Maker:
         #self.window.bind_all('<1>', lambda event: event.widget.focus_set())
 
     def refresh_smash_range(self, *args):
-        self.window.focus_set()
+        self.window.focus_force()
 
     def refresh_labelname_mono(self, *args):
-        self.window.focus_set()
+        self.window.focus_force()
 
     def update_curve(self, event, shoe, *args):
         """ update the curve parameters """
         self.refresh_param_curve(shoe)
         self.clear_image(shoe=shoe)
         self.plot_curve(shoe=shoe)
-        self.window.focus_set()
+        self.window.focus_force()
 
     def update_edges(self, event, shoe, *args):
         """ update the edge parameters """
@@ -784,7 +784,7 @@ class IFUM_AperMap_Maker:
             self.clear_image(shoe='both')
             self.plot_edges(shoe='both')
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def refresh_param_curve(self, shoe, *args):
         if shoe=='b':
@@ -964,15 +964,18 @@ class IFUM_AperMap_Maker:
         path_coefs = os.path.join(dir_coefs, file_coefs)
         np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='# aper_half_width = %d\n'%aper_half_width)
 
-        #### show apermap
-        self.clear_image(shoe=shoe)
+        #### show info
+        info_temp = '%s-side AperMap file made!\n\n Saved to %s'%(shoe, path_aperMap)
+        self.popup_showinfo('AperMap', info_temp)
 
+        #### show apermap
         fname = filename.split('_')[0]+'_apermap'
         title = '%s (N_sl=%d)'%(fname,N_sl)
+        self.clear_image(shoe=shoe)
         self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
-        print('++++\n++++ Saved an AperMap file: %s\n++++\n'%path_aperMap)
+        print('++++\n++++ %s-side AperMap file made! \n++++ Saved to %s\n++++\n'%(shoe, path_aperMap))
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def make_file_pypeit(self):
         dirname = self.ent_folder_trace.get()
@@ -1024,7 +1027,7 @@ class IFUM_AperMap_Maker:
         #self.lbl_slitnum['text'] = 'N_slits = %d'%N_slits
         self.make_file_apermap()
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def check_file_MasterSlits(self, message=True):
         #hdul = cached_fits_open(self.path_MasterSlits)
@@ -1175,7 +1178,7 @@ class IFUM_AperMap_Maker:
         self.popup_showinfo('aperMap', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def make_file_apermap_slits(self):
         #### load MasterSlits file
@@ -1315,7 +1318,7 @@ class IFUM_AperMap_Maker:
         self.popup_showinfo('aperMap', info_temp)
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def make_file_apermap_fix2_v2(self):
         '''
@@ -1676,7 +1679,7 @@ class IFUM_AperMap_Maker:
         if N_slits!=self.ifu_type.Ntotal/2:
             self.btn_make_apermap_bundles['state'] = 'normal'
 
-        self.window.focus_set()
+        self.window.focus_force()
 
     def pick_edges_mono(self):
         return 0
@@ -1697,7 +1700,7 @@ class IFUM_AperMap_Maker:
         if not dirname:
             return
         self.list_fits_file(dirname)
-        self.window.focus_set()
+        self.window.focus_force()
 
     def list_fits_file(self, dirname):
         file_list = os.listdir(dirname)
@@ -1733,7 +1736,7 @@ class IFUM_AperMap_Maker:
         self.ent_folder_trace.insert(tk.END, dirname)
         self.folder_trace = dirname
         self.disable_make_apermap()
-        self.window.focus_set()
+        self.window.focus_force()
 
     def refresh_folder_trace(self, *args):
         self.folder_trace = self.ent_folder_trace.get()
@@ -1866,7 +1869,7 @@ class IFUM_AperMap_Maker:
             self.disable_make_apermap()
             self.gray_all_lbl_file()
             self.remove_image()
-        self.window.focus_set()
+        self.window.focus_force()
 
     def open_fits_apermap2(self):
         self.folder_trace = self.ent_folder_trace.get()
@@ -1908,7 +1911,7 @@ class IFUM_AperMap_Maker:
             self.btn_make_apermap_mono['state'] = 'disabled'
             self.gray_all_lbl_file()
             self.remove_image()
-        self.window.focus_set()
+        self.window.focus_force()
 
     def open_fits_apermap(self):
         self.folder_trace = self.ent_folder_trace.get()
@@ -1972,7 +1975,7 @@ class IFUM_AperMap_Maker:
             self.btn_make_apermap_slits['state'] = 'disabled'
             self.gray_all_lbl_file()
             self.remove_image()
-        self.window.focus_set()
+        self.window.focus_force()
 
     def init_image1(self):
         # the figure that will contain the plot
