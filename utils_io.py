@@ -492,6 +492,8 @@ def write_trace_file(data, header, dirname, filename):
     path_backup = os.path.join(dir_backup, "%s_trace_%s.fits"%(filename[0:5], datetime.today().strftime('%y%m%d_%H%M')))
     hdul_full.writeto(path_backup,overwrite=False)
 
+    return path_trace
+
 
 def cut_apermap(data, header, dirname, filename):
     #### write to a fits file

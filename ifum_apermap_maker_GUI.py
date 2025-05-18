@@ -1824,10 +1824,13 @@ class IFUM_AperMap_Maker:
 
     def open_fits_trace(self):
         self.folder_trace = self.ent_folder_trace.get()
-        filename = filedialog.askopenfilename(initialdir=self.folder_trace)
-        if os.path.isfile(filename) and filename.endswith("_trace.fits"):
+        path_tmp = filedialog.askopenfilename(initialdir=self.folder_trace)
+        self.load_fits_trace(path_tmp)
+    
+    def load_fits_trace(self, pathname):
+        if os.path.isfile(pathname) and pathname.endswith("_trace.fits"):
             #hdul_temp = cached_fits_open(filename)
-            dirname, fname = os.path.split(filename)
+            dirname, fname = os.path.split(pathname)
             fname = fname[1:]
             hdul_temp = fits.open(os.path.join(dirname, 'b'+fname))
             self.data_full = np.float32(hdul_temp[0].data)
@@ -1835,12 +1838,12 @@ class IFUM_AperMap_Maker:
             self.data_full2 = np.float32(hdul_temp[0].data)
 
             #### update trace folder
-            self.folder_trace = os.path.dirname(filename)
+            self.folder_trace = os.path.dirname(pathname)
             self.ent_folder_trace.delete(0, tk.END)
             self.ent_folder_trace.insert(tk.END, self.folder_trace)
 
             #### update trace file
-            self.filename_trace = os.path.basename(filename)
+            self.filename_trace = os.path.basename(pathname)
             file_temp = self.filename_trace.split('.')[0]
             self.lbl_file_pypeit['text'] = file_temp[1:]
             self.file_current = file_temp[1:]
@@ -2489,11 +2492,14 @@ class IFUM_AperMap_Maker:
 
         #### write the fits file
         self.folder_trace = self.ent_folder_trace.get()
-        write_trace_file(self.data_full, self.hdr_c1_b, self.folder_trace, 'b'+self.file_current)
-        write_trace_file(self.data_full2, self.hdr_c1_r, self.folder_trace, 'r'+self.file_current)
+        path_trace_b = write_trace_file(self.data_full, self.hdr_c1_b, self.folder_trace, 'b'+self.file_current)
+        path_trace_r = write_trace_file(self.data_full2, self.hdr_c1_r, self.folder_trace, 'r'+self.file_current)
 
         #### control widgets
         self.btn_make_trace['state'] = 'disabled'
+
+        #### load the newly saved trace file
+        self.load_fits_trace(path_trace_r)
 
     def make_file_apermap_mono(self):
         self.data_full = self.cut_data_by_edges(self.data_full, 'b')
