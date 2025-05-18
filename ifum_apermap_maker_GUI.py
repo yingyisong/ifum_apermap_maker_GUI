@@ -26,6 +26,7 @@ window_width = 1800
 window_height = 930
 img_figsize = (6, 8.8)
 
+
 def main():
     #### Create the entire GUI program
     program = IFUM_AperMap_Maker()
@@ -41,6 +42,7 @@ def check_appearance():
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE, shell=True)
     return bool(p.communicate()[0])
+
 
 #print(check_appearance())
 if check_appearance():
@@ -168,7 +170,6 @@ class IFUM_AperMap_Maker:
 
         # initialize other widgets and values
         self.initialize_widgets()
-
         
     def initialize_widgets(self):
         """Initialize all widgets."""
@@ -409,8 +410,11 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_r)
         self.ent_param_curve_C_r.grid(row=rows[2], column=6, sticky="ew")
 
-        self.btn_update_curve_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_curve_r, highlightbackground=BG_COLOR)
-        self.btn_update_curve_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        self.btn_plot_curve_r = tk.Button(
+            self.frame1, width=6, text='Plot (r)', 
+            command=lambda: self.update_curve(None, 'r'), 
+            highlightbackground=BG_COLOR)
+        self.btn_plot_curve_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (b-side)
         lbl_param_curve_A_b = tk.Label(self.frame1, text="b-side:  A =", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -428,8 +432,11 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_curve_C_b)
         self.ent_param_curve_C_b.grid(row=rows[3], column=6, sticky="ew")
 
-        self.btn_update_curve_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_curve_b, highlightbackground=BG_COLOR)
-        self.btn_update_curve_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
+        self.btn_plot_curve_b = tk.Button(
+            self.frame1, width=6, text='Plot (b)', 
+            command=lambda: self.update_curve(None, 'b'), 
+            highlightbackground=BG_COLOR)
+        self.btn_plot_curve_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
     def create_widgets_edges(self, line_start, line_num):
         """ step 2 select edges using a science or twilight file """
@@ -476,8 +483,11 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX_r = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_r)
         self.ent_param_edges_dX_r.grid(row=rows[2], column=6, sticky="ew")
 
-        self.btn_update_edges_r = tk.Button(self.frame1, width=6, text='Plot (r)', command=self.update_edges_r, highlightbackground=BG_COLOR)
-        self.btn_update_edges_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
+        self.btn_plot_edges_r = tk.Button(
+            self.frame1, width=6, text='Plot (r)', 
+            command=lambda: self.update_edges(None, 'r'), 
+            highlightbackground=BG_COLOR)
+        self.btn_plot_edges_r.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (b-side)
         lbl_param_edges_X1_b = tk.Label(self.frame1, text="b-side: X1 =", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -495,8 +505,11 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX_b = tk.Entry(self.frame1, width=6, textvariable=self.txt_param_edges_dX_b)
         self.ent_param_edges_dX_b.grid(row=rows[3], column=6, sticky="ew")
 
-        self.btn_update_edges_b = tk.Button(self.frame1, width=6, text='Plot (b)', command=self.update_edges_b, highlightbackground=BG_COLOR)
-        self.btn_update_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
+        self.btn_plot_edges_b = tk.Button(
+            self.frame1, width=6, text='Plot (b)', 
+            command=lambda: self.update_edges(None, 'b'),
+            highlightbackground=BG_COLOR)
+        self.btn_plot_edges_b.grid(row=rows[3], column=7, sticky="e", padx=5, pady=5)
 
         #### offset parameters
         lbl_param_edges_offset = tk.Label(self.frame1, text="dX1 (r - b) =", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -712,29 +725,29 @@ class IFUM_AperMap_Maker:
         self.ent_folder.bind('<Return>', self.refresh_folder)
         self.ent_folder.bind('<KP_Enter>', self.refresh_folder) # unique for macOS
 
-        self.ent_param_curve_A_b.bind('<Return>', self.update_curve_b)
-        self.ent_param_curve_A_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
-        self.ent_param_curve_B_b.bind('<Return>', self.update_curve_b)
-        self.ent_param_curve_B_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
-        self.ent_param_curve_C_b.bind('<Return>', self.update_curve_b)
-        self.ent_param_curve_C_b.bind('<KP_Enter>', self.update_curve_b) # unique for macOS
-        self.ent_param_curve_A_r.bind('<Return>', self.update_curve_r)
-        self.ent_param_curve_A_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
-        self.ent_param_curve_B_r.bind('<Return>', self.update_curve_r)
-        self.ent_param_curve_B_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
-        self.ent_param_curve_C_r.bind('<Return>', self.update_curve_r)
-        self.ent_param_curve_C_r.bind('<KP_Enter>', self.update_curve_r) # unique for macOS
+        self.ent_param_curve_A_b.bind('<Return>', lambda event: self.update_curve(event, 'b'))
+        self.ent_param_curve_A_b.bind('<KP_Enter>', lambda event: self.update_curve(event, 'b')) # unique for macOS
+        self.ent_param_curve_B_b.bind('<Return>', lambda event: self.update_curve(event, 'b'))
+        self.ent_param_curve_B_b.bind('<KP_Enter>', lambda event: self.update_curve(event, 'b')) # unique for macOS
+        self.ent_param_curve_C_b.bind('<Return>', lambda event: self.update_curve(event, 'b'))
+        self.ent_param_curve_C_b.bind('<KP_Enter>', lambda event: self.update_curve(event, 'b')) # unique for macOS
+        self.ent_param_curve_A_r.bind('<Return>', lambda event: self.update_curve(event, 'r'))
+        self.ent_param_curve_A_r.bind('<KP_Enter>', lambda event: self.update_curve(event, 'r')) # unique for macOS
+        self.ent_param_curve_B_r.bind('<Return>', lambda event: self.update_curve(event, 'r'))
+        self.ent_param_curve_B_r.bind('<KP_Enter>', lambda event: self.update_curve(event, 'r')) # unique for macOS
+        self.ent_param_curve_C_r.bind('<Return>', lambda event: self.update_curve(event, 'r'))
+        self.ent_param_curve_C_r.bind('<KP_Enter>', lambda event: self.update_curve(event, 'r')) # unique for macOS
 
-        self.ent_param_edges_X1_b.bind('<Return>', self.update_edges_b)
-        self.ent_param_edges_X1_b.bind('<KP_Enter>', self.update_edges_b) # unique for macOS
-        self.ent_param_edges_dX_b.bind('<Return>', self.update_edges_b)
-        self.ent_param_edges_dX_b.bind('<KP_Enter>', self.update_edges_b) # unique for macOS
-        self.ent_param_edges_X1_r.bind('<Return>', self.update_edges_r)
-        self.ent_param_edges_X1_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
-        self.ent_param_edges_dX_r.bind('<Return>', self.update_edges_r)
-        self.ent_param_edges_dX_r.bind('<KP_Enter>', self.update_edges_r) # unique for macOS
-        self.ent_param_edges_offset.bind('<Return>', self.update_edges_offset)
-        self.ent_param_edges_offset.bind('<KP_Enter>', self.update_edges_offset) # unique for macOS
+        self.ent_param_edges_X1_b.bind('<Return>', lambda event: self.update_edges(event, 'b'))
+        self.ent_param_edges_X1_b.bind('<KP_Enter>', lambda event: self.update_edges(event, 'b')) # unique for macOS
+        self.ent_param_edges_dX_b.bind('<Return>', lambda event: self.update_edges(event, 'b'))
+        self.ent_param_edges_dX_b.bind('<KP_Enter>', lambda event: self.update_edges(event, 'b')) # unique for macOS
+        self.ent_param_edges_X1_r.bind('<Return>', lambda event: self.update_edges(event, 'r'))
+        self.ent_param_edges_X1_r.bind('<KP_Enter>', lambda event: self.update_edges(event, 'r')) # unique for macOS
+        self.ent_param_edges_dX_r.bind('<Return>', lambda event: self.update_edges(event, 'r'))
+        self.ent_param_edges_dX_r.bind('<KP_Enter>', lambda event: self.update_edges(event, 'r')) # unique for macOS
+        self.ent_param_edges_offset.bind('<Return>', lambda event: self.update_edges(event, 'both'))
+        self.ent_param_edges_offset.bind('<KP_Enter>', lambda event: self.update_edges(event, 'both')) # unique for macOS
 
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
@@ -753,39 +766,24 @@ class IFUM_AperMap_Maker:
     def refresh_labelname_mono(self, *args):
         self.window.focus_set()
 
-    def update_curve_b(self, *agrs):
-        shoe = 'b'
+    def update_curve(self, event, shoe, *args):
+        """ update the curve parameters """
         self.refresh_param_curve(shoe)
         self.clear_image(shoe=shoe)
         self.plot_curve(shoe=shoe)
         self.window.focus_set()
 
-    def update_curve_r(self, *agrs):
-        shoe = 'r'
-        self.refresh_param_curve(shoe)
-        self.clear_image(shoe=shoe)
-        self.plot_curve(shoe=shoe)
-        self.window.focus_set()
-
-    def update_edges_b(self, *args):
-        shoe = 'b'
+    def update_edges(self, event, shoe, *args):
+        """ update the edge parameters """
         self.refresh_param_edges(shoe)
-        self.clear_image(shoe=shoe)
-        self.plot_edges(shoe=shoe)
-        self.window.focus_set()
 
-    def update_edges_r(self, *args):
-        shoe = 'r'
-        self.refresh_param_edges(shoe)
-        self.clear_image(shoe=shoe)
-        self.plot_edges(shoe=shoe)
-        self.window.focus_set()
+        if self.state_edge_lock_r.get() == 0 and self.state_edge_lock_b.get() == 0:
+            self.clear_image(shoe=shoe)
+            self.plot_edges(shoe=shoe)
+        else:
+            self.clear_image(shoe='both')
+            self.plot_edges(shoe='both')
 
-    def update_edges_offset(self, *args):
-        shoe = 'r'
-        self.refresh_param_edges(shoe='offset')
-        self.clear_image(shoe='b')
-        self.plot_edges(shoe='b')
         self.window.focus_set()
 
     def refresh_param_curve(self, shoe, *args):
@@ -809,7 +807,7 @@ class IFUM_AperMap_Maker:
                 self.param_edges_r[0] = np.float32(self.ent_param_edges_X1_r.get())
                 self.param_edges_r[2] = np.float32(self.ent_param_edges_dX_r.get())
                 self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
-            elif shoe=='offset':
+            elif shoe=='both':
                 self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_r.get())-np.float32(self.ent_param_edges_offset.get())
                 self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
 
@@ -828,10 +826,6 @@ class IFUM_AperMap_Maker:
                 self.param_edges_b[2] = self.param_edges_r[2]
                 self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
 
-                # replot b-side
-                self.clear_image(shoe='b')
-                self.plot_edges(shoe='b')
-
             elif self.state_edge_lock_r.get() == 0 and self.state_edge_lock_b.get() == 1:
                 # can only change b-side
                 self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_b.get())
@@ -841,13 +835,8 @@ class IFUM_AperMap_Maker:
                 self.param_edges_r[0] = self.param_edges_b[0]+self.param_edges_offset
                 self.param_edges_r[2] = self.param_edges_b[2]
                 self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
-            
-                # replot r-side
-                self.clear_image(shoe='r')
-                self.plot_edges(shoe='r') 
         
         self.renew_param_edges()
-
 
     def renew_param_edges(self):
         """ copy the edge parameters from backend values to GUI """
@@ -867,7 +856,6 @@ class IFUM_AperMap_Maker:
         self.txt_param_curve_A_b.set("%.2f"%(self.param_curve_b[0]))
         self.txt_param_curve_B_b.set("%.2f"%(self.param_curve_b[1]))
         self.txt_param_curve_C_b.set("%.2f"%(self.param_curve_b[2]))
-
 
     def lock_edge(self, side):
         """ lock one side of the edges """
@@ -890,7 +878,6 @@ class IFUM_AperMap_Maker:
                 self.ent_param_edges_X1_r['state'] = 'normal'
                 self.ent_param_edges_dX_r['state'] = 'normal'
                 self.cbtn_edge_lock_r['state'] = 'normal'
-
 
     def get_curve_params(self, shoe):
         if shoe=='b':
@@ -1114,7 +1101,6 @@ class IFUM_AperMap_Maker:
             print('!!! Warning: Less bad fibers are added. !!!')
         else:
             print('All %d fibers are found.'%N_ap)
-
         
         #### make a new AperMap
         map_ap = np.zeros((len(self.data_full),len(self.data_full[0])), dtype=np.int32)
@@ -1692,7 +1678,6 @@ class IFUM_AperMap_Maker:
 
         self.window.focus_set()
 
-
     def pick_edges_mono(self):
         return 0
 
@@ -2132,7 +2117,6 @@ class IFUM_AperMap_Maker:
             else:
                 self.ent_param_edges_dX_r.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
 
-
     def add_instructions_on_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
             self.ax.text(0.04, 0.02, 'Right Click to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax.transAxes,
@@ -2388,8 +2372,8 @@ class IFUM_AperMap_Maker:
         self.btn_load_apermap['state'] = 'normal'
         self.btn_load_mono['state'] = 'normal'
         
-        self.btn_update_curve_b['state'] = 'normal'
-        self.btn_update_edges_b['state'] = 'normal'
+        self.btn_plot_curve_b['state'] = 'normal'
+        self.btn_plot_edges_b['state'] = 'normal'
         self.ent_param_curve_A_b['state'] = 'normal'
         self.ent_param_curve_B_b['state'] = 'normal'
         self.ent_param_curve_C_b['state'] = 'normal'
@@ -2399,8 +2383,8 @@ class IFUM_AperMap_Maker:
         self.cbtn_edge_lock_r['state'] = 'normal'
         self.cbtn_edge_lock_b['state'] = 'normal'
 
-        self.btn_update_curve_r['state'] = 'normal'
-        self.btn_update_edges_r['state'] = 'normal'
+        self.btn_plot_curve_r['state'] = 'normal'
+        self.btn_plot_edges_r['state'] = 'normal'
         self.ent_param_curve_A_r['state'] = 'normal'
         self.ent_param_curve_B_r['state'] = 'normal'
         self.ent_param_curve_C_r['state'] = 'normal'
@@ -2430,8 +2414,8 @@ class IFUM_AperMap_Maker:
         self.btn_load_apermap['state'] = 'disabled'
         self.btn_load_mono['state'] = 'disabled'
 
-        self.btn_update_curve_b['state'] = 'disabled'
-        self.btn_update_edges_b['state'] = 'disabled'
+        self.btn_plot_curve_b['state'] = 'disabled'
+        self.btn_plot_edges_b['state'] = 'disabled'
         self.ent_param_curve_A_b['state'] = 'disabled'
         self.ent_param_curve_B_b['state'] = 'disabled'
         self.ent_param_curve_C_b['state'] = 'disabled'
@@ -2441,8 +2425,8 @@ class IFUM_AperMap_Maker:
         self.cbtn_edge_lock_r['state'] = 'disabled'
         self.cbtn_edge_lock_b['state'] = 'disabled'
 
-        self.btn_update_curve_r['state'] = 'disabled'
-        self.btn_update_edges_r['state'] = 'disabled'
+        self.btn_plot_curve_r['state'] = 'disabled'
+        self.btn_plot_edges_r['state'] = 'disabled'
         self.ent_param_curve_A_r['state'] = 'disabled'
         self.ent_param_curve_B_r['state'] = 'disabled'
         self.ent_param_curve_C_r['state'] = 'disabled'
