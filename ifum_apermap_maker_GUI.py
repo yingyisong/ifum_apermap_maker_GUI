@@ -195,7 +195,7 @@ class IFUM_AperMap_Maker:
         self.folder_trace   = "./data_trace/"
         self.folder_curve   = "./curve_files/"
         self.path_MasterSlits = ' '
-        self.labelname_mono   = "input_an_unique_label_name"
+        self.labelname_mono   = "band_name"
 
         self.points = []
         self.x_last, self.y_last = -1., -1.
@@ -389,10 +389,16 @@ class IFUM_AperMap_Maker:
         lbl_note_curve = tk.Label(self.frame1, text="Hint: Select 7 points to fit func: x-C = A*(y-B)^2 ", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_curve.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
-        self.btn_select_curve_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_points_r, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_r = tk.Button(
+            self.frame1, width=6, text="Select (r)", 
+            command=lambda: self.pick_points('r'), 
+            state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_curve_r.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_select_curve_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_points_b, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_curve_b = tk.Button(
+            self.frame1, width=6, text="Select (b)", 
+            command=lambda: self.pick_points('b'),
+            state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_curve_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### curve parameters (r-side)
@@ -462,10 +468,16 @@ class IFUM_AperMap_Maker:
         lbl_note_edges = tk.Label(self.frame1, text="Hint: Select 2 points along y-axis middle line", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
-        self.btn_select_edges_r = tk.Button(self.frame1, width=6, text="Select (r)", command=self.pick_edges_r, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_r = tk.Button(
+            self.frame1, width=6, text="Select (r)", 
+            command=lambda: self.pick_edges('r'), 
+            state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_edges_r.grid(row=rows[1], column=6, sticky="e", padx=5, pady=5)
 
-        self.btn_select_edges_b = tk.Button(self.frame1, width=6, text="Select (b)", command=self.pick_edges_b, state='disabled', highlightbackground=BG_COLOR)
+        self.btn_select_edges_b = tk.Button(
+            self.frame1, width=6, text="Select (b)", 
+            command=lambda: self.pick_edges('b'), 
+            state='disabled', highlightbackground=BG_COLOR)
         self.btn_select_edges_b.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
 
         #### edge parameters (r-side)
@@ -536,10 +548,12 @@ class IFUM_AperMap_Maker:
 
         #### button to load the curve profile
         self.btn_load_all_param = tk.Button(
-            self.frame1, width=6, text="Params", 
+            self.frame1, width=11, text="Load curve param.", 
             command=self.load_curve_file, 
             state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_all_param.grid(row=rows[4], column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_all_param.grid(row=rows[4], 
+                                     column=6, columnspan=2,
+                                     sticky="e", padx=5, pady=5)
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 3 check and make a masked LED fits file for tracing """
@@ -696,9 +710,9 @@ class IFUM_AperMap_Maker:
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
         lbl_step6.grid(row=rows[0], column=0, sticky="w")
         lbl_step6 = tk.Label(self.frame1,
-                             text="(optional) Make monochromatic AperMap files",
+                             text="(optional) Make monochromatic / narrow-band AperMap files",
                              fg=STEP_LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6.grid(row=rows[0], column=1, columnspan=5, sticky="w")
+        lbl_step6.grid(row=rows[0], column=1, columnspan=6, sticky="w")
 
         #### step 6a
         lbl_step6a = tk.Label(self.frame1,
@@ -2163,51 +2177,79 @@ class IFUM_AperMap_Maker:
                      fontsize=10, color='white', ha='left', va='top',
                      bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
 
-    def pick_points_b(self):
-        shoe = 'b'
+    def pick_points(self, shoe):
+        """Pick points on the image to select the curve points."""
+        if shoe=='b':
+            btn_tmp = self.btn_select_curve_b
+            fig_tmp = self.fig
+        elif shoe=='r':
+            btn_tmp = self.btn_select_curve_r
+            fig_tmp = self.fig2
+
+        # initialize the figure
         self.disable_others()
-        self.btn_select_curve_b['state'] = 'active'
+        btn_tmp['state'] = 'active'
         self.clear_image(shoe=shoe)
         self.add_instructions_on_image(shoe=shoe)
         self.update_image(shoe=shoe)
 
-        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve', shoe=shoe))
+        # connect the button press event to the on_click_curve function
+        self.cidpick = fig_tmp.canvas.mpl_connect(
+            'button_press_event', 
+            lambda event: self.on_click_curve(event, shoe=shoe))
+        self.cidexit = fig_tmp.canvas.mpl_connect(
+            'key_press_event', 
+            lambda event: self.key_press(event, step='curve', shoe=shoe))
+        
+        # show info
+        info_temp = \
+            'Select 7 points on the %s-side image:\n\n'%(shoe) \
+            + '  -- Right Click to select a point\n' \
+            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+            + '  -- Press ESC to quit without saving'
+        self.popup_left_aligned('Pick points', info_temp)
 
-    def pick_points_r(self):
-        shoe = 'r'
+        self.window.focus_force()
+
+    def pick_edges(self, shoe):
+        """Pick points on the image to select the edges."""
+        if shoe=='b':
+            btn_tmp = self.btn_select_edges_b
+            fig_tmp = self.fig
+        elif shoe=='r':
+            btn_tmp = self.btn_select_edges_r
+            fig_tmp = self.fig2
+
+        # initialize the figure
         self.disable_others()
-        self.btn_select_curve_r['state'] = 'active'
+        btn_tmp['state'] = 'active'
         self.clear_image(shoe=shoe)
         self.add_instructions_on_image(shoe=shoe)
+
+        if shoe=='b':
+            self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
+        elif shoe=='r':
+            self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
+
         self.update_image(shoe=shoe)
 
-        self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_curve(event, shoe=shoe))
-        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='curve', shoe=shoe))
+        # connect the button press event to the on_click_curve function
+        self.cidpick = fig_tmp.canvas.mpl_connect(
+            'button_press_event', 
+            lambda event: self.on_click_edges(event, shoe=shoe))
+        self.cidexit = fig_tmp.canvas.mpl_connect(
+            'key_press_event', 
+            lambda event: self.key_press(event, step='edges', shoe=shoe))
+        
+        # show info
+        info_temp = \
+            'Select 2 points on the green line on the %s-side image:\n\n'%(shoe) \
+            + '  -- Right Click to select a point\n' \
+            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+            + '  -- Press ESC to quit without saving'
+        self.popup_left_aligned('Pick points', info_temp)
 
-    def pick_edges_b(self):
-        shoe = 'b'
-        self.disable_others()
-        self.btn_select_edges_b['state'] = 'active'
-
-        self.clear_image(shoe=shoe)
-        self.add_instructions_on_image(shoe=shoe)
-        self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
-        self.update_image(shoe=shoe)
-        self.cidpick = self.fig.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
-        self.cidexit = self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges', shoe=shoe))
-
-    def pick_edges_r(self):
-        shoe = 'r'
-        self.disable_others()
-        self.btn_select_edges_r['state'] = 'active'
-
-        self.clear_image(shoe=shoe)
-        self.add_instructions_on_image(shoe=shoe)
-        self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
-        self.update_image(shoe=shoe)
-        self.cidpick = self.fig2.canvas.mpl_connect('button_press_event', lambda event: self.on_click_edges(event, shoe=shoe))
-        self.cidexit = self.fig2.canvas.mpl_connect('key_press_event', lambda event: self.key_press(event, step='edges', shoe=shoe))
+        self.window.focus_force()
 
     def pick_slits(self):
         self.disable_others()
@@ -2412,6 +2454,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_offset['state'] = 'normal'
         self.cbtn_edge_lock_r['state'] = 'normal'
         self.cbtn_edge_lock_b['state'] = 'normal'
+        self.btn_load_all_param['state'] = 'normal'
 
         self.btn_plot_curve_r['state'] = 'normal'
         self.btn_plot_edges_r['state'] = 'normal'
@@ -2462,6 +2505,7 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_C_r['state'] = 'disabled'
         self.ent_param_edges_X1_r['state'] = 'disabled'
         self.ent_param_edges_dX_r['state'] = 'disabled'
+        self.btn_load_all_param['state'] = 'disabled'
 
         #self.ent_smash_range['state'] = 'disabled'
         self.ent_labelname_mono['state'] = 'disabled'
@@ -2553,8 +2597,49 @@ class IFUM_AperMap_Maker:
         #### control widgets
         self.btn_make_apermap_mono['state'] = 'disabled'
 
+        #### show info
+        info_temp = "Monochromatic Apermap files made!\n\n" \
+            +"Saved to %s"%(self.folder_apermap)
+        self.popup_showinfo("Apermap file saved", info_temp)
+
+        self.window.focus_force()
+
     def popup_showinfo(self, title, message):
+        """Show a popup message box."""
         showinfo(title=title, message=message)
+
+    def popup_left_aligned(self, title, message):
+        """Creates and displays a custom info dialog with left-aligned text."""
+        win = tk.Toplevel()
+        win.title(title)
+
+        # set the size of the window
+        win_width = 400
+        win_height = 200
+
+        # get the screen width and height
+        screen_width = win.winfo_screenwidth()
+        screen_height = win.winfo_screenheight()
+
+        # center the window on the screen
+        x = (screen_width // 2) - (win_width // 2)
+        y = (screen_height // 2) - (win_height // 2)
+        win.geometry(f"{win_width}x{win_height}+{x}+{y}")
+        win.resizable(False, False)
+        win.grab_set()
+        win.focus_set()
+        win.transient(self.window)
+        win.attributes("-topmost", True)
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        win.bind("<Return>", lambda event: win.destroy())
+        win.bind("<Escape>", lambda event: win.destroy())
+
+        # Create a Label with justify="left" to align text to the left
+        label = tk.Label(win, text=message, justify="left", padx=10, pady=10)  
+        label.pack(fill="both", expand=True)
+
+        button = tk.Button(win, text="OK", command=win.destroy)
+        button.pack(pady=5, padx=10)
 
 
 if __name__ == "__main__":
