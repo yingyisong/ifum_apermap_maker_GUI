@@ -716,21 +716,21 @@ class IFUM_AperMap_Maker:
 
         #### step 6a
         lbl_step6a = tk.Label(self.frame1,
-                              text="b. Determine monochromatic spans (using functions in Step 2)",
+                              text="a. Use Step 2 to determine the new edges (hint: load a SCI file)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6a.grid(row=rows[2], column=1, columnspan=6, sticky="w")
+        lbl_step6a.grid(row=rows[1], column=1, columnspan=6, sticky="w")
 
         #### step 6b
         lbl_step6b = tk.Label(self.frame1,
-                              text="a. Load the original AperMap files (i.e., ap*.fits)",
+                              text="b. Load the original AperMap files (i.e., ap*.fits)",
                               fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step6b.grid(row=rows[1], column=1, columnspan=5, sticky="w")
+        lbl_step6b.grid(row=rows[2], column=1, columnspan=5, sticky="w")
 
         self.lbl_file_mono = tk.Label(self.frame1, relief=tk.SUNKEN, text="XXX_0000", fg=LABEL_COLOR)
-        self.lbl_file_mono.grid(row=rows[1], column=4, columnspan=3, sticky="e")
+        self.lbl_file_mono.grid(row=rows[2], column=4, columnspan=3, sticky="e")
 
         self.btn_load_mono = tk.Button(self.frame1, width=6, text="Open", command=self.open_fits_apermap2, state='normal', highlightbackground=BG_COLOR)
-        self.btn_load_mono.grid(row=rows[1], column=7, sticky="e", padx=5, pady=5)
+        self.btn_load_mono.grid(row=rows[2], column=7, sticky="e", padx=5, pady=5)
 
         #### step 6c
         lbl_step6b = tk.Label(self.frame1, text="c. Make new files", fg=LABEL_COLOR, bg=BG_COLOR)
