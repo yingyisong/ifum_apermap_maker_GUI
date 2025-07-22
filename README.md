@@ -6,19 +6,74 @@ Requirements: python>=3.10, [matplotlib](https://matplotlib.org/), [ccdproc](htt
 
 <!-- [astropy](https://www.astropy.org/),  -->
 
-## Clone and install
+## Download
 
 ```bash
 git clone https://github.com/yingyisong/ifum_apermap_maker_GUI.git
 cd ifum_apermap_maker_GUI
-python setup.py
 ```
 
-## Run the GUI:
+## Install Option 1: Conda
+
+### Install
+
+```bash
+conda create -n ifum_gui python=3.12
+conda activate ifum_gui
+python install -r requirements.txt
+```
+
+### Run the GUI
+
+```bash
+conda activate ifum_gui
+
+# navigate to the GUI folder
+python ifum_apermap_maker_GUI.py
+```
+
+### Uninstall
+
+```bash
+conda env remove -n ifum_gui
+```
+
+## Install Option 2: Virtual Environment
+
+### Install
+
+```bash
+python setup_venv.py
+```
+
+### Run the GUI
 
 ```bash
 # navigate to the GUI folder
 ./run_gui
+```
+
+### Uninstall
+
+Linux/macOS:
+
+```bash
+# navigate to the GUI folder
+rm -rf .venv run_gui
+```
+
+Windows (Command Prompt):
+
+```cmd
+REM navigate to the GUI folder
+rmdir /s .venv & del run_gui.bat run_gui
+```
+
+Windows (PowerShell):
+
+```powershell
+# navigate to the GUI folder
+Remove-Item -Recurse -Force .venv, run_gui.bat, run_gui
 ```
 
 <!--## Clone and intiatlize the GUI
