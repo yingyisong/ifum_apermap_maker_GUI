@@ -66,7 +66,7 @@ def determine_signal_height(columnspec_array, min_height=100.):
     return signal_height
 
 
-def preanalyze_columnspec_array(columnspec_array):
+def preanalyze_columnspec_array(columnspec_array, ifu_type):
     """Preanalyze columnspec array. """
 
     # get the inital peaks and properties from columnspec_array
@@ -80,8 +80,13 @@ def preanalyze_columnspec_array(columnspec_array):
     aper_half_width = int(np.median(peaks_diff_array)/2)
 
     # get the width and distance cut
-    width_cut = int( aper_half_width - 1 )
-    distance_cut = int( width_cut * 2 )
+    width_cut = int( aper_half_width * 0.5 )
+#    if ifu_type == 'LSB' or ifu_type == 'STD':
+#        width_cut = int( aper_half_width - 2 )
+#    else:   # if ifu_type == 'HR' or ifu_type == 'STD'
+#        width_cut = int( aper_half_width - 1 )
+#
+    distance_cut = int( aper_half_width * 1.5 )
 
     # get the prominence cut
     # prominences_array_sub = prominences_array[
@@ -237,7 +242,15 @@ def clean_peaks_array(peaks_array, percentile=0.2, verbose=False):
     n_peaks = np.array( 
         [np.sum(~np.isnan(peaks_array[i])) for i in range(len(peaks_array))] 
         )
-    column_max = np.argmax(n_peaks)
+    # column_max = np.argmax(n_peaks)
+    column_max_all = np.where(n_peaks == np.max(n_peaks))[0]
+    if len(column_max_all) > 1:
+        # if there are multiple columns with the same number of peaks,
+        # take the one with the median value
+        column_max = np.median(column_max_all).astype(int)
+    else:
+        # otherwise, take the column with the maximum number of peaks
+        column_max = np.argmax(n_peaks)
 
     # remove nan rows in column max
     mask_nan = np.isnan(peaks_array[column_max])
@@ -330,30 +343,65 @@ def find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
     """find missing fibers in the column max. """
 
     if verbose:
-        print("!!!! Finding missing fibers for HR and STD")
+        print("!!!! Finding missing fibers for HR or STD")
         print("!!!! # of default fibers: ", len(y_pred))
         n_missing = len(y_pred) - len(y_data)
         print("!!!! # of missing fibers: ", n_missing)
+        print("!!!! cut of delta_y: ", delta_y)
 
-    count_add = 0
-    count_del = 0
+    # count_add = 0
+    # count_del = 0
+    # ids = []
+    # y_new = np.zeros_like(y_pred)
+    # for i_pred in range(len(y_pred)):
+    #     i_data = i_pred-count_add+count_del
+    #     if np.abs(y_data[i_data] - y_pred[i_pred]) > delta_y:
+    #         y_new[i_pred] = y_pred[i_pred]
+    #         count_add += 1
+    #         ids.append(i_pred+1)
+
+    #         if verbose:
+    #             print('!!!! Missing %d: %.2f - %.2f = %.2f'%
+    #                   (i_pred+1, y_data[i_data], y_pred[i_pred],
+    #                    y_data[i_data]-y_pred[i_pred])
+    #                    )
+    #     else:
+    #         y_new[i_pred] = y_data[i_data]
+
+    # rewrite by comparing diff array
+    diff_y_pred = np.diff(y_pred, axis=0)
+    diff_y_data = np.diff(y_data, axis=0)
+
     ids = []
-    y_new = np.zeros_like(y_pred)
-    for i_pred in range(len(y_pred)):
-        i_data = i_pred-count_add+count_del
-        if np.abs(y_data[i_data] - y_pred[i_pred]) > delta_y:
-            y_new[i_pred] = y_pred[i_pred]
-            count_add += 1
-            ids.append(i_pred+1)
-
+    y_data_temp = y_data.copy()
+    for i_pred in range(len(y_pred)-1):
+        if i_pred >= len(diff_y_data):
+            break
+        elif np.abs(diff_y_data[i_pred] - diff_y_pred[i_pred]) > delta_y:
             if verbose:
                 print('!!!! Missing %d: %.2f - %.2f = %.2f'%
-                      (i_pred+1, y_data[i_data], y_pred[i_pred],
-                       y_data[i_data]-y_pred[i_pred])
+                      (i_pred+2, diff_y_data[i_pred], diff_y_pred[i_pred],
+                       diff_y_data[i_pred]-diff_y_pred[i_pred])
                        )
-        else:
-            y_new[i_pred] = y_data[i_data]
-    
+            y_data_temp = np.insert(
+                y_data_temp, i_pred+1, 
+                np.abs(y_data_temp[i_pred]) + diff_y_pred[i_pred])
+            diff_y_data = np.diff(y_data_temp, axis=0)
+            ids.append(i_pred+2)
+            i_pred -= 1  # adjust the index since we added an element
+
+    # if the last element is missing, add it
+    if (len(diff_y_pred) - len(diff_y_data) == 1):
+        if verbose:
+            print('!!!! Missing %d (the last fiber)' % (len(y_pred)))
+        ids.append(len(y_pred))
+    elif (len(diff_y_pred) - len(diff_y_data) > 1):
+        print('!!!! Warning: possible missing fiber at the start!')
+
+        # add the missing fibers to the end
+        for i in range(len(diff_y_pred) - len(diff_y_data) ):
+            ids.append(len(y_data_temp) + i + 1)
+
     return ids
 
 
@@ -524,7 +572,7 @@ def do_trace_v2(trace, curve_params,
 
     # pre-analyze the trace data
     aper_half_width, width_cut, distance_cut, prominence_cut \
-        = preanalyze_columnspec_array(columnspec_array)
+        = preanalyze_columnspec_array(columnspec_array, ifu_type)
     print("++++ aper_half_width: ", aper_half_width)
     print("++++ width_cut: ", width_cut)
     print("++++ distance_cut: ", distance_cut)
@@ -569,11 +617,11 @@ def do_trace_v2(trace, curve_params,
         # transfer the template to the column max
         coefs, peaks_template_cmax \
             = fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
-                                         peaks_template)
+                                         peaks_template, order=4)
 
         # find the missing fibers
         ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax,
-                                      delta_y=5.0, verbose=True)
+                                      delta_y=aper_half_width*2.0, verbose=True)
     else:   
         # i.e., ifu_type == 'LSB'
         # LSB has no distingushed group gaps, so use the template directly
