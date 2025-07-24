@@ -80,13 +80,14 @@ def preanalyze_columnspec_array(columnspec_array, ifu_type):
     aper_half_width = int(np.median(peaks_diff_array)/2)
 
     # get the width and distance cut
-    width_cut = int( aper_half_width * 0.5 )
+    width_cut = int( aper_half_width - 1 )
+    #width_cut = int( aper_half_width * 0.5 )
 #    if ifu_type == 'LSB' or ifu_type == 'STD':
 #        width_cut = int( aper_half_width - 2 )
 #    else:   # if ifu_type == 'HR' or ifu_type == 'STD'
 #        width_cut = int( aper_half_width - 1 )
 #
-    distance_cut = int( aper_half_width * 1.5 )
+    distance_cut = int( aper_half_width * 1.8 )
 
     # get the prominence cut
     # prominences_array_sub = prominences_array[
