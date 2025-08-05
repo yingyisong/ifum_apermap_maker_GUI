@@ -73,21 +73,25 @@ def preanalyze_columnspec_array(columnspec_array, ifu_type):
     peaks_diff_array = np.array([])
     for column in range(len(columnspec_array)):
         spec = columnspec_array[column].spec
-        peaks = signal.find_peaks(spec, prominence=0, width=0)
-        peaks_diff_array = np.append(peaks_diff_array, np.diff(peaks[0]))
+        _, properties = signal.find_peaks(
+            spec, prominence=10, width=1, rel_height=0.5)
+        peaks_left = properties['left_ips']
+        peaks_right = properties['right_ips']
+        peaks = (peaks_left + peaks_right)/2
+        peaks_diff_array = np.append(peaks_diff_array, np.diff(peaks))
 
     # get the aperture half width
     aper_half_width = int(np.median(peaks_diff_array)/2)
 
     # get the width and distance cut
-    width_cut = int( aper_half_width - 1 )
+    width_cut = int( aper_half_width - 2 )
     #width_cut = int( aper_half_width * 0.5 )
 #    if ifu_type == 'LSB' or ifu_type == 'STD':
 #        width_cut = int( aper_half_width - 2 )
 #    else:   # if ifu_type == 'HR' or ifu_type == 'STD'
 #        width_cut = int( aper_half_width - 1 )
 #
-    distance_cut = int( aper_half_width * 1.8 )
+    distance_cut = int( width_cut * 2.0 )
 
     # get the prominence cut
     # prominences_array_sub = prominences_array[
