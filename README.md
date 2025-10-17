@@ -20,7 +20,8 @@ cd ifum_apermap_maker_GUI
 ```bash
 conda create -n ifum_gui python=3.12
 conda activate ifum_gui
-python install -r requirements.txt
+pip install -r requirements.txt
+./create_folders
 ```
 
 ### Run the GUI
