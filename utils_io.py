@@ -485,13 +485,6 @@ def write_trace_file(data, header, dirname, filename):
     path_trace = os.path.join(dirname, filename_temp)
     hdul_full.writeto(path_trace,overwrite=True)
 
-    #### save backup file
-    dir_backup = os.path.join(dirname, "backup_trace")
-    if not os.path.exists(dir_backup):
-        os.mkdir(dir_backup)
-    path_backup = os.path.join(dir_backup, "%s_trace_%s.fits"%(filename[0:5], datetime.today().strftime('%y%m%d_%H%M')))
-    hdul_full.writeto(path_backup,overwrite=False)
-
     return path_trace
 
 
@@ -522,14 +515,5 @@ def cut_apermap(data, header, dirname, filename):
 
     #### save trace file
     today_temp = datetime.today().strftime("%y%m%d")
-    today_backup = datetime.today().strftime("%y%m%d_%H%M")
-    
-    path_trace = os.path.join(dirname, filename+'_%s_3000.fits'%today_temp)
+    path_trace = os.path.join(dirname, filename+'_%s.fits'%today_temp)
     hdul_full.writeto(path_trace,overwrite=True)
-
-    #### save backup file
-    dir_backup = os.path.join(dirname, "backup_aperMap")
-    if not os.path.exists(dir_backup):
-        os.mkdir(dir_backup)
-    path_backup = os.path.join(dir_backup, "%s_%s.fits"%(filename, today_backup))
-    hdul_full.writeto(path_backup,overwrite=False)

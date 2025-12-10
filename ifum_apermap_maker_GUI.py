@@ -956,19 +956,13 @@ class IFUM_AperMap_Maker:
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
         today_temp = datetime.today().strftime("%y%m%d")
-        today_backup = datetime.today().strftime("%y%m%d_%H%M")
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
+        file_aperMap = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
-        path_backup = os.path.join(dir_backup, file_backup)
+
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #### save slits file
         dir_slits = os.path.join(dir_aperMap, 'slits')
@@ -1176,17 +1170,12 @@ class IFUM_AperMap_Maker:
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
         today_temp = datetime.today().strftime('%y%m%d')
-        today_backup = datetime.today().strftime('%y%m%d_%H%M')
         dir_aperMap = self.ent_folder_trace.get()
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
@@ -1316,17 +1305,12 @@ class IFUM_AperMap_Maker:
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
         today_temp = datetime.today().strftime('%y%m%d')
-        today_backup = datetime.today().strftime('%y%m%d_%H%M')
         dir_aperMap = self.ent_folder_trace.get()
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
+        
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
@@ -1671,19 +1655,13 @@ class IFUM_AperMap_Maker:
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
         today_temp = datetime.today().strftime("%y%m%d")
-        today_backup = datetime.today().strftime("%y%m%d_%H%M")
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
+        file_aperMap = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
-        path_backup = os.path.join(dir_backup, file_backup)
+
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #### show apermap
         self.clear_image(shoe=shoe)
