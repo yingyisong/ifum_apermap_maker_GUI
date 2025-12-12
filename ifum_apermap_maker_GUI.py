@@ -959,6 +959,13 @@ class IFUM_AperMap_Maker:
         hdr_map['BINNING'] = ('1x1', 'binning')
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
+        ## record curve params in header
+        hdr_map['CURVE_A'] = (coef_temp[0], 'curve parameter A')
+        hdr_map['CURVE_B'] = (coef_temp[1], 'curve parameter B')
+        hdr_map['CURVE_C'] = (coef_temp[2], 'curve parameter C')
+        hdr_map['CURVE_X1'] = (coef_temp[3], 'starting X position of edges')
+        hdr_map['CURVE_DX'] = (coef_temp[4], 'length of edges along X axis')
+
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
