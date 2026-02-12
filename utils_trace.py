@@ -587,10 +587,9 @@ def do_trace_v2(trace, curve_params,
     print("++++ rel_height_cut: ", rel_height_cut)
 
     # get the inital peaks array
-    peaks_array_raw = get_peaks_array(columnspec_array, distance_cut,
-                                        prominence_cut, width_cut, 
-                                        rel_height=rel_height_cut, 
-                                        verbose=True)
+    peaks_array_raw = get_peaks_array(
+        columnspec_array, distance_cut, prominence_cut, width_cut, 
+        rel_height=rel_height_cut, verbose=True)
 
     # get the aligned peaks array
     peaks_array = align_peaks_array(peaks_array_raw, verbose=True)
