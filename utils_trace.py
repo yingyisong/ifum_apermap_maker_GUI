@@ -92,6 +92,7 @@ def preanalyze_columnspec_array(columnspec_array, ifu_type):
 #        width_cut = int( aper_half_width - 1 )
 #
     distance_cut = int( width_cut * 2.0 )
+    #distance_cut = int( aper_half_width * 2 )
 
     # get the prominence cut
     # prominences_array_sub = prominences_array[
