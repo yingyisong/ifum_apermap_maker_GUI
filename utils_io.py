@@ -314,7 +314,10 @@ def pack_4fits(name_file,dir_input,dir_output,flag_img_mask,path_img_mask,config
     ##     hdr_full['EXPTYPE'] = 'Lamp-ThArNe'
     ## elif (hdr_full['OBJECT']=='Twilight Config 1'):
     ##     hdr_full['EXPTYPE'] = 'Twilight'
-    hdr_full['BINNING'] = ('1x1', 'binning') # added by YYS on May 11, 2022
+
+    # added by YYS on May 11, 2022 
+    # commented out on Dec 12, 2025, since no longer use pypeit
+    # hdr_full['BINNING'] = ('1x1', 'binning') 
 
     hdul_full.writeto(dir_output+'/'+name_file+'.fits',overwrite=True)
 
