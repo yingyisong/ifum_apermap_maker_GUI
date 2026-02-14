@@ -52,7 +52,33 @@ def reshape_trace_by_curvature(trace, curve_params):
     return trace_new
 
 
-def determine_signal_height(columnspec_array, min_height=100.):
+def create_apermap(trace, curve_params, traces_coefs, aper_half_width, verbose=False):
+    """Create aperture map. """
+
+    aper_map_full = np.zeros_like(trace.data, dtype=np.int32)
+    x_middle = int(trace.data.shape[1]/2)
+    x_trace = np.arange(trace.data.shape[1])
+
+    y_middle = np.array([], dtype=np.int32)
+    for i in range(len(traces_coefs)):
+        y_middle = np.append(y_middle, np.round(poly.polyval(x_middle, traces_coefs[i])).astype(np.int32))
+        y_trace = poly.polyval(x_trace, traces_coefs[i])
+        y_trace = np.round(y_trace).astype(np.int32)
+        for j in range(len(y_trace)):
+            aper_map_full[y_trace[j]-aper_half_width:y_trace[j]+aper_half_width, x_trace[j]] = i+1
+
+    # trim the aperture map according to the curvature
+    aper_map_trim = np.zeros_like(trace.data, dtype=np.int32)
+    for y_idx in range(aper_map_full.shape[0]):
+        x_1 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3])
+        x_2 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3]+curve_params[4])
+        x_1 = int(np.floor(x_1))
+        x_2 = int(np.ceil(x_2))
+        aper_map_trim[y_idx, x_1:x_2] = aper_map_full[y_idx, x_1:x_2]
+
+    return aper_map_trim, y_middle
+
+def _determine_signal_height(columnspec_array, min_height=100.):
     """Determine signal height. """
 
     height_arrary = []
@@ -66,7 +92,7 @@ def determine_signal_height(columnspec_array, min_height=100.):
     return signal_height
 
 
-def preanalyze_columnspec_array(columnspec_array, ifu_type):
+def _preanalyze_columnspec_array(columnspec_array, ifu_type):
     """Preanalyze columnspec array. """
 
     # get the inital peaks and properties from columnspec_array
@@ -109,7 +135,7 @@ def preanalyze_columnspec_array(columnspec_array, ifu_type):
     return aper_half_width, width_cut, distance_cut, prominence_cut
 
 
-def get_peaks_in_one_column(columnspec_array, column, distance, prominence, 
+def _get_peaks_in_one_column(columnspec_array, column, distance, prominence, 
                             width, rel_height=0.5):
     """Get peaks in one column. """
 
@@ -126,13 +152,13 @@ def get_peaks_in_one_column(columnspec_array, column, distance, prominence,
     return peaks
 
 
-def get_peaks_array(columnspec_array, distance, prominence, width, 
+def _get_peaks_array(columnspec_array, distance, prominence, width, 
                     rel_height=0.5, verbose=False):
     """Get peaks array. """
 
     peaks_array = []
     for column in range(len(columnspec_array)):
-        peaks = get_peaks_in_one_column(
+        peaks = _get_peaks_in_one_column(
             columnspec_array, column, distance, prominence, width, rel_height
             )
         peaks_array.append(peaks)
@@ -149,7 +175,7 @@ def get_peaks_array(columnspec_array, distance, prominence, width,
     return peaks_array
 
 
-def align_peaks_array(peaks_array_raw, verbose=False):
+def _align_peaks_array(peaks_array_raw, verbose=False):
     """Align peaks into apertures. """
 
     peaks_col0 = peaks_array_raw[0] 
@@ -226,7 +252,7 @@ def align_peaks_array(peaks_array_raw, verbose=False):
     return peaks_array
 
 
-def clean_peaks_array(peaks_array, percentile=0.2, verbose=False):
+def _clean_peaks_array(peaks_array, percentile=0.2, verbose=False):
     """
     Clean peaks array by 
     1) removing short traces, and 
@@ -270,7 +296,7 @@ def clean_peaks_array(peaks_array, percentile=0.2, verbose=False):
     return peaks_array, column_max
 
 
-def get_group_gaps_from_template(peaks_template, peak_diff_cut=1.5, 
+def _get_group_gaps_from_template(peaks_template, peak_diff_cut=1.5, 
                                  verbose=False):
     """Get the group gaps from a IFU template file. """
 
@@ -297,7 +323,7 @@ def get_group_gaps_from_template(peaks_template, peak_diff_cut=1.5,
     return peaks_gap_template, min_diff_gap
 
 
-def get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
+def _get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
                                    peak_diff_cut=1.5, verbose=False):
     """Get the group gaps from the column max. """
 
@@ -329,7 +355,7 @@ def get_group_gaps_from_column_max(peaks_cmax, min_diff_gap,
     return peaks_gap_cmax
 
 
-def fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax, 
+def _fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax, 
                                peaks_template, order=4, verbose=False):
     """Fit projection from template to column max. """
 
@@ -345,7 +371,7 @@ def fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
     return coefs, peaks_template_cmax
 
 
-def find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
+def _find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
     """find missing fibers in the column max. """
 
     if verbose:
@@ -411,7 +437,7 @@ def find_missing_fibers(y_data, y_pred, delta_y=3.0, verbose=False):
     return ids
 
 
-def add_missing_fibers(peaks_array, peaks_template, ids,
+def _add_missing_fibers(peaks_array, peaks_template, ids,
                        order=4, verbose=False):
     """Add missing fibers to peaks array. """
 
@@ -437,7 +463,7 @@ def add_missing_fibers(peaks_array, peaks_template, ids,
     return peaks_array_new
 
 
-def find_missing_fibers_LSB(y_data, y_template, 
+def _find_missing_fibers_LSB(y_data, y_template, 
                            rel_delta_y=1.5, verbose=False):
     """Add missing fibers to peaks array for LSB. """
 
@@ -491,7 +517,7 @@ def find_missing_fibers_LSB(y_data, y_template,
     return ids 
 
 
-def plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
+def _plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
     """Plot a view of gaps of the column max vs. the template. """
 
     x_gap_template = np.arange(len(peaks_template)-1)+1
@@ -531,7 +557,7 @@ def plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
     #plt.savefig('gaps.png')
 
 
-def fit_aperture_traces(peaks_array, col_centers, curve_params, 
+def _fit_aperture_traces(peaks_array, col_centers, curve_params, 
                         order=4, verbose=False):
     """Fit aperture traces. """
 
@@ -578,7 +604,7 @@ def do_trace_v2(trace, curve_params,
 
     # pre-analyze the trace data
     aper_half_width, width_cut, distance_cut, prominence_cut \
-        = preanalyze_columnspec_array(columnspec_array, ifu_type)
+        = _preanalyze_columnspec_array(columnspec_array, ifu_type)
     print("++++ aper_half_width: ", aper_half_width)
     print("++++ width_cut: ", width_cut)
     print("++++ distance_cut: ", distance_cut)
@@ -588,15 +614,15 @@ def do_trace_v2(trace, curve_params,
     print("++++ rel_height_cut: ", rel_height_cut)
 
     # get the inital peaks array
-    peaks_array_raw = get_peaks_array(
+    peaks_array_raw = _get_peaks_array(
         columnspec_array, distance_cut, prominence_cut, width_cut, 
         rel_height=rel_height_cut, verbose=True)
 
     # get the aligned peaks array
-    peaks_array = align_peaks_array(peaks_array_raw, verbose=True)
+    peaks_array = _align_peaks_array(peaks_array_raw, verbose=True)
 
     # clean the peaks array
-    peaks_array, column_max = clean_peaks_array(peaks_array, verbose=True)
+    peaks_array, column_max = _clean_peaks_array(peaks_array, verbose=True)
     peaks_cmax = peaks_array[column_max]
 
     # get the peaks template
@@ -612,68 +638,41 @@ def do_trace_v2(trace, curve_params,
     if ifu_type == 'HR' or ifu_type == 'STD':
         # get the group gaps from the template
         peaks_gap_template, min_diff_gap \
-            = get_group_gaps_from_template(peaks_template, verbose=True)
+            = _get_group_gaps_from_template(peaks_template, verbose=True)
 
         # get the group gaps from the column max
         peaks_gap_cmax \
-            = get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
+            = _get_group_gaps_from_column_max(peaks_cmax, min_diff_gap, 
                                              verbose=True)
 
         # transfer the template to the column max
         coefs, peaks_template_cmax \
-            = fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
+            = _fit_template_to_column_max(peaks_gap_template, peaks_gap_cmax,
                                          peaks_template, order=4)
 
         # find the missing fibers
-        ids_add = find_missing_fibers(peaks_cmax, peaks_template_cmax,
+        ids_add = _find_missing_fibers(peaks_cmax, peaks_template_cmax,
                                       delta_y=aper_half_width*2.0, verbose=True)
     else:   
         # i.e., ifu_type == 'LSB'
         # LSB has no distingushed group gaps, so use the template directly
-        ids_add = find_missing_fibers_LSB(peaks_cmax, peaks_template, 
+        ids_add = _find_missing_fibers_LSB(peaks_cmax, peaks_template, 
                                           rel_delta_y=1.5, verbose=True)
     print("++++ # of added fibers: ", len(ids_add))
     print("++++ Added IDs: ", ids_add)
 
     # add missing fibers to the peaks array
-    peaks_array = add_missing_fibers(peaks_array, peaks_template, 
+    peaks_array = _add_missing_fibers(peaks_array, peaks_template, 
                                      ids_add, verbose=True)
 
     # plot a view of gaps of the column max vs. the template
     if plot:
-        plt_gaps(peaks_array[column_max], peaks_template, ids_add, 
+        _plt_gaps(peaks_array[column_max], peaks_template, ids_add, 
                  shoe, ifu_type)
 
     # fit the aperture traces
     traces_array, traces_coefs \
-        = fit_aperture_traces(peaks_array, col_centers, curve_params)
+        = _fit_aperture_traces(peaks_array, col_centers, curve_params)
     n_aper = len(traces_array[0])
 
     return traces_array, traces_coefs, n_aper, aper_half_width
-
-
-def create_apermap(trace, curve_params, traces_coefs, aper_half_width, verbose=False):
-    """Create aperture map. """
-
-    aper_map_full = np.zeros_like(trace.data, dtype=np.int32)
-    x_middle = int(trace.data.shape[1]/2)
-    x_trace = np.arange(trace.data.shape[1])
-
-    y_middle = np.array([], dtype=np.int32)
-    for i in range(len(traces_coefs)):
-        y_middle = np.append(y_middle, np.round(poly.polyval(x_middle, traces_coefs[i])).astype(np.int32))
-        y_trace = poly.polyval(x_trace, traces_coefs[i])
-        y_trace = np.round(y_trace).astype(np.int32)
-        for j in range(len(y_trace)):
-            aper_map_full[y_trace[j]-aper_half_width:y_trace[j]+aper_half_width, x_trace[j]] = i+1
-
-    # trim the aperture map according to the curvature
-    aper_map_trim = np.zeros_like(trace.data, dtype=np.int32)
-    for y_idx in range(aper_map_full.shape[0]):
-        x_1 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3])
-        x_2 = func_parabola(y_idx, curve_params[0], curve_params[1], curve_params[3]+curve_params[4])
-        x_1 = int(np.floor(x_1))
-        x_2 = int(np.ceil(x_2))
-        aper_map_trim[y_idx, x_1:x_2] = aper_map_full[y_idx, x_1:x_2]
-
-    return aper_map_trim, y_middle
