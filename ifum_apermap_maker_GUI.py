@@ -16,7 +16,7 @@ import numpy.polynomial.polynomial as poly
 from scipy.optimize import curve_fit
 
 from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
-from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v2, create_apermap
+from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v3, create_apermap
 
 import subprocess
 #from multiprocessing import Process
@@ -923,7 +923,7 @@ class IFUM_AperMap_Maker:
         data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
 
         # trace the resahped data and create an apermap
-        trace_array, trace_coefs, N_sl, aper_half_width = do_trace_v2(
+        trace_array, trace_coefs, N_sl, aper_half_width = do_trace_v3(
             data_reshaped, coef_temp,                          
             shoe, ifu_type_trace, bin_y_trace, verbose=True)
         map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
