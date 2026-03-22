@@ -80,9 +80,7 @@ def main():
     folders = [
         "data_raw",
         "data_trace",
-        "data_trace/backup_trace",
         "data_trace/aperMap",
-        "data_trace/aperMap/backup_aperMap",
         "data_trace/aperMap/slits",
         "data_trace/aperMap/trace_coefs"
     ]

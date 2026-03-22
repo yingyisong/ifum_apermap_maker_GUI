@@ -16,7 +16,7 @@ import numpy.polynomial.polynomial as poly
 from scipy.optimize import curve_fit
 
 from utils_io import IFUM_UNIT, pack_4fits_simple, func_parabola, readFloat_space, write_pypeit_file, write_trace_file, cut_apermap, cached_fits_open
-from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v2, create_apermap
+from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v3, create_apermap
 
 import subprocess
 #from multiprocessing import Process
@@ -65,15 +65,15 @@ class IFUM_AperMap_Maker:
         # Configure the main window grid
         self.window.rowconfigure(0, weight=1)
         self.window.columnconfigure(0, weight=1)
-        
+
         # Create a container frame for the scrollable content
         self.outer_frame = tk.Frame(self.window)
         self.outer_frame.grid(row=0, column=0, sticky="nsew")
-        
+
         # Configure the container frame grid
         self.outer_frame.rowconfigure(1, weight=1)
         self.outer_frame.columnconfigure(1, weight=1)
-        
+
         # Create a canvas for scrolling
         self.tk_canvas = tk.Canvas(self.outer_frame, bg=BG_COLOR)  # Changed from self.canvas
         self.tk_canvas.grid(row=1, column=1, sticky="nsew")
@@ -87,21 +87,21 @@ class IFUM_AperMap_Maker:
         style.configure("Horizontal.TScrollbar", gripcount=0,
                 background=BG_COLOR, darkcolor=LABEL_COLOR, lightcolor=LABEL_COLOR,
                 troughcolor="gray", bordercolor=BG_COLOR, arrowcolor="gray")
-        
+
         # Add vertical scrollbar
         v_scrollbar = ttk.Scrollbar(self.outer_frame, orient="vertical", command=self.tk_canvas.yview)
         v_scrollbar.grid(row=1, column=0, sticky="ns")
         self.tk_canvas.configure(yscrollcommand=v_scrollbar.set)
-        
+
         # Add horizontal scrollbar
         h_scrollbar = ttk.Scrollbar(self.outer_frame, orient="horizontal", command=self.tk_canvas.xview)
         h_scrollbar.grid(row=0, column=1, sticky="ew")
         self.tk_canvas.configure(xscrollcommand=h_scrollbar.set)
-        
+
         # Create a frame inside the canvas to hold all content
         self.content_frame = tk.Frame(self.tk_canvas)
         self.canvas_window = self.tk_canvas.create_window((0, 0), window=self.content_frame, anchor="nw")
-        
+
         # Bind events to update the scroll region
         self.content_frame.bind("<Configure>", self.on_frame_configure)
         self.tk_canvas.bind("<Configure>", self.on_canvas_configure)
@@ -137,14 +137,14 @@ class IFUM_AperMap_Maker:
 
         # Keep the scroll region updated
         self.on_frame_configure(None)
-        
+
     def initialize_gui(self):
         """Initialize the GUI components."""
         # Configure the content frame grid
         self.content_frame.rowconfigure(0, weight=1)
         self.content_frame.columnconfigure(1, weight=1)
         self.content_frame.columnconfigure(2, weight=1) 
-    
+
         #### menubar
         self.menubar = tk.Menu(self.window)
         self.window.config(menu=self.menubar)
@@ -170,7 +170,7 @@ class IFUM_AperMap_Maker:
 
         # initialize other widgets and values
         self.initialize_widgets()
-        
+
     def initialize_widgets(self):
         """Initialize all widgets."""
         #### IFUM units
@@ -309,9 +309,13 @@ class IFUM_AperMap_Maker:
 
         today_temp = datetime.today().strftime('%y%m%d')
         filename = "curve_%s_%s_%s_%s_%s_%s_%s.txt"%(
-            self.ifu_type.label, self.HDR_CONFIG, self.HDR_BINNING,
-            self.HDR_SLITNAME, self.HDR_SLIDE,
-            self.lbl_file_trace['text'], today_temp)
+            self.ifu_type.label, 
+            self.HDR_BINNING,
+            self.HDR_SLIDE,
+            self.HDR_SLITNAME, 
+            self.HDR_CONFIG, 
+            self.lbl_file_trace['text'], 
+            today_temp)
         pathname = os.path.join(self.folder_curve, filename)
         file = open(pathname, 'w')
         file.write("#side A B C X1 dX\n")
@@ -322,7 +326,7 @@ class IFUM_AperMap_Maker:
             self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], 
             self.param_edges_r[0], self.param_edges_r[2]))
         file.close()
-        
+
         #### show message
         info_temp = 'Steps 1 & 2 parameters saved!\n\n Location: %s'%pathname
         self.popup_showinfo('File saved', info_temp)
@@ -919,9 +923,9 @@ class IFUM_AperMap_Maker:
         data_reshaped = reshape_trace_by_curvature(data_trace, coef_temp)
 
         # trace the resahped data and create an apermap
-        trace_array, trace_coefs, N_sl, aper_half_width \
-            = do_trace_v2(data_reshaped, coef_temp,                          
-                          shoe, ifu_type_trace, bin_y_trace, verbose=True)
+        trace_array, trace_coefs, N_sl, aper_half_width = do_trace_v3(
+            data_reshaped, coef_temp,                          
+            shoe, ifu_type_trace, bin_y_trace, verbose=True)
         map_ap, y_middle = create_apermap(data_trace, coef_temp, trace_coefs, aper_half_width)
         #print(len(y_middle), y_middle)
         #print(np.diff(y_middle))
@@ -955,20 +959,30 @@ class IFUM_AperMap_Maker:
         hdr_map['BINNING'] = ('1x1', 'binning')
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-        today_temp = datetime.today().strftime("%y%m%d")
-        today_backup = datetime.today().strftime("%y%m%d_%H%M")
+        ## record curve params in header
+        hdr_map['CURVE_A'] = (coef_temp[0], 'curve parameter A')
+        hdr_map['CURVE_B'] = (coef_temp[1], 'curve parameter B')
+        hdr_map['CURVE_C'] = (coef_temp[2], 'curve parameter C')
+        hdr_map['CURVE_X1'] = (coef_temp[3], 'starting X position of edges')
+        hdr_map['CURVE_DX'] = (coef_temp[4], 'length of edges along X axis')
+
         dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
+
+        today_temp = datetime.today().strftime("%y%m%d")
+        file_aperMap = 'ap%s_%s_%s_%s_%s_%s_%s_%s.fits'%(
+            shoe, 
+            self.ifu_type.label, 
+            self.HDR_CONFIG, 
+            self.lbl_file_pypeit['text'][0:4],
+            self.HDR_BINNING,
+            self.HDR_SLIDE,
+            self.HDR_SLITNAME, 
+            today_temp)
+
         path_aperMap = os.path.join(dir_aperMap, file_aperMap)
-        path_backup = os.path.join(dir_backup, file_backup)
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #### save slits file
         dir_slits = os.path.join(dir_aperMap, 'slits')
@@ -1126,7 +1140,7 @@ class IFUM_AperMap_Maker:
             print('!!! Warning: Less bad fibers are added. !!!')
         else:
             print('All %d fibers are found.'%N_ap)
-        
+
         #### make a new AperMap
         map_ap = np.zeros((len(self.data_full),len(self.data_full[0])), dtype=np.int32)
         x_trace = np.arange(len(self.data_full[0]))
@@ -1152,41 +1166,46 @@ class IFUM_AperMap_Maker:
                 y_temp = np.round( poly.polyval(x_trace, trace_coefs[i_temp]) ).astype(np.int32)
                 for j in range(len(x_trace)):
                     map_ap[y_temp[j]+shift_temp-aper_half_width:y_temp[j]+shift_temp+aper_half_width, x_trace[j]] = np.int32(ap_num)
+
+        #### cut data
+        map_ap = self.cut_data_by_edges(map_ap, shoe)
+
+        #### find the maximum number of pixels in all slits
+        num_ap = np.zeros(N_ap, dtype=np.int32)
+        for i_ap in range(N_ap):
+            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+        num_max = np.max(num_ap)
+
+        #### save AperMap
+        #### the following header params may require modifying
+        hdu_map = fits.PrimaryHDU(map_ap)
+        hdr_map = hdu_map.header
+        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+        hdr_map['NSLITS'] = (N_new, 'number of slits')
+        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+        hdr_map['BINNING'] = ('1x1', 'binning')
+        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+
+        dir_aperMap = self.ent_folder_trace.get()
+        if not os.path.exists(dir_aperMap):
+            os.mkdir(dir_aperMap)
         
-        #### cut data
-        map_ap = self.cut_data_by_edges(map_ap, shoe)
-
-        #### find the maximum number of pixels in all slits
-        num_ap = np.zeros(N_ap, dtype=np.int32)
-        for i_ap in range(N_ap):
-            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
-        num_max = np.max(num_ap)
-
-        #### save AperMap
-        #### the following header params may require modifying
-        hdu_map = fits.PrimaryHDU(map_ap)
-        hdr_map = hdu_map.header
-        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
-        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
-        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
-        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
-        hdr_map['NSLITS'] = (N_new, 'number of slits')
-        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
-        hdr_map['BINNING'] = ('1x1', 'binning')
-        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
-
         today_temp = datetime.today().strftime('%y%m%d')
-        today_backup = datetime.today().strftime('%y%m%d_%H%M')
-        dir_aperMap = self.ent_folder_trace.get()
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
-        if not os.path.exists(dir_aperMap):
-            os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
+        file_aperMap = 'ap%s_%s_%s_%s_%s_%s_%s_%s.fits'%(
+            self.lbl_file_apermap['text'][2], 
+            self.ifu_type.label, 
+            self.HDR_CONFIG, 
+            self.lbl_file_apermap['text'][3:7],
+            self.HDR_BINNING,
+            self.HDR_SLIDE,
+            self.HDR_SLITNAME, 
+            today_temp)
+
+        path_aperMap = os.path.join(dir_aperMap, file_aperMap)
         hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
 
         #self.btn_select_slits['state'] = 'disabled'
         #self.btn_select_slits['state'] = 'disabled'
@@ -1201,147 +1220,148 @@ class IFUM_AperMap_Maker:
         print('\n++++\n++++ %s\n++++\n'%(info_temp))
 
         self.window.focus_force()
-
-    def make_file_apermap_slits(self):
-        #### load MasterSlits file
-        N_ap = np.int32(self.ifu_type.Ntotal/2)
-
-        basename = os.path.basename(self.path_MasterSlits)
-        shoe = basename.split('_')[1][0]
-
-        #hdul = cached_fits_open(self.path_MasterSlits)
-        hdul = fits.open(self.path_MasterSlits)
-        hdr = hdul[1].header
-        data = hdul[1].data
-
-        N_sl  = np.int32(hdr['NSLITS'])
-        nspec = np.int32(hdr['NSPEC']) ### binning?
-        nspat = np.int32(hdr['NSPAT'])
-        map_ap = np.zeros((nspat,nspec), dtype=np.int32)
-
-        print('nspat, nspec=',nspat,nspec)
-        print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
-
-        #### load missing slits file
-        dirname_slits = os.path.join(self.folder_trace, 'slits_file')
-        filename_slits = self.filename_trace.split('_')[2]+'_slits.txt'
-        path_slits = os.path.join(dirname_slits, filename_slits)
-        if os.path.isfile(path_slits):
-            spat_id_missing = np.int32(readFloat_space(path_slits, 0))
-        else:
-            spat_id_missing = np.array([])
-
-        #### add missing slits and make new AperMap
-        print('Note: %d fiber(s) are added manually.'%(len(spat_id_missing)))
-        spat_id_raw = data['spat_id']
-        spat_id_new = np.append(spat_id_raw, spat_id_missing)
-        spat_id_new = np.sort(spat_id_new)
-        N_new = len(spat_id_new)
-
-        if N_new>N_ap:
-            print('!!! Warning: More bad fibers are added. !!!')
-        elif N_new<N_ap:
-            print('!!! Warning: Less bad fibers are added. !!!')
-
-        for i_ap in range(N_new):
-            ap_num = i_ap+1
-            spat_id_temp = spat_id_new[i_ap]
-
-            temp_index = np.where(spat_id_raw==spat_id_temp)[0]
-            if len(temp_index)==1:
-                i_temp = temp_index[0]
-                for x_temp in range(nspec):
-                    ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                    ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                    map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
-            else:
-                #map_ap[spat_id_temp-2:spat_id_temp+1, int(nspec/2)-2:int(nspec/2)+1] = np.int32(ap_num)
-                #print("!!!!!!", spat_id_temp-2, spat_id_temp+1, int(nspec/2)-2, int(nspec/2)+1)
-
-                #### insert a missing slit using the nearest slit
-                dist_temp = np.abs(spat_id_raw-spat_id_temp)
-                i_temp = np.where(dist_temp==np.min(dist_temp))[0][0]
-                shift_temp = spat_id_temp-spat_id_raw[i_temp]
-                print(ap_num, i_temp)
-
-                for x_temp in range(nspec):
-                    ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                    ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                    map_ap[ap_y1+shift_temp:ap_y2+shift_temp, x_temp] = np.int32(ap_num)
-
-                ##### insert a missing slit using either one slit before or after
-                #d1_spat_id = spat_id_temp - spat_id_new[i_ap-1]
-                #d2_spat_id = spat_id_new[i_ap+1] - spat_id_temp
-                #print(d1_spat_id, d2_spat_id)
-                #if d1_spat_id>d2_spat_id:
-                #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap+1])[0]
-                #    if len(temp_index)==1:
-                #        i_temp = temp_index[0]
-                #        for x_temp in range(nspec):
-                #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                #            map_ap[ap_y1-d2_spat_id:ap_y2-d2_spat_id, x_temp] = np.int32(ap_num)
-                #else:
-                #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap-1])[0]
-                #    if len(temp_index)==1:
-                #        i_temp = temp_index[0]
-                #        for x_temp in range(nspec):
-                #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
-                #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
-                #            map_ap[ap_y1+d1_spat_id:ap_y2+d1_spat_id, x_temp] = np.int32(ap_num)
-                #            map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
-
-        #### cut data
-        map_ap = self.cut_data_by_edges(map_ap, shoe)
-
-        #### find the maximum number of pixels in all slits
-        num_ap = np.zeros(N_ap, dtype=np.int32)
-        for i_ap in range(N_ap):
-            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
-        num_max = np.max(num_ap)
-
-        #plt.imshow(map_ap, origin='lower')
-
-        #### save AperMap
-        #### the following header params may require modifying
-        hdu_map = fits.PrimaryHDU(map_ap)
-        hdr_map = hdu_map.header
-        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
-        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
-        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
-        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
-        hdr_map['NSLITS'] = (N_new, 'number of slits')
-        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
-        hdr_map['BINNING'] = ('1x1', 'binning')
-        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
-
-        today_temp = datetime.today().strftime('%y%m%d')
-        today_backup = datetime.today().strftime('%y%m%d_%H%M')
-        dir_aperMap = self.ent_folder_trace.get()
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
-        if not os.path.exists(dir_aperMap):
-            os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        path_aperMap = os.path.join(dir_aperMap, 'ap%s_%s_%s_%s_3000.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_temp))
-        path_backup = os.path.join(dir_backup, 'ap%s_%s_%s_%s.fits'%(self.lbl_file_apermap['text'][2], self.ifu_type.label, self.lbl_file_apermap['text'][3:7],today_backup))
-        hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
-
-        #self.btn_select_slits['state'] = 'disabled'
-        #self.btn_select_slits['state'] = 'disabled'
-
-        ####
-        self.clear_image()
-        self.file_current = '%s (Nslits=%d)'%(self.lbl_file_apermap['text'], N_new)
-        self.update_image_single(map_ap, self.file_current, shoe='b', uniform=True)
-
-        info_temp = 'Saved as %s'%path_aperMap
-        self.popup_showinfo('aperMap', info_temp)
-        print('\n++++\n++++ %s\n++++\n'%(info_temp))
-
-        self.window.focus_force()
-
+    
+    # def make_file_apermap_slits(self):
+    #     #### load MasterSlits file
+    #     N_ap = np.int32(self.ifu_type.Ntotal/2)
+    
+    #     basename = os.path.basename(self.path_MasterSlits)
+    #     shoe = basename.split('_')[1][0]
+    
+    #     #hdul = cached_fits_open(self.path_MasterSlits)
+    #     hdul = fits.open(self.path_MasterSlits)
+    #     hdr = hdul[1].header
+    #     data = hdul[1].data
+    
+    #     N_sl  = np.int32(hdr['NSLITS'])
+    #     nspec = np.int32(hdr['NSPEC']) ### binning?
+    #     nspat = np.int32(hdr['NSPAT'])
+    #     map_ap = np.zeros((nspat,nspec), dtype=np.int32)
+    
+    #     print('nspat, nspec=',nspat,nspec)
+    #     print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
+    
+    #     #### load missing slits file
+    #     dirname_slits = os.path.join(self.folder_trace, 'slits_file')
+    #     filename_slits = self.filename_trace.split('_')[2]+'_slits.txt'
+    #     path_slits = os.path.join(dirname_slits, filename_slits)
+    #     if os.path.isfile(path_slits):
+    #         spat_id_missing = np.int32(readFloat_space(path_slits, 0))
+    #     else:
+    #         spat_id_missing = np.array([])
+    
+    #     #### add missing slits and make new AperMap
+    #     print('Note: %d fiber(s) are added manually.'%(len(spat_id_missing)))
+    #     spat_id_raw = data['spat_id']
+    #     spat_id_new = np.append(spat_id_raw, spat_id_missing)
+    #     spat_id_new = np.sort(spat_id_new)
+    #     N_new = len(spat_id_new)
+    
+    #     if N_new>N_ap:
+    #         print('!!! Warning: More bad fibers are added. !!!')
+    #     elif N_new<N_ap:
+    #         print('!!! Warning: Less bad fibers are added. !!!')
+    
+    #     for i_ap in range(N_new):
+    #         ap_num = i_ap+1
+    #         spat_id_temp = spat_id_new[i_ap]
+    
+    #         temp_index = np.where(spat_id_raw==spat_id_temp)[0]
+    #         if len(temp_index)==1:
+    #             i_temp = temp_index[0]
+    #             for x_temp in range(nspec):
+    #                 ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+    #                 ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+    #                 map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
+    #         else:
+    #             #map_ap[spat_id_temp-2:spat_id_temp+1, int(nspec/2)-2:int(nspec/2)+1] = np.int32(ap_num)
+    #             #print("!!!!!!", spat_id_temp-2, spat_id_temp+1, int(nspec/2)-2, int(nspec/2)+1)
+    
+    #             #### insert a missing slit using the nearest slit
+    #             dist_temp = np.abs(spat_id_raw-spat_id_temp)
+    #             i_temp = np.where(dist_temp==np.min(dist_temp))[0][0]
+    #             shift_temp = spat_id_temp-spat_id_raw[i_temp]
+    #             print(ap_num, i_temp)
+    
+    #             for x_temp in range(nspec):
+    #                 ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+    #                 ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+    #                 map_ap[ap_y1+shift_temp:ap_y2+shift_temp, x_temp] = np.int32(ap_num)
+    
+    #             ##### insert a missing slit using either one slit before or after
+    #             #d1_spat_id = spat_id_temp - spat_id_new[i_ap-1]
+    #             #d2_spat_id = spat_id_new[i_ap+1] - spat_id_temp
+    #             #print(d1_spat_id, d2_spat_id)
+    #             #if d1_spat_id>d2_spat_id:
+    #             #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap+1])[0]
+    #             #    if len(temp_index)==1:
+    #             #        i_temp = temp_index[0]
+    #             #        for x_temp in range(nspec):
+    #             #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+    #             #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+    #             #            map_ap[ap_y1-d2_spat_id:ap_y2-d2_spat_id, x_temp] = np.int32(ap_num)
+    #             #else:
+    #             #    temp_index = np.where(spat_id_raw==spat_id_new[i_ap-1])[0]
+    #             #    if len(temp_index)==1:
+    #             #        i_temp = temp_index[0]
+    #             #        for x_temp in range(nspec):
+    #             #            ap_y1 = np.int32(np.round(data[i_temp]['left_init'][x_temp]-1))
+    #             #            ap_y2 = np.int32(np.round(data[i_temp]['right_init'][x_temp]))
+    #             #            map_ap[ap_y1+d1_spat_id:ap_y2+d1_spat_id, x_temp] = np.int32(ap_num)
+    #             #            map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num-1)
+    
+    #     #### cut data
+    #     map_ap = self.cut_data_by_edges(map_ap, shoe)
+    
+    #     #### find the maximum number of pixels in all slits
+    #     num_ap = np.zeros(N_ap, dtype=np.int32)
+    #     for i_ap in range(N_ap):
+    #         num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+    #     num_max = np.max(num_ap)
+    
+    #     #plt.imshow(map_ap, origin='lower')
+    
+    #     #### save AperMap
+    #     #### the following header params may require modifying
+    #     hdu_map = fits.PrimaryHDU(map_ap)
+    #     hdr_map = hdu_map.header
+    #     hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+    #     #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+    #     hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+    #     hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+    #     hdr_map['NSLITS'] = (N_new, 'number of slits')
+    #     hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+    #     hdr_map['BINNING'] = ('1x1', 'binning')
+    #     #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+    
+    #     dir_aperMap = self.ent_folder_trace.get()
+    #     if not os.path.exists(dir_aperMap):
+    #         os.mkdir(dir_aperMap)
+    
+    #     today_temp = datetime.today().strftime('%y%m%d')
+    #     file_aperMap = 'ap%s_%s_%s_%s.fits'%(
+    #         self.lbl_file_apermap['text'][2], 
+    #         self.ifu_type.label, 
+    #         self.lbl_file_apermap['text'][3:7],
+    #         today_temp)
+    
+    #     path_aperMap = os.path.join(dir_aperMap, file_aperMap)
+    #     hdu_map.writeto(path_aperMap,overwrite=True)
+    
+    #     #self.btn_select_slits['state'] = 'disabled'
+    #     #self.btn_select_slits['state'] = 'disabled'
+    
+    #     ####
+    #     self.clear_image()
+    #     self.file_current = '%s (Nslits=%d)'%(self.lbl_file_apermap['text'], N_new)
+    #     self.update_image_single(map_ap, self.file_current, shoe='b', uniform=True)
+    
+    #     info_temp = 'Saved as %s'%path_aperMap
+    #     self.popup_showinfo('aperMap', info_temp)
+    #     print('\n++++\n++++ %s\n++++\n'%(info_temp))
+    
+    #     self.window.focus_force()
+    
     def make_file_apermap_fix2_v2(self):
         '''
         For LSB, STD and HR, pick 5, 6 and 8 bundle centers, respectively
@@ -1501,7 +1521,7 @@ class IFUM_AperMap_Maker:
             ap_id_temp = np.append(pts_all[i], ap_id_temp)
             ap_id_temp = np.append(ap_id_temp, pts_all[i+1])
             ap_diff_temp = np.diff(ap_id_temp)
-            
+
             print('Working on %d/%d to add %d fiber(s)'%(i+1, n_pick*2, self.ifu_type.Nx-len(ap_diff_temp)+1))
             while len(ap_diff_temp)<=self.ifu_type.Nx:
                 mask_diff_temp = ap_diff_temp>thresh_diff*ap_diff_med_temp
@@ -1516,9 +1536,9 @@ class IFUM_AperMap_Maker:
                     ap_id_temp = np.sort( np.append(ap_id_temp, ap_id_add_temp) )
                     ap_diff_temp = np.diff(ap_id_temp)
                     print(len(ap_id_add), ap_id_add_temp)
-            
+
             ap_id = np.sort( np.append(ap_id[~mask_id_temp], ap_id_temp) )
-                        
+
         #### 
         print("Auto-fix found %d fiber(s) to add"%len(ap_id_add))
 
@@ -1595,7 +1615,7 @@ class IFUM_AperMap_Maker:
                 ap_diff = np.diff(ap_id)
             else:
                 iy += 1
-        
+
         #### 
         print("Auto-fix found %d fiber(s) to add"%len(ap_id_add))
 
@@ -1613,95 +1633,94 @@ class IFUM_AperMap_Maker:
 
         self.make_file_apermap_slits()
 
-    def make_file_apermap(self):
-        N_ap = np.int32(self.ifu_type.Ntotal/2)
-        basename = os.path.basename(self.path_MasterSlits)
-        fname = basename.split('_')[1]+'_apermap'
-        shoe = fname[0]
-        print(shoe, fname)
+    # def make_file_apermap(self):
+    #     N_ap = np.int32(self.ifu_type.Ntotal/2)
+    #     basename = os.path.basename(self.path_MasterSlits)
+    #     fname = basename.split('_')[1]+'_apermap'
+    #     shoe = fname[0]
+    #     print(shoe, fname)
 
-        #hdul = cached_fits_open(self.path_MasterSlits)
-        hdul = fits.open(self.path_MasterSlits)
-        hdr = hdul[1].header
-        data = hdul[1].data
+    #     #hdul = cached_fits_open(self.path_MasterSlits)
+    #     hdul = fits.open(self.path_MasterSlits)
+    #     hdr = hdul[1].header
+    #     data = hdul[1].data
 
-        N_sl  = np.int32(hdr['NSLITS'])
-        nspec = np.int32(hdr['NSPEC']) ### binning?
-        nspat = np.int32(hdr['NSPAT'])
-        map_ap = np.zeros((nspat,nspec), dtype=np.int32)
-        print('nspat, nspec=',nspat,nspec)
-        print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
+    #     N_sl  = np.int32(hdr['NSLITS'])
+    #     nspec = np.int32(hdr['NSPEC']) ### binning?
+    #     nspat = np.int32(hdr['NSPAT'])
+    #     map_ap = np.zeros((nspat,nspec), dtype=np.int32)
+    #     print('nspat, nspec=',nspat,nspec)
+    #     print('Note: %d out of %d fibers are found by pypeit_trace_edges.'%(N_sl,N_ap))
 
-        ####
-        if N_ap>N_sl:
-            print('!!! Warning: Missing %d fiber(s). !!!'%(N_ap-N_sl))
-        elif N_ap<N_sl:
-            print('!!! Warning: Found %d more fiber(s) than expected. !!!'%(N_sl-N_ap))
+    #     ####
+    #     if N_ap>N_sl:
+    #         print('!!! Warning: Missing %d fiber(s). !!!'%(N_ap-N_sl))
+    #     elif N_ap<N_sl:
+    #         print('!!! Warning: Found %d more fiber(s) than expected. !!!'%(N_sl-N_ap))
 
-        #### make AperMap (note by YYS: need to improve speed)
-        for i_ap in range(N_sl):
-            ap_num = i_ap+1
-            for x_temp in range(nspec):
-                ap_y1 = int(np.round(data[i_ap]['left_init'][x_temp]-1))
-                ap_y2 = int(np.round(data[i_ap]['right_init'][x_temp]))
-                map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
+    #     #### make AperMap (note by YYS: need to improve speed)
+    #     for i_ap in range(N_sl):
+    #         ap_num = i_ap+1
+    #         for x_temp in range(nspec):
+    #             ap_y1 = int(np.round(data[i_ap]['left_init'][x_temp]-1))
+    #             ap_y2 = int(np.round(data[i_ap]['right_init'][x_temp]))
+    #             map_ap[ap_y1:ap_y2, x_temp] = np.int32(ap_num)
 
-        #### cut data
-        map_ap = self.cut_data_by_edges(map_ap, shoe)
+    #     #### cut data
+    #     map_ap = self.cut_data_by_edges(map_ap, shoe)
 
-        #### find the maximum number of pixels in all slits
-        num_ap = np.zeros(N_ap, dtype=np.int32)
-        for i_ap in range(N_ap):
-            num_ap[i_ap] = np.sum(map_ap==i_ap+1)
-        num_max = np.max(num_ap)
+    #     #### find the maximum number of pixels in all slits
+    #     num_ap = np.zeros(N_ap, dtype=np.int32)
+    #     for i_ap in range(N_ap):
+    #         num_ap[i_ap] = np.sum(map_ap==i_ap+1)
+    #     num_max = np.max(num_ap)
 
-        #plt.imshow(map_ap, origin='lower')
+    #     #plt.imshow(map_ap, origin='lower')
 
-        #### save AperMap
-        #### the following header params may require modifying
-        hdu_map = fits.PrimaryHDU(map_ap)
-        hdr_map = hdu_map.header
-        hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
-        #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
-        hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
-        hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
-        hdr_map['NSLITS'] = (N_sl, 'number of slits')
-        hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
-        hdr_map['BINNING'] = ('1x1', 'binning')
-        #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
+    #     #### save AperMap
+    #     #### the following header params may require modifying
+    #     hdu_map = fits.PrimaryHDU(map_ap)
+    #     hdr_map = hdu_map.header
+    #     hdr_map['IFUTYPE'] = (self.ifu_type.label, 'type of IFU')
+    #     #hdr_map.set('IFUTYPE', IFU_type, 'type of IFU')
+    #     hdr_map['NIFU1'] = (self.ifu_type.Nx, 'number of IFU columns')
+    #     hdr_map['NIFU2'] = (self.ifu_type.Ny, 'number of IFU rows')
+    #     hdr_map['NSLITS'] = (N_sl, 'number of slits')
+    #     hdr_map['NMAX'] = (num_max, 'maximum number of pixels among all apertures')
+    #     hdr_map['BINNING'] = ('1x1', 'binning')
+    #     #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-        today_temp = datetime.today().strftime("%y%m%d")
-        today_backup = datetime.today().strftime("%y%m%d_%H%M")
-        dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
-        dir_backup = os.path.join(dir_aperMap, 'backup_aperMap')
-        if not os.path.exists(dir_aperMap):
-            os.mkdir(dir_aperMap)
-        if not os.path.exists(dir_backup):
-            os.mkdir(dir_backup)
-        file_aperMap = 'ap%s_%s_%s_%s_3000.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_temp)
-        file_backup = 'ap%s_%s_%s_%s.fits'%(shoe, self.ifu_type.label, self.lbl_file_pypeit['text'][0:4],today_backup)
-        path_aperMap = os.path.join(dir_aperMap, file_aperMap)
-        path_backup = os.path.join(dir_backup, file_backup)
-        hdu_map.writeto(path_aperMap,overwrite=True)
-        os.system('cp %s %s'%(path_aperMap, path_backup))
+    #     dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+    #     if not os.path.exists(dir_aperMap):
+    #         os.mkdir(dir_aperMap)
 
-        #### show apermap
-        self.clear_image(shoe=shoe)
+    #     today_temp = datetime.today().strftime("%y%m%d")
+    #     file_aperMap = 'ap%s_%s_%s_%s.fits'%(
+    #         shoe, 
+    #         self.ifu_type.label, 
+    #         self.lbl_file_pypeit['text'][0:4],
+    #         today_temp)
 
-        title = '%s (N_sl=%d)'%(fname,N_sl)
-        self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
+    #     path_aperMap = os.path.join(dir_aperMap, file_aperMap)
+    #     hdu_map.writeto(path_aperMap,overwrite=True)
 
-        #### show message
-        #info_temp = 'Saved as %s'%path_aperMap
-        #self.popup_showinfo('aperMap', info_temp)
-        #print('\n++++\n++++ %s\n++++\n'%(info_temp))
+    #     #### show apermap
+    #     self.clear_image(shoe=shoe)
 
-        #### check the MasterSlits file
-        N_slits = self.check_file_MasterSlits()       
-        if N_slits!=self.ifu_type.Ntotal/2:
-            self.btn_make_apermap_bundles['state'] = 'normal'
+    #     title = '%s (N_sl=%d)'%(fname,N_sl)
+    #     self.update_image_single(map_ap, title, shoe=shoe, uniform=True)
 
-        self.window.focus_force()
+    #     #### show message
+    #     #info_temp = 'Saved as %s'%path_aperMap
+    #     #self.popup_showinfo('aperMap', info_temp)
+    #     #print('\n++++\n++++ %s\n++++\n'%(info_temp))
+
+    #     #### check the MasterSlits file
+    #     N_slits = self.check_file_MasterSlits()       
+    #     if N_slits!=self.ifu_type.Ntotal/2:
+    #         self.btn_make_apermap_bundles['state'] = 'normal'
+
+    #     self.window.focus_force()
 
     def pick_edges_mono(self):
         return 0
@@ -1803,6 +1822,10 @@ class IFUM_AperMap_Maker:
             self.HDR_CONFIG = hdr_tmp['CONFIGFL']
             self.HDR_SLIDE = hdr_tmp['SLIDE']
             self.HDR_SLITNAME = hdr_tmp['SLITNAME']
+
+            self.HDR_CONFIG = self.HDR_CONFIG.replace('Config', 'c')
+            self.HDR_CONFIG = self.HDR_CONFIG.replace('unknown', 'c?')
+
             return 1
         else:
             return 0
@@ -1867,7 +1890,7 @@ class IFUM_AperMap_Maker:
         self.folder_trace = self.ent_folder_trace.get()
         path_tmp = filedialog.askopenfilename(initialdir=self.folder_trace)
         self.load_fits_trace(path_tmp)
-    
+
     def load_fits_trace(self, pathname):
         if os.path.isfile(pathname) and pathname.endswith("_trace.fits"):
             #hdul_temp = cached_fits_open(filename)
@@ -1877,6 +1900,9 @@ class IFUM_AperMap_Maker:
             self.data_full = np.float32(hdul_temp[0].data)
             hdul_temp = fits.open(os.path.join(dirname, 'r'+fname))
             self.data_full2 = np.float32(hdul_temp[0].data)
+
+            #### get config info from header
+            tmp = self.get_header_info(pathname)
 
             #### update trace folder
             self.folder_trace = os.path.dirname(pathname)
@@ -1929,7 +1955,9 @@ class IFUM_AperMap_Maker:
             #### update apermap file
             self.filename_apermap = os.path.basename(pathname)
             file_temp = self.filename_apermap.split('.')[0].split('_')
-            self.file_current = file_temp[1]+'_'+file_temp[2] 
+            self.file_current = file_temp[1]
+            for i in range(2, len(file_temp)-1):
+                self.file_current += '_'+file_temp[i] 
             self.lbl_file_mono['text'] = self.file_current 
             #self.shoe.set(file_temp[0])
 
@@ -2200,7 +2228,7 @@ class IFUM_AperMap_Maker:
         self.cidexit = fig_tmp.canvas.mpl_connect(
             'key_press_event', 
             lambda event: self.key_press(event, step='curve', shoe=shoe))
-        
+
         # show info
         info_temp = \
             'Select 7 points on the %s-side image:\n\n'%(shoe) \
@@ -2395,7 +2423,7 @@ class IFUM_AperMap_Maker:
                 self.points.append([event.xdata, event.ydata])
                 print(len(self.points), event.xdata, event.ydata)
                 self.x_last, self.y_last = event.xdata, event.ydata
-                
+
                 if shoe=='b':
                     self.ax.scatter(event.xdata, len(self.data_full)/2, c='r', marker='x', zorder=10)
                 elif shoe=='r':
@@ -2443,7 +2471,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_pypeit['state'] = 'normal'
         self.btn_load_apermap['state'] = 'normal'
         self.btn_load_mono['state'] = 'normal'
-        
+
         self.btn_plot_curve_b['state'] = 'normal'
         self.btn_plot_edges_b['state'] = 'normal'
         self.ent_param_curve_A_b['state'] = 'normal'
@@ -2590,7 +2618,9 @@ class IFUM_AperMap_Maker:
 
         #### write the fits file
         temp_name = self.lbl_file_mono['text'].split('_')
-        fname = temp_name[0]+'_'+self.ent_labelname_mono.get()+'_'+temp_name[1]
+        fname = temp_name[0]+'_'+self.ent_labelname_mono.get()
+        for i in range(1, len(temp_name)):
+            fname += '_'+temp_name[i]
         cut_apermap(self.data_full, self.hdr_b, self.folder_apermap, 'apb_'+fname)
         cut_apermap(self.data_full2, self.hdr_r, self.folder_apermap, 'apr_'+fname)
 
