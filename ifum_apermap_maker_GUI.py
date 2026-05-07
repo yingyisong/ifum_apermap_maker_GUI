@@ -22,10 +22,14 @@ from utils_trace import load_trace, reshape_trace_by_curvature, do_trace_v3, cre
 import subprocess
 #from multiprocessing import Process
 
-# default window size of the GUI
-window_width = 1800
-window_height = 930
-img_figsize = (6, 8.8)
+# window geometry
+# window_width = 1800
+# window_height = 930
+CTRL_WIDTH  = 650       # control panel width
+CTRL_HEIGHT = 820       # control panel height
+IMG_WIDTH   = 800       # each image window width
+IMG_HEIGHT  = 800       # each image window height
+img_figsize = (6, 6)
 
 
 def main():
@@ -84,29 +88,37 @@ class IFUM_AperMap_Maker:
         # Setup CustomTkinter Window
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
-        
+
+        # ── Main control window ──────────────────────────────────────────────
         self.window = ctk.CTk()
         self.window.title("IFUM AperMap Maker")
-        self.window.geometry(f"{window_width}x{window_height}")
+        self.window.geometry(f"{CTRL_WIDTH}x{CTRL_HEIGHT}+0+0")
+        self.window.resizable(True, True)
+        self.window.protocol("WM_DELETE_WINDOW", self._on_main_close)
 
-        # Configure the main window grid
-        self.window.rowconfigure(0, weight=1)
-        self.window.columnconfigure(0, weight=1)
+        # ── b-side image window ──────────────────────────────────────────────
+        self.win_b = ctk.CTkToplevel(self.window)
+        self.win_b.title("b-side Image")
+        self.win_b.geometry(f"{IMG_WIDTH}x{IMG_HEIGHT}+{CTRL_WIDTH+10}+0")
+        self.win_b.resizable(True, True)
+        self.win_b.protocol("WM_DELETE_WINDOW", lambda: None)   # keep open
 
-        # Create the main content frame in the window
-        self.content_frame = ctk.CTkFrame(self.window)
-        self.content_frame.grid(row=0, column=0, sticky="nsew")
+        # ── r-side image window ──────────────────────────────────────────────
+        self.win_r = ctk.CTkToplevel(self.window)
+        self.win_r.title("r-side Image")
+        self.win_r.geometry(f"{IMG_WIDTH}x{IMG_HEIGHT}+{CTRL_WIDTH+IMG_WIDTH+20}+0")
+        self.win_r.resizable(True, True)
+        self.win_r.protocol("WM_DELETE_WINDOW", lambda: None)
 
         # initialize the rest of the GUI
         self.initialize_gui()
 
+    def _on_main_close(self):
+        self.window.quit()
+        self.window.destroy()
+
     def initialize_gui(self):
         """Initialize the GUI components."""
-        # Configure the content frame grid
-        self.content_frame.rowconfigure(0, weight=1)
-        self.content_frame.columnconfigure(1, weight=1)
-        self.content_frame.columnconfigure(2, weight=1) 
-
         #### menubar
         self.menubar = tk.Menu(self.window)
         self.window.config(menu=self.menubar)
@@ -114,21 +126,23 @@ class IFUM_AperMap_Maker:
         self.menu_file.add_command(label="Load Curve", command=self.load_curve_file)
         self.menu_file.add_command(label="Save Curve", command=self.save_curve_file)
         #self.menu_file.add_command(label="Save as", command=self.save_file_as)
-        self.menu_file.add_command(label="Exit", command=self.window.quit)
+        self.menu_file.add_command(label="Exit", command=self._on_main_close)
         self.menubar.add_cascade(label="File", menu=self.menu_file)
 
-        #### frames
-        # control panel
-        self.frame1 = ctk.CTkFrame(self.content_frame, border_width=2)
-        self.frame1.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
+        # Control panel (fills the main window, no scroll)
+        self.frame1 = ctk.CTkFrame(self.window)
+        self.frame1.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # r-side image
-        self.frame3 = ctk.CTkFrame(self.content_frame)
-        self.frame3.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        # Column weight so entry fields expand
+        for c in range(1, 7):
+            self.frame1.columnconfigure(c, weight=1)
 
-        # b-side image
-        self.frame2 = ctk.CTkFrame(self.content_frame)
-        self.frame2.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+        # Image frames inside their dedicated windows
+        self.frame2 = ctk.CTkFrame(self.win_b)   # b-side canvas host
+        self.frame2.pack(fill="both", expand=True)
+
+        self.frame3 = ctk.CTkFrame(self.win_r)   # r-side canvas host
+        self.frame3.pack(fill="both", expand=True)
 
         # initialize other widgets and values
         self.initialize_widgets()
@@ -226,10 +240,10 @@ class IFUM_AperMap_Maker:
         self.DEFAULT_FG = self.ent_folder.cget("text_color")
         self.DEFAULT_FG_DISABLED = ("gray50", "gray50") 
 
-        # Force the content frame to maintain minimum size
-        self.content_frame.configure(width=window_width, height=window_height)
-        # Force update of scrollbars after all widgets are created
-        self.content_frame.update_idletasks()
+        # # Force the content frame to maintain minimum size
+        # self.content_frame.configure(width=CTRL_WIDTH, height=CTRL_HEIGHT)
+        # # Force update of scrollbars after all widgets are created
+        # self.content_frame.update_idletasks()
 
     # =========================================================================
     # WIDGET CREATION METHODS
@@ -2042,14 +2056,14 @@ class IFUM_AperMap_Maker:
         self.canvas.draw()
 
         # placing the canvas on the Tkinter window
-        self.canvas.get_tk_widget().pack() #grid(row=0, column=0)
+        self.canvas.get_tk_widget().pack(fill='both', expand=True) #grid(row=0, column=0)
 
         # creating the Matplotlib toolbar
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.frame2)
         self.toolbar.update()
 
         # placing the toolbar on the Tkinter window
-        self.canvas.get_tk_widget().pack() #grid(row=1, column=0)
+        self.canvas.get_tk_widget().pack(fill='both', expand=True) #grid(row=1, column=0)
 
     def init_image2(self):
         # the figure that will contain the plot
@@ -2062,14 +2076,14 @@ class IFUM_AperMap_Maker:
         self.canvas2.draw()
 
         # placing the canvas on the Tkinter window
-        self.canvas2.get_tk_widget().pack() #grid(row=0, column=0)
+        self.canvas2.get_tk_widget().pack(fill='both', expand=True) #grid(row=0, column=0)
 
         # creating the Matplotlib toolbar
         self.toolbar2 = NavigationToolbar2Tk(self.canvas2, self.frame3)
         self.toolbar2.update()
 
         # placing the toolbar on the Tkinter window
-        self.canvas2.get_tk_widget().pack() #grid(row=1, column=0)
+        self.canvas2.get_tk_widget().pack(fill='both', expand=True) #grid(row=1, column=0)
 
     def remove_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
