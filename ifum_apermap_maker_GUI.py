@@ -55,6 +55,28 @@ def main():
 #     LABEL_COLOR = 'black'
 #     BG_COLOR = 'lightgray'
 
+def check_appearance():
+    """Checks DARK/LIGHT mode of macOS.  True = DARK, False = LIGHT."""
+    cmd = 'defaults read -g AppleInterfaceStyle'
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, shell=True)
+    return bool(p.communicate()[0])
+
+
+# ── CTk global appearance ────────────────────────────────────────────────────
+if check_appearance():
+    ctk.set_appearance_mode("dark")
+    #STEP_LABEL_COLOR = '#ffd600'       # yellow on dark bg
+    STEP_LABEL_COLOR = '#1565c0'       # blue on light bg
+else:
+    ctk.set_appearance_mode("light")
+    STEP_LABEL_COLOR = '#1565c0'       # blue on light bg
+
+ctk.set_default_color_theme("blue")
+
+# Badge colours for the sunken file-name indicators
+BADGE_ACTIVE  = ('#FFD700', '#8B6914')   # gold when active
+BADGE_NEUTRAL = ('gray80', 'gray30')     # neutral resting state
 
 class IFUM_AperMap_Maker:
 
@@ -209,6 +231,28 @@ class IFUM_AperMap_Maker:
         # Force update of scrollbars after all widgets are created
         self.content_frame.update_idletasks()
 
+    # =========================================================================
+    # WIDGET CREATION METHODS
+    # =========================================================================
+
+    def _step_label(self, row, tag, desc):
+        """Helper: place a coloured step header across frame1."""
+        ctk.CTkLabel(self.frame1, text=tag, text_color=STEP_LABEL_COLOR,
+                     font=ctk.CTkFont(weight="bold")
+                     ).grid(row=row, column=0, sticky="w", padx=(6, 2), pady=2)
+        ctk.CTkLabel(self.frame1, text=desc, text_color=STEP_LABEL_COLOR,
+                     font=ctk.CTkFont(weight="bold")
+                     ).grid(row=row, column=1, columnspan=6, sticky="w", padx=2, pady=2)
+
+    def _file_badge(self, row, col, text="0000", colspan=1):
+        """Helper: sunken file-name badge using a rounded CTkLabel."""
+        lbl = ctk.CTkLabel(self.frame1, text=text,
+                           fg_color=BADGE_NEUTRAL, corner_radius=4,
+                           padx=6, pady=2)
+        lbl.grid(row=row, column=col, columnspan=colspan,
+                 sticky="e", padx=4, pady=2)
+        return lbl
+
     def load_curve_file(self):
         '''  load a curve file and update param_curve '''
 
@@ -332,13 +376,17 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step1 = ctk.CTkLabel(self.frame1, text="Step 1:")
-        lbl_step1.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step1_desc = ctk.CTkLabel(self.frame1, text="Fit curvature of a constant wavelength (load an ARC/solar file)")
-        lbl_step1_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
+        # lbl_step1 = ctk.CTkLabel(self.frame1, text="Step 1:")
+        # lbl_step1.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step1_desc = ctk.CTkLabel(self.frame1, text="Fit curvature of a constant wavelength (load an ARC/solar file)")
+        # lbl_step1_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
 
-        self.lbl_file_curve = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
-        self.lbl_file_curve.grid(row=rows[0], column=6, sticky="e", padx=2)
+        # self.lbl_file_curve = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
+        # self.lbl_file_curve.grid(row=rows[0], column=6, sticky="e", padx=2)
+
+        self._step_label(rows[0], "Step 1:",
+                         "Fit curvature of a constant wavelength (load an ARC/solar file)")
+        self.lbl_file_curve = self._file_badge(rows[0], col=6, text="0000")
 
         self.btn_load_curve = ctk.CTkButton(self.frame1, width=60, text="Load", command=self.load_4fits_curve)
         self.btn_load_curve.grid(row=rows[0], column=7, sticky="e", padx=2, pady=1)
@@ -404,13 +452,17 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step2 = ctk.CTkLabel(self.frame1, text="Step 2:")
-        lbl_step2.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step2_desc = ctk.CTkLabel(self.frame1, text="Determine spectral region edges (load a solar/SCI file)")
-        lbl_step2_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
+        # lbl_step2 = ctk.CTkLabel(self.frame1, text="Step 2:")
+        # lbl_step2.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step2_desc = ctk.CTkLabel(self.frame1, text="Determine spectral region edges (load a solar/SCI file)")
+        # lbl_step2_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
 
-        self.lbl_file_edges = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
-        self.lbl_file_edges.grid(row=rows[0], column=6, sticky="e", padx=2)
+        # self.lbl_file_edges = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
+        # self.lbl_file_edges.grid(row=rows[0], column=6, sticky="e", padx=2)
+
+        self._step_label(rows[0], "Step 2:",
+                         "Determine spectral region edges (load a solar/SCI file)")
+        self.lbl_file_edges = self._file_badge(rows[0], col=6, text="0000")
 
         self.btn_load_edges = ctk.CTkButton(self.frame1, width=60, text="Load", command=self.load_4fits_edges, state='normal')
         self.btn_load_edges.grid(row=rows[0], column=7, sticky="e", padx=2, pady=1)
@@ -504,13 +556,16 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step3 = ctk.CTkLabel(self.frame1, text="Step 3:")
-        lbl_step3.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step3_desc = ctk.CTkLabel(self.frame1, text="Make TRACE files (load an LED file)")
-        lbl_step3_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
+        # lbl_step3 = ctk.CTkLabel(self.frame1, text="Step 3:")
+        # lbl_step3.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step3_desc = ctk.CTkLabel(self.frame1, text="Make TRACE files (load an LED file)")
+        # lbl_step3_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
 
-        self.lbl_file_trace = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
-        self.lbl_file_trace.grid(row=rows[0], column=6, sticky="e", padx=2)
+        # self.lbl_file_trace = ctk.CTkLabel(self.frame1, text="0000", corner_radius=4, fg_color=("gray80", "gray20"))
+        # self.lbl_file_trace.grid(row=rows[0], column=6, sticky="e", padx=2)
+
+        self._step_label(rows[0], "Step 3:", "Make TRACE files (load an LED file)")
+        self.lbl_file_trace = self._file_badge(rows[0], col=6, text="0000")
 
         self.btn_load_trace = ctk.CTkButton(self.frame1, width=60, text="Load", command=self.load_4fits_trace, state='normal')
         self.btn_load_trace.grid(row=rows[0], column=7, sticky="e", padx=2, pady=1)
@@ -534,14 +589,17 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step4 = ctk.CTkLabel(self.frame1, text="Step 4:")
-        lbl_step4.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step4_desc = ctk.CTkLabel(self.frame1, text="Make AperMap files (open a TRACE file)")
-        lbl_step4_desc.grid(row=rows[0], column=1, columnspan=5, sticky="w")
+        # lbl_step4 = ctk.CTkLabel(self.frame1, text="Step 4:")
+        # lbl_step4.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step4_desc = ctk.CTkLabel(self.frame1, text="Make AperMap files (open a TRACE file)")
+        # lbl_step4_desc.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_pypeit = ctk.CTkLabel(self.frame1, text="0000_trace", corner_radius=4, fg_color=("gray80", "gray20"))
-        self.lbl_file_pypeit.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
+        # self.lbl_file_pypeit = ctk.CTkLabel(self.frame1, text="0000_trace", corner_radius=4, fg_color=("gray80", "gray20"))
+        # self.lbl_file_pypeit.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
 
+        self._step_label(rows[0], "Step 4:", "Make AperMap files (open a TRACE file)")
+        self.lbl_file_pypeit = self._file_badge(rows[0], col=5, text="0000_trace",
+                                                colspan=2)
         self.btn_load_pypeit = ctk.CTkButton(self.frame1, width=60, text="Open", command=self.open_fits_trace, state='normal')
         self.btn_load_pypeit.grid(row=rows[0], column=7, sticky="e", padx=2, pady=1)
 
@@ -601,13 +659,18 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step5 = ctk.CTkLabel(self.frame1, text="Add. 2:")
-        lbl_step5.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step5_desc = ctk.CTkLabel(self.frame1, text="(obsolete) Add missing slits to an AperMap")
-        lbl_step5_desc.grid(row=rows[0], column=1, columnspan=5, sticky="w")
+        # lbl_step5 = ctk.CTkLabel(self.frame1, text="Add. 2:")
+        # lbl_step5.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step5_desc = ctk.CTkLabel(self.frame1, text="(obsolete) Add missing slits to an AperMap")
+        # lbl_step5_desc.grid(row=rows[0], column=1, columnspan=5, sticky="w")
 
-        self.lbl_file_apermap = ctk.CTkLabel(self.frame1, text="apx0000_0000", corner_radius=4, fg_color=("gray80", "gray20"))
-        self.lbl_file_apermap.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
+        # self.lbl_file_apermap = ctk.CTkLabel(self.frame1, text="apx0000_0000", corner_radius=4, fg_color=("gray80", "gray20"))
+        # self.lbl_file_apermap.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
+
+        self._step_label(rows[0], "Add. 2:",
+                         "(obsolete) Add missing slits to an AperMap")
+        self.lbl_file_apermap = self._file_badge(rows[0], col=5,
+                                                 text="apx0000_0000", colspan=2)
 
         self.btn_load_apermap = ctk.CTkButton(self.frame1, width=60, text="Open", command=self.open_fits_apermap, state='normal')
         self.btn_load_apermap.grid(row=rows[0], column=7, sticky="e", padx=2, pady=1)
@@ -641,10 +704,13 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
-        lbl_step6 = ctk.CTkLabel(self.frame1, text="Add. 1:")
-        lbl_step6.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
-        lbl_step6_desc = ctk.CTkLabel(self.frame1, text="(optional) Make monochromatic / narrow-band AperMap files")
-        lbl_step6_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
+        # lbl_step6 = ctk.CTkLabel(self.frame1, text="Add. 1:")
+        # lbl_step6.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
+        # lbl_step6_desc = ctk.CTkLabel(self.frame1, text="(optional) Make monochromatic / narrow-band AperMap files")
+        # lbl_step6_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
+
+        self._step_label(rows[0], "Add. 1:",
+                         "(optional) Make monochromatic / narrow-band AperMap files")
 
         #### step 6a
         lbl_step6a = ctk.CTkLabel(self.frame1, text="a. Use Step 2 to determine the new edges (hint: load a SCI file)")
