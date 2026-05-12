@@ -216,6 +216,8 @@ class IFUM_AperMap_Maker:
         self.param_curve_r = np.array([1.53314740e-05, 2.12797487e+03, 6.75423701e+02]) #np.zeros(3)
         self.param_edges_b = np.array([418., 1250., 1250.-418.])#np.zeros(2)
         self.param_edges_r = np.array([426., 1258., 1258.-426.])#np.zeros(2)
+        self.param_offset_X0_b = self.param_edges_b[0]
+        self.param_offset_X0_r = self.param_edges_r[0] 
         self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
         #self.param_curve_b = np.array([-1.67977832e-05, 1.86465356e+03, 9.65048123e+02]) #np.zeros(3) for STD_b0107 Triplet
         #self.param_curve_r = np.array([-1.76051975e-05, 2.19290161e+03, 1.29282266e+03]) #np.zeros(3)
@@ -236,6 +238,8 @@ class IFUM_AperMap_Maker:
         self.txt_param_curve_A_r = ctk.StringVar(value=['%.3e'%self.param_curve_r[0]])
         self.txt_param_curve_B_r = ctk.StringVar(value=['%.1f'%self.param_curve_r[1]])
         self.txt_param_curve_C_r = ctk.StringVar(value=['%.1f'%self.param_curve_r[2]])
+        self.txt_param_offset_X0_r = ctk.StringVar(value=['%.0f'%self.param_edges_r[0]])
+        self.txt_param_offset_X0_b = ctk.StringVar(value=['%.0f'%self.param_edges_b[0]])
         self.txt_param_edges_X1_b = ctk.StringVar(value=['%.0f'%self.param_edges_b[0]])
         self.txt_param_edges_X2_b = ctk.StringVar(value=['%.0f'%self.param_edges_b[1]])
         self.txt_param_edges_dX_b = ctk.StringVar(value=['%.0f'%self.param_edges_b[2]])
@@ -929,6 +933,10 @@ class IFUM_AperMap_Maker:
         self.ent_param_edges_dX_r.bind('<KP_Enter>', lambda event: self.update_edges(event, 'r')) # unique for macOS
         self.ent_param_edges_offset.bind('<Return>', lambda event: self.update_edges(event, 'both'))
         self.ent_param_edges_offset.bind('<KP_Enter>', lambda event: self.update_edges(event, 'both')) # unique for macOS
+        self.ent_param_offset_X0_b.bind('<Return>', lambda event: self.update_offset(event, 'b'))
+        self.ent_param_offset_X0_b.bind('<KP_Enter>', lambda event: self.update_offset(event, 'b')) # unique for macOS
+        self.ent_param_offset_X0_r.bind('<Return>', lambda event: self.update_offset(event, 'r'))
+        self.ent_param_offset_X0_r.bind('<KP_Enter>', lambda event: self.update_offset(event, 'r')) # unique for macOS
 
         self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
         self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
@@ -954,6 +962,13 @@ class IFUM_AperMap_Maker:
         self.plot_curve(shoe=shoe)
         self.window.focus_force()
 
+    def update_offset(self, event, shoe, *args):
+        """ update the edge parameters """
+        self.refresh_param_offset(shoe)
+        self.clear_image(shoe=shoe)
+        self.plot_offset(shoe=shoe)
+        self.window.focus_force()
+
     def update_edges(self, event, shoe, *args):
         """ update the edge parameters """
         self.refresh_param_edges(shoe)
@@ -976,6 +991,15 @@ class IFUM_AperMap_Maker:
             self.param_curve_r[0] = np.float32(self.ent_param_curve_A_r.get())
             self.param_curve_r[1] = np.float32(self.ent_param_curve_B_r.get())
             self.param_curve_r[2] = np.float32(self.ent_param_curve_C_r.get())
+        self.renew_param_curve()
+
+    def refresh_param_offset(self, shoe, *args):
+        if shoe=='b':
+            self.param_offset_X0_b = np.float32(self.ent_param_offset_X0_b.get())
+        elif shoe=='r':
+            self.param_offset_X0_r = np.float32(self.ent_param_offset_X0_r.get())
+        self.param_edges_offset = self.param_offset_X0_r - self.param_offset_X0_b
+        self.renew_param_offset()
 
     def refresh_param_edges(self, shoe, *args):
         if self.state_edge_lock_r.get() == 0 and self.state_edge_lock_b.get() == 0:
@@ -992,7 +1016,7 @@ class IFUM_AperMap_Maker:
                 self.param_edges_b[0] = np.float32(self.ent_param_edges_X1_r.get())-np.float32(self.ent_param_edges_offset.get())
                 self.param_edges_b[1] = self.param_edges_b[0] + self.param_edges_b[2]
 
-            self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+            #self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
         else:
             # offset is locked
             self.param_edges_offset = np.float32(self.ent_param_edges_offset.get())
@@ -1016,8 +1040,13 @@ class IFUM_AperMap_Maker:
                 self.param_edges_r[0] = self.param_edges_b[0]+self.param_edges_offset
                 self.param_edges_r[2] = self.param_edges_b[2]
                 self.param_edges_r[1] = self.param_edges_r[0] + self.param_edges_r[2]
-        
         self.renew_param_edges()
+
+    def renew_param_offset(self):
+        """ copy the offset parameters from backend values to GUI """
+        self.txt_param_offset_X0_r.set("%.0f"%(self.param_offset_X0_r))
+        self.txt_param_offset_X0_b.set("%.0f"%(self.param_offset_X0_b))
+        self.txt_param_edges_offset.set("%.0f"%(self.param_edges_offset))
 
     def renew_param_edges(self):
         """ copy the edge parameters from backend values to GUI """
@@ -1027,7 +1056,7 @@ class IFUM_AperMap_Maker:
         self.txt_param_edges_X1_b.set("%.0f"%(self.param_edges_b[0]))
         self.txt_param_edges_X2_b.set("%.0f"%(self.param_edges_b[1]))
         self.txt_param_edges_dX_b.set("%.0f"%(self.param_edges_b[2]))
-        self.txt_param_edges_offset.set("%.0f"%(self.param_edges_offset))
+        # self.txt_param_edges_offset.set("%.0f"%(self.param_edges_offset))
 
     def renew_param_curve(self):
         """ copy the curve parameters from backend values to GUI """
@@ -2006,6 +2035,8 @@ class IFUM_AperMap_Maker:
     def disable_dependent_btns(self):
         self.btn_select_curve_b.configure(state='disabled')
         self.btn_select_curve_r.configure(state='disabled')
+        self.btn_select_offset_b.configure(state='disabled')
+        self.btn_select_offset_r.configure(state='disabled')
         self.btn_select_edges_b.configure(state='disabled')
         self.btn_select_edges_r.configure(state='disabled')
         self.btn_make_trace.configure(state='disabled')
@@ -2037,6 +2068,16 @@ class IFUM_AperMap_Maker:
             self.disable_dependent_btns()
             self.btn_select_curve_b.configure(state='normal')
             self.btn_select_curve_r.configure(state='normal')
+
+    def load_4fits_offset(self):
+        label = self.load_4fits()
+        if label!='0000':
+            self.lbl_file_offset.configure(text=label)
+            self.gray_all_lbl_file()
+            self.lbl_file_offset.configure(fg_color='yellow', text_color='black')
+            self.disable_dependent_btns()
+            self.btn_select_offset_b.configure(state='normal')
+            self.btn_select_offset_r.configure(state='normal')
 
     def load_4fits_edges(self):
         label = self.load_4fits()
@@ -2319,6 +2360,18 @@ class IFUM_AperMap_Maker:
             self.ax2.plot(xx, yy, 'r--')
             self.update_image(shoe='r')
 
+    def plot_offset(self, shoe='both'):
+        if shoe=='b' or shoe=='both':
+            yy = np.arange(len(self.data_full))
+            x0 = func_parabola(yy, self.param_curve_b[0], self.param_curve_b[1], self.param_offset_X0_b)
+            self.ax.plot(x0, yy, 'r--')
+            self.update_image(shoe='b')
+        if shoe=='r' or shoe=='both':
+            yy = np.arange(len(self.data_full2))
+            x0 = func_parabola(yy, self.param_curve_r[0], self.param_curve_r[1], self.param_offset_X0_r)
+            self.ax2.plot(x0, yy, 'r--')
+            self.update_image(shoe='r')
+
     def plot_edges(self, shoe='both'):
         if shoe=='b' or shoe=='both':
             yy = np.arange(len(self.data_full))
@@ -2428,7 +2481,55 @@ class IFUM_AperMap_Maker:
             + '  -- Press ESC to quit without saving'
         self.popup_left_aligned('Pick points', info_temp)
 
-        self.window.focus_force()
+        #self.window.focus_force()
+        if shoe == 'b':
+            self.win_b.focus_force()
+        elif shoe == 'r':
+            self.win_r.focus_force()
+
+    def pick_offset(self, shoe):
+        """Pick one point on the image to select a line feature."""
+        if shoe=='b':
+            btn_tmp = self.btn_select_offset_b
+            fig_tmp = self.fig
+        elif shoe=='r':
+            btn_tmp = self.btn_select_offset_r
+            fig_tmp = self.fig2
+
+        # initialize the figure
+        self.switch_state('disabled')
+        btn_tmp.configure(state='normal')
+        self.clear_image(shoe=shoe)
+        self.add_instructions_on_image(shoe=shoe)
+
+        if shoe=='b':
+            self.ax.axhline(len(self.data_full)/2, c='g', ls='-')
+        elif shoe=='r':
+            self.ax2.axhline(len(self.data_full2)/2, c='g', ls='-')
+
+        self.update_image(shoe=shoe)
+
+        # connect the button press event to the on_click_curve function
+        self.cidpick = fig_tmp.canvas.mpl_connect(
+            'button_press_event', 
+            lambda event: self.on_click_offset(event, shoe=shoe))
+        self.cidexit = fig_tmp.canvas.mpl_connect(
+            'key_press_event', 
+            lambda event: self.key_press(event, step='offset', shoe=shoe))
+        
+        # show info
+        info_temp = \
+            'Select 1 point on the green line on the %s-side image:\n\n'%(shoe) \
+            + '  -- Right Click to select a point\n' \
+            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+            + '  -- Press ESC to quit without saving'
+        self.popup_left_aligned('Pick points', info_temp)
+
+        # self.window.focus_force()
+        if shoe == 'b':
+            self.win_b.focus_force()
+        elif shoe == 'r':
+            self.win_r.focus_force()
 
     def pick_edges(self, shoe):
         """Pick points on the image to select the edges."""
@@ -2468,7 +2569,11 @@ class IFUM_AperMap_Maker:
             + '  -- Press ESC to quit without saving'
         self.popup_left_aligned('Pick points', info_temp)
 
-        self.window.focus_force()
+        # self.window.focus_force()
+        if shoe == 'b':
+            self.win_b.focus_force()
+        elif shoe == 'r':
+            self.win_r.focus_force()
 
     def pick_slits(self):
         self.switch_state('disabled')
@@ -2542,6 +2647,9 @@ class IFUM_AperMap_Maker:
             if step=='curve':
                 self.btn_select_curve_b.configure(state='normal')
                 self.btn_select_curve_r.configure(state='normal')
+            elif step=='offset':
+                self.btn_select_offset_b.configure(state='normal')
+                self.btn_select_offset_r.configure(state='normal')
             elif step=='edges':
                 self.btn_select_edges_b.configure(state='normal')
                 self.btn_select_edges_r.configure(state='normal')
@@ -2604,6 +2712,54 @@ class IFUM_AperMap_Maker:
                 #### break the mpl connection
                 self.break_mpl_connect(shoe=shoe)
 
+                #### update the figure
+                self.clear_image(shoe=shoe)
+                self.plot_curve(shoe=shoe)
+                self.window.focus_force()
+
+    def on_click_offset(self, event, shoe):
+        # reset lock conditions
+        self.state_edge_lock_b.set(0)
+        self.state_edge_lock_r.set(0)
+
+        if event.button is MouseButton.RIGHT:
+            if len(self.points)<1 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
+                self.points.append([event.xdata, event.ydata])
+                print(len(self.points), event.xdata, event.ydata)
+                self.x_last, self.y_last = event.xdata, event.ydata
+
+                if shoe=='b':
+                    self.ax.scatter(event.xdata, len(self.data_full)/2, c='r', marker='x', zorder=10)
+                elif shoe=='r':
+                    self.ax2.scatter(event.xdata, len(self.data_full2)/2, c='r', marker='x', zorder=10)
+                self.update_image(shoe=shoe)
+
+            if len(self.points) == 1:
+
+                if shoe=='b':
+                    self.param_offset_X0_b = self.points[0][0]
+                elif shoe=='r':
+                    self.param_offset_X0_r = self.points[0][0]
+
+                self.param_edges_offset = self.param_offset_X0_r-self.param_offset_X0_b
+                self.renew_param_offset()
+
+                #### plot the edges
+                self.plot_offset(shoe=shoe)
+
+                #### enable other functions
+                self.switch_state('normal')
+                self.btn_select_offset_b.configure(state='normal')
+                self.btn_select_offset_r.configure(state='normal')
+
+                #### break the mpl connection
+                self.break_mpl_connect(shoe=shoe)
+
+                #### update the figure
+                self.clear_image(shoe=shoe)
+                self.plot_offset(shoe=shoe)
+                self.window.focus_force()
+
     def on_click_edges(self, event, shoe):
         # reset lock conditions
         self.state_edge_lock_b.set(0)
@@ -2645,6 +2801,11 @@ class IFUM_AperMap_Maker:
 
                 #### break the mpl connection
                 self.break_mpl_connect(shoe=shoe)
+
+                #### update the figure
+                self.clear_image(shoe=shoe)
+                self.plot_edges(shoe=shoe)
+                self.window.focus_force()
 
     def switch_state(self, state):
         self.btn_folder.configure(state=state)
