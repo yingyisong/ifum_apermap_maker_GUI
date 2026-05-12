@@ -310,7 +310,7 @@ class IFUM_AperMap_Maker:
                            fg_color=BADGE_NEUTRAL, corner_radius=4,
                            padx=6, pady=2)
         lbl.grid(row=row, column=col, columnspan=colspan,
-                 sticky="e", padx=4, pady=2)
+                 sticky="ew", padx=4, pady=2)
         return lbl
 
     def load_curve_file(self):
@@ -563,7 +563,7 @@ class IFUM_AperMap_Maker:
 
         self.lbl_file_offset = self._file_badge(rows[0], col=8, text="0000")
 
-        self.btn_load_offset = ctk.CTkButton(self.frame1, width=60, text="Load File 2", command=self.load_4fits_offset, state='normal')
+        self.btn_load_offset = ctk.CTkButton(self.frame1, width=60, text="Load File 1", command=self.load_4fits_offset, state='normal')
         self.btn_load_offset.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         #### offset parameters
@@ -1940,19 +1940,22 @@ class IFUM_AperMap_Maker:
         idxs = self.box_files.curselection()
         if len(idxs) == 1:
             self.file1_name = self.box_files.get(idxs[0])
-            self.lbl_file1.configure(text=self.file1_name)
+            self.lbl_file1.configure(text=self.file1_name, fg_color='yellow', text_color='black')
+        label = self.assign_4fits()
 
     def assign_file2(self):
         idxs = self.box_files.curselection()
         if len(idxs) == 1:
             self.file2_name = self.box_files.get(idxs[0])
-            self.lbl_file2.configure(text=self.file2_name)
+            self.lbl_file2.configure(text=self.file2_name, fg_color='yellow', text_color='black')
+        label = self.assign_4fits()
 
     def assign_file3(self):
         idxs = self.box_files.curselection()
         if len(idxs) == 1:
             self.file3_name = self.box_files.get(idxs[0])
-            self.lbl_file3.configure(text=self.file3_name)
+            self.lbl_file3.configure(text=self.file3_name, fg_color='yellow', text_color='black')
+        label = self.assign_4fits()
 
     def open_folder(self):
         """Open a folder using the Browse button."""
@@ -2012,8 +2015,8 @@ class IFUM_AperMap_Maker:
         self.folder_trace = self.ent_folder_trace.get()
         self.disable_make_apermap()
 
-    def load_4fits(self):
-        """Load the selected fits file."""
+    def assign_4fits(self):
+        """Assign the selected fits file."""
         #shoe_i = self.shoe.get()
         dirname = self.ent_folder.get()
         idxs = self.box_files.curselection()
@@ -2041,6 +2044,29 @@ class IFUM_AperMap_Maker:
                 return fnum #shoe_i+fnum
         else:
             return '0000'
+
+    def load_specific_4fits(self, fnum):
+        dirname = self.ent_folder.get()
+        if fnum != "0000":
+            fname = os.path.join(dirname, "b%sc1.fits"%(fnum))
+            if os.path.isfile(fname):
+                # get header info
+                tmp = self.get_header_info(fname)
+
+                self.data_full = None
+                self.hdr_c1_b = None
+                self.data_full, self.hdr_c1_b = pack_4fits_simple(fnum, dirname, 'b')
+                self.file_current = fnum
+
+                self.data_full2 = None
+                self.hdr_c1_r = None
+                self.data_full2, self.hdr_c1_r = pack_4fits_simple(fnum, dirname, 'r')
+
+                #### show the fits image
+                self.clear_image()
+                self.update_image()
+                return fnum
+        return '0000'
 
     def get_header_info(self, pathname):
         """Get header info from the fits file."""
@@ -2087,7 +2113,7 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_mono.configure(fg_color=bg_color, text_color=("black", "white"))
 
     def load_4fits_curve(self):
-        label = self.load_4fits()
+        label = self.load_specific_4fits(self.file1_name)
         if label!='0000':
             self.lbl_file_curve.configure(text=label)
             self.gray_all_lbl_file()
@@ -2097,7 +2123,7 @@ class IFUM_AperMap_Maker:
             self.btn_select_curve_r.configure(state='normal')
 
     def load_4fits_offset(self):
-        label = self.load_4fits()
+        label = self.load_specific_4fits(self.file1_name)
         if label!='0000':
             self.lbl_file_offset.configure(text=label)
             self.gray_all_lbl_file()
@@ -2107,7 +2133,7 @@ class IFUM_AperMap_Maker:
             self.btn_select_offset_r.configure(state='normal')
 
     def load_4fits_edges(self):
-        label = self.load_4fits()
+        label = self.load_specific_4fits(self.file2_name)
         if label!='0000':
             self.lbl_file_edges.configure(text=label)
             self.gray_all_lbl_file()
@@ -2119,7 +2145,7 @@ class IFUM_AperMap_Maker:
             # self.btn_select_edges_r.configure(state='normal')
 
     def load_4fits_trace(self):
-        label = self.load_4fits()
+        label = self.load_specific_4fits(self.file3_name)
         if label!='0000':
             self.filename_trace = label+'_trace'
             self.lbl_file_trace.configure(text=label)
