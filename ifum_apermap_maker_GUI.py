@@ -82,6 +82,8 @@ ctk.set_default_color_theme("blue")
 BADGE_ACTIVE  = ('#FFD700', '#8B6914')   # gold when active
 BADGE_NEUTRAL = ('gray80', 'gray30')     # neutral resting state
 
+DEFAULT_FG_DISABLED = ("gray50", "gray50") 
+
 
 class ToolTip:
     """Creates a hover tooltip for a given widget."""
@@ -280,7 +282,6 @@ class IFUM_AperMap_Maker:
         # self.DEFAULT_FG = self.ent_folder.cget("fg")
         # self.DEFAULT_FG_DISABLED = self.ent_folder.cget("disabledforeground")
         self.DEFAULT_FG = self.ent_folder.cget("text_color")
-        self.DEFAULT_FG_DISABLED = ("gray50", "gray50") 
 
         # # Force the content frame to maintain minimum size
         # self.content_frame.configure(width=CTRL_WIDTH, height=CTRL_HEIGHT)
@@ -628,75 +629,6 @@ class IFUM_AperMap_Maker:
         self.btn_load_edges = ctk.CTkButton(self.frame1, width=60, text="Load File 2", command=self.load_4fits_edges, state='normal')
         self.btn_load_edges.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
-        #### pick edges
-        # lbl_note_edges = ctk.CTkLabel(self.frame1, text="Hint: Select 2 points along y-axis middle line")
-        # lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
-
-        self.btn_select_edges_r = ctk.CTkButton(
-            self.frame1, width=60, text="Select (r)", 
-            command=lambda: self.pick_edges('r'), state='disabled')
-        self.btn_select_edges_r.grid(row=rows[2], column=8, sticky="ew", padx=2, pady=1)
-
-        self.btn_select_edges_b = ctk.CTkButton(
-            self.frame1, width=60, text="Select (b)", 
-            command=lambda: self.pick_edges('b'), state='disabled')
-        self.btn_select_edges_b.grid(row=rows[3], column=8, sticky="ew", padx=2, pady=1)
-
-        #### edge parameters (r-side)
-        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="r-side:")
-        lbl_param_edges_X1_r.grid(row=rows[2], column=1, sticky="w", padx=2)
-
-        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="X1 =")
-        lbl_param_edges_X1_r.grid(row=rows[2], column=2, sticky="e", padx=2)
-        self.ent_param_edges_X1_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_r)
-        self.ent_param_edges_X1_r.grid(row=rows[2], column=3, sticky="ew", padx=1)
-
-        lbl_param_edges_X2_r = ctk.CTkLabel(self.frame1, text="X2 =")
-        lbl_param_edges_X2_r.grid(row=rows[2], column=4, sticky="e", padx=2)
-        self.ent_param_edges_X2_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_r, state='disabled', text_color=("gray50", "gray50"))
-        self.ent_param_edges_X2_r.grid(row=rows[2], column=5, sticky="ew", padx=1)
-
-        lbl_param_edges_dX_r = ctk.CTkLabel(self.frame1, text="dX =")
-        lbl_param_edges_dX_r.grid(row=rows[2], column=6, sticky="e", padx=2)
-        self.ent_param_edges_dX_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_r)
-        self.ent_param_edges_dX_r.grid(row=rows[2], column=7, sticky="ew", padx=1)
-
-        self.btn_plot_edges_r = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (r)', 
-            command=lambda: self.update_edges(None, 'r'))
-        self.btn_plot_edges_r.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
-
-        #### edge parameters (b-side)
-        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="b-side:")
-        lbl_param_edges_X1_b.grid(row=rows[3], column=1, sticky="w", padx=2)
-
-        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="X1 =")
-        lbl_param_edges_X1_b.grid(row=rows[3], column=2, sticky="e", padx=2)
-        self.ent_param_edges_X1_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_b)
-        self.ent_param_edges_X1_b.grid(row=rows[3], column=3, sticky="ew", padx=1)
-
-        lbl_param_edges_X2_b = ctk.CTkLabel(self.frame1, text="X2 =")
-        lbl_param_edges_X2_b.grid(row=rows[3], column=4, sticky="e", padx=2)
-        self.ent_param_edges_X2_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_b, state='disabled', text_color=("gray50", "gray50"))
-        self.ent_param_edges_X2_b.grid(row=rows[3], column=5, sticky="ew", padx=1)
-
-        lbl_param_edges_dX_b = ctk.CTkLabel(self.frame1, text="dX =")
-        lbl_param_edges_dX_b.grid(row=rows[3], column=6, sticky="e", padx=2)
-        self.ent_param_edges_dX_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_b)
-        self.ent_param_edges_dX_b.grid(row=rows[3], column=7, sticky="ew", padx=1)
-
-        self.btn_plot_edges_b = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (b)', 
-            command=lambda: self.update_edges(None, 'b'))
-        self.btn_plot_edges_b.grid(row=rows[3], column=9, sticky="ew", padx=2, pady=1)
-
-        # #### offset parameters
-        # lbl_param_edges_offset = ctk.CTkLabel(self.frame1, text="dX1 (r - b) =")
-        # lbl_param_edges_offset.grid(row=rows[4], column=1, sticky="e", padx=2)
-        # self.ent_param_edges_offset = ctk.CTkEntry(
-        #     self.frame1, width=80, textvariable=self.txt_param_edges_offset)
-        # self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew", padx=1)
-
         #### lock on one side of the edges
         lbl_edge_lock = ctk.CTkLabel(self.frame1, text="Fix the OFFSET (in Step 2) to:")
         lbl_edge_lock.grid(row=rows[1], column=1, columnspan=4, sticky="w", padx=2)
@@ -717,6 +649,75 @@ class IFUM_AperMap_Maker:
         self.btn_load_all_param.grid(row=rows[1], 
                                      column=8, columnspan=2,
                                      sticky="e", padx=2, pady=1)
+
+        #### pick edges
+        # lbl_note_edges = ctk.CTkLabel(self.frame1, text="Hint: Select 2 points along y-axis middle line")
+        # lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
+
+        self.btn_select_edges_r = ctk.CTkButton(
+            self.frame1, width=60, text="Select (r)", 
+            command=lambda: self.pick_edges('r'), state='disabled')
+        self.btn_select_edges_r.grid(row=rows[2], column=8, sticky="ew", padx=2, pady=1)
+
+        self.btn_select_edges_b = ctk.CTkButton(
+            self.frame1, width=60, text="Select (b)", 
+            command=lambda: self.pick_edges('b'), state='disabled')
+        self.btn_select_edges_b.grid(row=rows[3], column=8, sticky="ew", padx=2, pady=1)
+
+        #### edge parameters (r-side)
+        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="r-side:")
+        lbl_param_edges_X1_r.grid(row=rows[2], column=1, sticky="w", padx=2)
+
+        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="X1 =")
+        lbl_param_edges_X1_r.grid(row=rows[2], column=2, sticky="e", padx=2)
+        self.ent_param_edges_X1_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X1_r.grid(row=rows[2], column=3, sticky="ew", padx=1)
+
+        lbl_param_edges_X2_r = ctk.CTkLabel(self.frame1, text="X2 =")
+        lbl_param_edges_X2_r.grid(row=rows[2], column=4, sticky="e", padx=2)
+        self.ent_param_edges_X2_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X2_r.grid(row=rows[2], column=5, sticky="ew", padx=1)
+
+        lbl_param_edges_dX_r = ctk.CTkLabel(self.frame1, text="dX =")
+        lbl_param_edges_dX_r.grid(row=rows[2], column=6, sticky="e", padx=2)
+        self.ent_param_edges_dX_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_dX_r.grid(row=rows[2], column=7, sticky="ew", padx=1)
+
+        self.btn_plot_edges_r = ctk.CTkButton(
+            self.frame1, width=60, text='Plot (r)', 
+            command=lambda: self.update_edges(None, 'r'))
+        self.btn_plot_edges_r.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
+
+        #### edge parameters (b-side)
+        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="b-side:")
+        lbl_param_edges_X1_b.grid(row=rows[3], column=1, sticky="w", padx=2)
+
+        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="X1 =")
+        lbl_param_edges_X1_b.grid(row=rows[3], column=2, sticky="e", padx=2)
+        self.ent_param_edges_X1_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X1_b.grid(row=rows[3], column=3, sticky="ew", padx=1)
+
+        lbl_param_edges_X2_b = ctk.CTkLabel(self.frame1, text="X2 =")
+        lbl_param_edges_X2_b.grid(row=rows[3], column=4, sticky="e", padx=2)
+        self.ent_param_edges_X2_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X2_b.grid(row=rows[3], column=5, sticky="ew", padx=1)
+
+        lbl_param_edges_dX_b = ctk.CTkLabel(self.frame1, text="dX =")
+        lbl_param_edges_dX_b.grid(row=rows[3], column=6, sticky="e", padx=2)
+        self.ent_param_edges_dX_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_dX_b.grid(row=rows[3], column=7, sticky="ew", padx=1)
+
+        self.btn_plot_edges_b = ctk.CTkButton(
+            self.frame1, width=60, text='Plot (b)', 
+            command=lambda: self.update_edges(None, 'b'))
+        self.btn_plot_edges_b.grid(row=rows[3], column=9, sticky="ew", padx=2, pady=1)
+
+        # #### offset parameters
+        # lbl_param_edges_offset = ctk.CTkLabel(self.frame1, text="dX1 (r - b) =")
+        # lbl_param_edges_offset.grid(row=rows[4], column=1, sticky="e", padx=2)
+        # self.ent_param_edges_offset = ctk.CTkEntry(
+        #     self.frame1, width=80, textvariable=self.txt_param_edges_offset)
+        # self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew", padx=1)
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 4 check and make a masked LED fits file for tracing """
@@ -1071,23 +1072,49 @@ class IFUM_AperMap_Maker:
         """ lock one side of the edges """
         if side == 'r':
             if self.state_edge_lock_r.get() == 1:
-                self.ent_param_edges_X1_b.configure(state='disabled', text_color=self.DEFAULT_FG_DISABLED)
-                self.ent_param_edges_dX_b.configure(state='disabled', text_color=self.DEFAULT_FG_DISABLED)
+                self.ent_param_edges_X1_r.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.ent_param_edges_dX_r.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.btn_select_edges_r.configure(state='normal')
                 self.cbtn_edge_lock_b.configure(state='disabled')
             else:
-                self.ent_param_edges_X1_b.configure(state='normal', text_color=self.DEFAULT_FG)
-                self.ent_param_edges_dX_b.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.ent_param_edges_X1_r.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+                self.ent_param_edges_dX_r.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+                self.btn_select_edges_r.configure(state='disabled')
                 self.cbtn_edge_lock_b.configure(state='normal')
 
         elif side == 'b':
             if self.state_edge_lock_b.get() == 1:
-                self.ent_param_edges_X1_r.configure(state='disabled', text_color=self.DEFAULT_FG_DISABLED)
-                self.ent_param_edges_dX_r.configure(state='disabled', text_color=self.DEFAULT_FG_DISABLED)
+                self.ent_param_edges_X1_b.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.ent_param_edges_dX_b.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.btn_select_edges_b.configure(state='normal')
                 self.cbtn_edge_lock_r.configure(state='disabled')
             else:
-                self.ent_param_edges_X1_r.configure(state='normal', text_color=self.DEFAULT_FG)
-                self.ent_param_edges_dX_r.configure(state='normal', text_color=self.DEFAULT_FG)
+                self.ent_param_edges_X1_b.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+                self.ent_param_edges_dX_b.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+                self.btn_select_edges_b.configure(state='disabled')
                 self.cbtn_edge_lock_r.configure(state='normal')
+
+    # def lock_edge(self, side):
+    #     """ lock one side of the edges """
+    #     if side == 'r':
+    #         if self.state_edge_lock_r.get() == 1:
+    #             self.ent_param_edges_X1_b.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+    #             self.ent_param_edges_dX_b.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+    #             self.cbtn_edge_lock_b.configure(state='disabled')
+    #         else:
+    #             self.ent_param_edges_X1_b.configure(state='normal', text_color=self.DEFAULT_FG)
+    #             self.ent_param_edges_dX_b.configure(state='normal', text_color=self.DEFAULT_FG)
+    #             self.cbtn_edge_lock_b.configure(state='normal')
+
+    #     elif side == 'b':
+    #         if self.state_edge_lock_b.get() == 1:
+    #             self.ent_param_edges_X1_r.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+    #             self.ent_param_edges_dX_r.configure(state='disabled', text_color=DEFAULT_FG_DISABLED)
+    #             self.cbtn_edge_lock_r.configure(state='disabled')
+    #         else:
+    #             self.ent_param_edges_X1_r.configure(state='normal', text_color=self.DEFAULT_FG)
+    #             self.ent_param_edges_dX_r.configure(state='normal', text_color=self.DEFAULT_FG)
+    #             self.cbtn_edge_lock_r.configure(state='normal')
 
     def get_curve_params(self, shoe):
         if shoe=='b':
@@ -2086,8 +2113,10 @@ class IFUM_AperMap_Maker:
             self.gray_all_lbl_file()
             self.lbl_file_edges.configure(fg_color='yellow', text_color='black')
             self.disable_dependent_btns()
-            self.btn_select_edges_b.configure(state='normal')
-            self.btn_select_edges_r.configure(state='normal')
+            self.cbtn_edge_lock_r.configure(state='normal')
+            self.cbtn_edge_lock_b.configure(state='normal')
+            # self.btn_select_edges_b.configure(state='normal')
+            # self.btn_select_edges_r.configure(state='normal')
 
     def load_4fits_trace(self):
         label = self.load_4fits()
@@ -2388,7 +2417,7 @@ class IFUM_AperMap_Maker:
                 if self.ent_param_edges_X1_b.cget("state") == 'normal':
                     self.ent_param_edges_X1_b.configure(text_color=self.DEFAULT_FG)
                 else: 
-                    self.ent_param_edges_X1_b.configure(text_color=self.DEFAULT_FG_DISABLED)
+                    self.ent_param_edges_X1_b.configure(text_color=DEFAULT_FG_DISABLED)
 
             if np.any(x2 < 0) or np.any(x2 > len(self.data_full[0])):
                 self.ent_param_edges_dX_b.configure(text_color='red')
@@ -2396,7 +2425,7 @@ class IFUM_AperMap_Maker:
                 if self.ent_param_edges_dX_b.cget("state") == 'normal':
                     self.ent_param_edges_dX_b.configure(text_color=self.DEFAULT_FG)
                 else:
-                    self.ent_param_edges_dX_b.configure(text_color=self.DEFAULT_FG_DISABLED)
+                    self.ent_param_edges_dX_b.configure(text_color=DEFAULT_FG_DISABLED)
 
         if shoe=='r' or shoe=='both':
             yy = np.arange(len(self.data_full2))
@@ -2410,12 +2439,12 @@ class IFUM_AperMap_Maker:
             # if np.any(x1 < 0) or np.any(x1 > len(self.data_full2[0])):
             #     self.ent_param_edges_X1_r.config(fg='red', disabledforeground='red')
             # else:
-            #     self.ent_param_edges_X1_r.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
+            #     self.ent_param_edges_X1_r.config(fg=self.DEFAULT_FG, disabledforeground=DEFAULT_FG_DISABLED)
 
             # if np.any(x2 < 0) or np.any(x2 > len(self.data_full2[0])):
             #     self.ent_param_edges_dX_r.config(fg='red', disabledforeground='red')
             # else:
-            #     self.ent_param_edges_dX_r.config(fg=self.DEFAULT_FG, disabledforeground=self.DEFAULT_FG_DISABLED)
+            #     self.ent_param_edges_dX_r.config(fg=self.DEFAULT_FG, disabledforeground=DEFAULT_FG_DISABLED)
 
             if np.any(x1 < 0) or np.any(x1 > len(self.data_full2[0])):
                 self.ent_param_edges_X1_r.configure(text_color='red')
@@ -2423,7 +2452,7 @@ class IFUM_AperMap_Maker:
                 if self.ent_param_edges_X1_r.cget("state") == 'normal':
                     self.ent_param_edges_X1_r.configure(text_color=self.DEFAULT_FG)
                 else:
-                    self.ent_param_edges_X1_r.configure(text_color=self.DEFAULT_FG_DISABLED)
+                    self.ent_param_edges_X1_r.configure(text_color=DEFAULT_FG_DISABLED)
 
             if np.any(x2 < 0) or np.any(x2 > len(self.data_full2[0])):
                 self.ent_param_edges_dX_r.configure(text_color='red')
@@ -2431,7 +2460,7 @@ class IFUM_AperMap_Maker:
                 if self.ent_param_edges_dX_r.cget("state") == 'normal': 
                     self.ent_param_edges_dX_r.configure(text_color=self.DEFAULT_FG)
                 else:
-                    self.ent_param_edges_dX_r.configure(text_color=self.DEFAULT_FG_DISABLED)
+                    self.ent_param_edges_dX_r.configure(text_color=DEFAULT_FG_DISABLED)
 
     def add_instructions_on_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
@@ -2473,13 +2502,13 @@ class IFUM_AperMap_Maker:
             'key_press_event', 
             lambda event: self.key_press(event, step='curve', shoe=shoe))
 
-        # show info
-        info_temp = \
-            'Select 7 points on the %s-side image:\n\n'%(shoe) \
-            + '  -- Right Click to select a point\n' \
-            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
-            + '  -- Press ESC to quit without saving'
-        self.popup_left_aligned('Pick points', info_temp)
+        # # show info
+        # info_temp = \
+        #     'Select 7 points on the %s-side image:\n\n'%(shoe) \
+        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+        #     + '  -- Press ESC to quit without saving'
+        # self.popup_left_aligned('Pick points', info_temp)
 
         #self.window.focus_force()
         if shoe == 'b':
@@ -2517,13 +2546,13 @@ class IFUM_AperMap_Maker:
             'key_press_event', 
             lambda event: self.key_press(event, step='offset', shoe=shoe))
         
-        # show info
-        info_temp = \
-            'Select 1 point on the green line on the %s-side image:\n\n'%(shoe) \
-            + '  -- Right Click to select a point\n' \
-            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
-            + '  -- Press ESC to quit without saving'
-        self.popup_left_aligned('Pick points', info_temp)
+        # # show info
+        # info_temp = \
+        #     'Select 1 point on the green line on the %s-side image:\n\n'%(shoe) \
+        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+        #     + '  -- Press ESC to quit without saving'
+        # self.popup_left_aligned('Pick points', info_temp)
 
         # self.window.focus_force()
         if shoe == 'b':
@@ -2561,13 +2590,13 @@ class IFUM_AperMap_Maker:
             'key_press_event', 
             lambda event: self.key_press(event, step='edges', shoe=shoe))
         
-        # show info
-        info_temp = \
-            'Select 2 points on the green line on the %s-side image:\n\n'%(shoe) \
-            + '  -- Right Click to select a point\n' \
-            + '  -- Use Toolbar\'s Zoom to zoom in\n' \
-            + '  -- Press ESC to quit without saving'
-        self.popup_left_aligned('Pick points', info_temp)
+        # # show info
+        # info_temp = \
+        #     'Select 2 points on the green line on the %s-side image:\n\n'%(shoe) \
+        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
+        #     + '  -- Press ESC to quit without saving'
+        # self.popup_left_aligned('Pick points', info_temp)
 
         # self.window.focus_force()
         if shoe == 'b':
@@ -2701,6 +2730,7 @@ class IFUM_AperMap_Maker:
                     self.param_curve_r = popt
 
                 #### plot the fitted curve
+                self.clear_image(shoe=shoe)
                 self.plot_curve(shoe=shoe)
 
                 #### enable other functions
@@ -2712,9 +2742,7 @@ class IFUM_AperMap_Maker:
                 #### break the mpl connection
                 self.break_mpl_connect(shoe=shoe)
 
-                #### update the figure
-                self.clear_image(shoe=shoe)
-                self.plot_curve(shoe=shoe)
+                #### focus to the control panel
                 self.window.focus_force()
 
     def on_click_offset(self, event, shoe):
@@ -2744,7 +2772,8 @@ class IFUM_AperMap_Maker:
                 self.param_edges_offset = self.param_offset_X0_r-self.param_offset_X0_b
                 self.renew_param_offset()
 
-                #### plot the edges
+                #### plot
+                self.clear_image(shoe=shoe)
                 self.plot_offset(shoe=shoe)
 
                 #### enable other functions
@@ -2755,15 +2784,13 @@ class IFUM_AperMap_Maker:
                 #### break the mpl connection
                 self.break_mpl_connect(shoe=shoe)
 
-                #### update the figure
-                self.clear_image(shoe=shoe)
-                self.plot_offset(shoe=shoe)
+                #### focus to the control panel
                 self.window.focus_force()
 
     def on_click_edges(self, event, shoe):
-        # reset lock conditions
-        self.state_edge_lock_b.set(0)
-        self.state_edge_lock_r.set(0)
+        # # reset lock conditions
+        # self.state_edge_lock_b.set(0)
+        # self.state_edge_lock_r.set(0)
 
         if event.button is MouseButton.RIGHT:
             if len(self.points)<2 and (np.abs(self.x_last-event.xdata)>1 or np.abs(self.y_last-event.ydata)>10):
@@ -2792,19 +2819,29 @@ class IFUM_AperMap_Maker:
                 self.renew_param_edges()
 
                 #### plot the edges
+                self.clear_image(shoe=shoe)
                 self.plot_edges(shoe=shoe)
 
                 #### enable other functions
                 self.switch_state('normal')
-                self.btn_select_edges_b.configure(state='normal')
-                self.btn_select_edges_r.configure(state='normal')
+                if shoe == 'b':
+                    self.cbtn_edge_lock_b.configure(state='normal')
+                    self.btn_select_edges_b.configure(state='normal')
+                    self.ent_param_edges_X1_b.configure(state='normal', text_color=self.DEFAULT_FG)
+                    self.ent_param_edges_dX_b.configure(state='normal', text_color=self.DEFAULT_FG)
+                elif shoe == 'r':
+                    self.cbtn_edge_lock_r.configure(state='normal')
+                    self.btn_select_edges_r.configure(state='normal')
+                    self.ent_param_edges_X1_r.configure(state='normal', text_color=self.DEFAULT_FG)
+                    self.ent_param_edges_dX_r.configure(state='normal', text_color=self.DEFAULT_FG)
 
                 #### break the mpl connection
                 self.break_mpl_connect(shoe=shoe)
+            
+                #### update edges parameters
+                self.update_edges(event, shoe)
 
-                #### update the figure
-                self.clear_image(shoe=shoe)
-                self.plot_edges(shoe=shoe)
+                #### focus to the control panel 
                 self.window.focus_force()
 
     def switch_state(self, state):
@@ -2829,22 +2866,20 @@ class IFUM_AperMap_Maker:
         self.ent_param_curve_A_b.configure(state=state)
         self.ent_param_curve_B_b.configure(state=state)
         self.ent_param_curve_C_b.configure(state=state)
-        self.ent_param_edges_X1_b.configure(state=state)
-        self.ent_param_edges_dX_b.configure(state=state)
+        # self.ent_param_edges_X1_b.configure(state=state)
+        # self.ent_param_edges_dX_b.configure(state=state)
 
         self.btn_plot_curve_r.configure(state=state)
         self.btn_plot_edges_r.configure(state=state)
         self.ent_param_curve_A_r.configure(state=state)
         self.ent_param_curve_B_r.configure(state=state)
         self.ent_param_curve_C_r.configure(state=state)
-        self.ent_param_edges_X1_r.configure(state=state)
-        self.ent_param_edges_dX_r.configure(state=state)
+        # self.ent_param_edges_X1_r.configure(state=state)
+        # self.ent_param_edges_dX_r.configure(state=state)
 
         self.ent_param_offset_X0_r.configure(state=state)
         self.ent_param_offset_X0_b.configure(state=state)
         self.ent_param_edges_offset.configure(state=state)
-        self.cbtn_edge_lock_r.configure(state=state)
-        self.cbtn_edge_lock_b.configure(state=state)
         self.btn_load_all_param.configure(state=state)
 
         #self.ent_smash_range['state'] = state
@@ -2854,6 +2889,8 @@ class IFUM_AperMap_Maker:
         self.btn_folder_trace.configure(state=state)
 
         if state == 'disabled': 
+            self.cbtn_edge_lock_r.configure(state=state)
+            self.cbtn_edge_lock_b.configure(state=state)
             self.btn_select_curve_b.configure(state=state)
             self.btn_select_offset_b.configure(state=state)
             self.btn_select_edges_b.configure(state=state)
