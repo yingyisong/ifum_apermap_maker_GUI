@@ -209,7 +209,7 @@ class IFUM_AperMap_Maker:
         self.file_current = "0000"
 
         self.folder_rawdata = "./data_raw/"
-        self.folder_trace   = "./data_trace/"
+        self.folder_trace   = "./data_raw/"
         self.folder_curve   = "./curve_files/"
         self.path_MasterSlits = ' '
         self.labelname_mono   = "band_name"
@@ -2104,6 +2104,7 @@ class IFUM_AperMap_Maker:
         self.ent_folder.delete(0, tk.END)
         self.ent_folder.insert(tk.END, dirname)
         self.folder_rawdata = dirname
+        self.folder_trace = dirname
         self.refresh_folder()
 
     def refresh_folder(self, *args):
