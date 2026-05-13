@@ -542,7 +542,7 @@ def _plt_gaps(peaks_cmax, peaks_template, ids_add, shoe, ifu_type):
             else:
                 ax.axvline(x=id, color='b', linestyle='--')
 
-    ax.legend(loc='upper right')
+    ax.legend(loc='lower right')
     ax.text(0.05, 0.95, '%s_%s'%(shoe.lower(), ifu_type.upper()), fontsize=20,
             horizontalalignment='left', verticalalignment='top',
             transform=ax.transAxes)
@@ -732,7 +732,12 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     fig = plt.figure(figsize=(12,6))
     fig.clf()
     ax = fig.add_subplot(111)
-    ax.set_title("Press 'Shift+S' to enter selecting mode, 'Esc' to quit selecting mode")
+    ax.set_title((
+        "Figure of the peaks in the first aperture." 
+        "Exclude any BAD/POOR-found peaks if necessary.\n"
+        "Hint: Press 'Shift+S' to enter SELECTING mode\n"
+        "CLOSE the window to continue"
+    )) # \n 'Esc' to quit SELECTING mode
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
 
@@ -800,7 +805,7 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
-    ax.legend(loc="upper right")
+    ax.legend(loc="lower right")
     plt.tight_layout()
     plt.show()
 
@@ -819,7 +824,11 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
     fig = plt.figure(6, figsize=(10,10))
     fig.clf()
     ax = fig.add_subplot(111)
-    ax.set_title("Press 'Shift+S' to enter selecting mode, 'Esc' to quit selecting mode")
+    ax.set_title((
+        "Figure of all found peaks in all the apertures. Exclude any BAD/POOR columns if necessary.\n"
+        "Hint: Press 'Shift+S' to enter SELECTING mode\n"
+        "CLOSE the window to continue"
+    )) #\n 'Esc' to quit SELECTING mode
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
 
@@ -880,7 +889,7 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
     cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
-    ax.legend(loc="upper right")
+    ax.legend(loc="lower right")
     plt.tight_layout()
     plt.show()
 

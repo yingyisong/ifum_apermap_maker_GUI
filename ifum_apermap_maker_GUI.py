@@ -417,8 +417,17 @@ class IFUM_AperMap_Maker:
         # 3. Use local row indices for the sub-frame (0 to line_num-1)
         rows = np.arange(line_num)
         
-        self._step_label(self.frame_files, rows[0], "Prep. :",
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_files, rows[0], "Prep. :",
                          "\u2139\ufe0f Select files in")
+
+        help_msg = (
+            "Select three files for preparing the processes in Steps 1-4.\n\n"
+            "Curve File (File 1) -> ARC, Dome Solar Light, or Twilight (a file with clear line feature)\n"
+            "Edges File (File 2) -> Dome Solar Light, Twilight or LED (a file with clear spectral region)\n"
+            "Trace File (File 3) -> LED, Dome Soalr Light, or Twilight (a file with flat light or continuum)"
+        )
+        ToolTip(lbl_step_tag, help_msg)
+        ToolTip(lbl_step_desc, help_msg)
 
         #### folder
         # lbl_folder = ctk.CTkLabel(self.frame_files, text="Folder")
@@ -517,10 +526,14 @@ class IFUM_AperMap_Maker:
         lbl_step_tag, lbl_step_desc = self._step_label(self.frame_curve, rows[0], "Step 1:",
                          "\u2139\ufe0f Fit CURVATURE (select 7 points on each side)") 
 
-        help_msg = '''Use the Curve File (File 1) to fit the curvature of the same wavelength using the assigned CURVE file (File 1).
-        \nHint: On each side, select 7 points to fit the porabola function: x-C = A*(y-B)^2;
-        \n      make sure that the selected points (on one side) belong to the same line feature among different apertures.
-        '''
+        help_msg = (
+            "Use the Curve File (File 1) to fit the curvature of the same wavelength.\n\n"
+            "Hint:\n"
+            "1. On each side, select 7 points to fit a porabola function: x-C = A*(y-B)^2\n"
+            "2. The points should be selected along the same line feature across different apertures.\n"
+            "3. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "4. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
+        )
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
@@ -610,10 +623,14 @@ class IFUM_AperMap_Maker:
         lbl_step_tag, lbl_step_desc = self._step_label(self.frame_offset, rows[0], "Step 2:",
                          "\u2139\ufe0f Measure OFFSET (select 1 point on each side)")
 
-        help_msg = '''Use the Edges File (File 2) to measure the pixel offset between r and b sides.
-        \nHint: For each side, select 1 point along the y-axis middle line (in green color);
-        \n      make sure to select the same line feature on both sides.
-        '''
+        help_msg = (
+            "Use the Curve File (File 1) to measure the pixel offset between r and b sides.\n\n"
+            "Hint:\n"
+            "1. On each side, select 1 point (Xr or Xb) along the y-axis middle line (green).\n" 
+            "2. Xr and Xb should be selected at the same line feature.\n"   
+            "3. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "4. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
+        )
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
@@ -680,13 +697,18 @@ class IFUM_AperMap_Maker:
         lbl_step_tag, lbl_step_desc = self._step_label(self.frame_edges, rows[0], "Step 3:",
                          "\u2139\ufe0f Determine EDGES (select 2 points on either side)")
 
-        help_msg = '''Use the Edges File (File 2) to determine the full spectral range.
-        \n  Hint: 1. Choose which side the offset is fixed to.
-        \n        2. Select 2 points (X1 and X2) along the y-axis middle line (in green color);
-                     OR, manually input X1 and dX to fine tune the spectral range.
-        \n        3. Make sure that X1 and X2 cover the widest possible spectral range, but do not include other spectral order.
-        \n        4. Value turns RED when the selected edges lay beyond the data region.
-        '''
+        help_msg = (
+            "Use the Edges File (File 2) to determine the full spectral range.\n\n"
+            "Hint:\n"
+            "1. Choose which side the offset is fixed to.\n"
+            "2. Select 2 points (X1 and X2) along the y-axis middle line (in green color);\n"
+            "    OR, manually input X1 and dX to fine tune the spectral range.\n"
+            "3. Make sure that X1 and X2 cover the widest possible spectral range.\n"
+            "4. Do NOT include other spectral order.\n"
+            "5. Values turn RED when the selected edges lay beyond the data region.\n"
+            "6. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "7. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
+        )
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
@@ -801,7 +823,18 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_trace.grid(row=rows[0], column=6, sticky="e", padx=2)
 
         #  Make TRACE files (load an LED file)
-        self._step_label(self.frame_trace, rows[0], "Step 4:", "\u2139\ufe0f Make Trimmed-Trace files")
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_trace, rows[0], "Step 4:", "\u2139\ufe0f Make Trimmed-Trace files")
+
+        help_msg = (
+            "Use the Trace File (File 1) to generate the Trimmed-Trace files with the parameters in Steps 1 and 3.\n\n"
+            "The outputs after clicking the Make button include:\n"
+            "1. A folder named as 'apermap_YYDDMM_XXXX' (XXXX is the four-digit file number of the File 3)\n"
+            "2. A pair of Trimmed-Trace files saved to the above folder\n"
+            "3. A Curve File recording all parameters in Steps 1-3 and saved to the 'curve_files' folder"
+        )
+        ToolTip(lbl_step_tag, help_msg)
+        ToolTip(lbl_step_desc, help_msg)
+    
         self.lbl_file_trace = self._file_badge(self.frame_trace, rows[0], col=8, text="0000")
 
         self.btn_load_trace = ctk.CTkButton(self.frame_trace, width=80, text="Load File 3", command=self.load_4fits_trace, state='normal')
@@ -844,7 +877,21 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_pypeit = ctk.CTkLabel(self.frame1, text="0000_trace", corner_radius=4, fg_color=("gray80", "gray20"))
         # self.lbl_file_pypeit.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
 
-        self._step_label(self.frame_apermap, rows[0], "Step 5:", "\u2139\ufe0f Make AperMap files")
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_apermap, rows[0], "Step 5:", "\u2139\ufe0f Make AperMap files")
+
+        help_msg = (
+            "Use the Trimmed-Trace files (made in Step 4) to generate the AperMap files.\n\n"
+            "This step should typically ready to perform immediately after Step 4.\n"
+            "To redo the step (or can skip Steps 1-4), use 'Load Curve File' and 'Open Trimmed' buttons.\n\n"
+            "The outputs are saved to the same folder as the Trimmed-Trace files.\n\n"
+            "The files are made for r and b side, respectively.\n"
+            "For each side, two figures will be shown iteratively for removing any BAD/POOR-found peaks:\n"
+            "1. Figure of the found central points (i.e. peaks) in the first aperture.\n"
+            "2. Figure of all found peaks in all apertures."
+        )
+        ToolTip(lbl_step_tag, help_msg)
+        ToolTip(lbl_step_desc, help_msg)
+
         self.lbl_file_pypeit = self._file_badge(self.frame_apermap, rows[0], col=8, colspan=2, text="0000_trace")
 
         ##### step 5a make a PypeIt file
