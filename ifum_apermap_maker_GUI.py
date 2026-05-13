@@ -267,7 +267,7 @@ class IFUM_AperMap_Maker:
         self.create_widgets_offset(line_start=8, line_num=2) # step 2
         self.create_widgets_edges(line_start=10, line_num=4)  # step 3
         self.create_widgets_trace(line_start=14, line_num=3)  # step 4
-        self.create_widgets_apermap(line_start=17, line_num=2) # step 5
+        self.create_widgets_apermap(line_start=17, line_num=3) # step 5
         # self.create_widgets_mono(line_start=19, line_num=4)   # add 1 (optional)
         # self.create_widgets_add_slits(line_start=23, line_num=4)   # add 2 (obsolete)
         self.bind_widgets()
@@ -708,14 +708,6 @@ class IFUM_AperMap_Maker:
                 command=lambda: self.lock_edge('b'), text_color='cyan')
         self.cbtn_edge_lock_b.grid(row=rows[1], column=7, columnspan=2, sticky="w", padx=2)
 
-        #### button to load the curve profile
-        self.btn_load_all_param = ctk.CTkButton(
-            self.frame_edges, width=120, text="Load saved profile", 
-            command=self.load_curve_file, state='normal')
-        self.btn_load_all_param.grid(row=rows[1], 
-                                     column=8, columnspan=2,
-                                     sticky="e", padx=2, pady=1)
-
         #### pick edges
         # lbl_note_edges = ctk.CTkLabel(self.frame_edges, text="Hint: Select 2 points along y-axis middle line")
         # lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
@@ -852,12 +844,8 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_pypeit = ctk.CTkLabel(self.frame1, text="0000_trace", corner_radius=4, fg_color=("gray80", "gray20"))
         # self.lbl_file_pypeit.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
 
-         #  Make AperMap files (open a TRACE file)
         self._step_label(self.frame_apermap, rows[0], "Step 5:", "\u2139\ufe0f Make AperMap files")
-        self.lbl_file_pypeit = self._file_badge(self.frame_apermap, rows[0], col=7, text="0000_trace",
-                                                colspan=2)
-        self.btn_load_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text="Open TRACE", command=self.open_fits_trace, state='normal')
-        self.btn_load_pypeit.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
+        self.lbl_file_pypeit = self._file_badge(self.frame_apermap, rows[0], col=8, colspan=2, text="0000_trace")
 
         ##### step 5a make a PypeIt file
         #lbl_step4a = tk.Label(self.frame_apermap, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -909,6 +897,18 @@ class IFUM_AperMap_Maker:
         # lbl_line.grid(row=rows[3], column=0, columnspan=8, sticky="w")
         # self.divider = ctk.CTkFrame(self.frame_apermap, height=2, fg_color='gray')
         # self.divider.grid(row=rows[3], column=0, columnspan=10, sticky="ew", padx=5, pady=5)
+
+        #### button to load the curve profile
+        self.btn_load_all_param = ctk.CTkButton(
+            self.frame_apermap, width=120, text="Load Curve File", 
+            command=self.load_curve_file, state='normal')
+        self.btn_load_all_param.grid(row=rows[2], 
+                                     column=7, columnspan=2,
+                                     sticky="e", padx=2, pady=1)
+
+        #### button to open saved Trimmed-Trace files
+        self.btn_load_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text="Open Trimmed", command=self.open_fits_trace, state='normal')
+        self.btn_load_pypeit.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
 
     def create_widgets_add_slits(self, line_start, line_num):
         """ Add. 2 add bad/missing slits """
