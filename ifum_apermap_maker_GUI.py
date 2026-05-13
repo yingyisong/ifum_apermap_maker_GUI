@@ -268,8 +268,8 @@ class IFUM_AperMap_Maker:
         self.create_widgets_edges(line_start=10, line_num=4)  # step 3
         self.create_widgets_trace(line_start=14, line_num=3)  # step 4
         self.create_widgets_apermap(line_start=17, line_num=2) # step 5
-        # self.create_widgets_mono(line_start=19, line_num=4)   # addtion 1 (optional)
-        # self.create_widgets_add_slits(line_start=23, line_num=4)   # addition 2 (obsolete)
+        # self.create_widgets_mono(line_start=19, line_num=4)   # add 1 (optional)
+        # self.create_widgets_add_slits(line_start=23, line_num=4)   # add 2 (obsolete)
         self.bind_widgets()
 
         #### initialize widgets
@@ -360,13 +360,16 @@ class IFUM_AperMap_Maker:
             temp = file[~mask_bside, 4:6].astype(np.float64).flatten()
             self.param_edges_r = np.array([temp[0], temp[0]+temp[1], temp[1]])
 
-            self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
-
             self.renew_param_edges()
 
+            self.param_offset_X0_b = self.param_edges_b[0]
+            self.param_offset_X0_r = self.param_edges_r[0]
+            self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+            self.renew_param_offset()
+
             #### show message
-            info_temp = 'Steps 1 & 2 parameters loaded!\n\n Location: %s'%(pathname)
-            self.popup_showinfo('File loaded', info_temp) 
+            info_temp = 'Steps 1-3 parameters loaded!\n\n Location:\n %s'%(pathname)
+            self.popup_showinfo('Curve File Loaded', info_temp) 
 
         self.window.focus_force()
 
@@ -394,8 +397,8 @@ class IFUM_AperMap_Maker:
         file.close()
 
         #### show message
-        info_temp = 'Steps 1 & 2 parameters saved!\n\n Location: %s'%pathname
-        self.popup_showinfo('File saved', info_temp)
+        info_temp = 'Steps 1-3 parameters are saved!\n\n Location:\n %s'%pathname
+        self.popup_showinfo('Curve File Saved', info_temp)
 
         self.window.focus_force()
 
@@ -813,11 +816,11 @@ class IFUM_AperMap_Maker:
         self.btn_load_trace.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         ####
-        self.ent_folder_trace = ctk.CTkEntry(self.frame_trace, textvariable=self.txt_folder_trace, state='normal')
-        self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=7, sticky="ew", padx=2)
+        # self.ent_folder_trace = ctk.CTkEntry(self.frame_trace, textvariable=self.txt_folder_trace, state='normal')
+        # self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=7, sticky="ew", padx=2)
 
-        self.btn_folder_trace = ctk.CTkButton(self.frame_trace, width=80, text="Folder", command=self.open_folder_trace, state='normal')
-        self.btn_folder_trace.grid(row=rows[1], column=8, sticky="ew", pady=1)
+        # self.btn_folder_trace = ctk.CTkButton(self.frame_trace, width=80, text="Folder", command=self.open_folder_trace, state='normal')
+        # self.btn_folder_trace.grid(row=rows[1], column=8, sticky="ew", pady=1)
 
         self.btn_make_trace = ctk.CTkButton(self.frame_trace, width=80, text="Make", command=self.make_file_trace, state='disabled')
         self.btn_make_trace.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
@@ -841,7 +844,7 @@ class IFUM_AperMap_Maker:
         # 3. Use local row indices for the sub-frame (0 to line_num-1)
         rows = np.arange(line_num)
 
-        # lbl_step4 = ctk.CTkLabel(self.frame1, text="Step 4:")
+        # lbl_step4 = ctk.CTkLabel(self.frame1, text="Step 5:")
         # lbl_step4.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
         # lbl_step4_desc = ctk.CTkLabel(self.frame1, text="Make AperMap files (open a TRACE file)")
         # lbl_step4_desc.grid(row=rows[0], column=1, columnspan=5, sticky="w")
@@ -856,7 +859,7 @@ class IFUM_AperMap_Maker:
         self.btn_load_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text="Open TRACE", command=self.open_fits_trace, state='normal')
         self.btn_load_pypeit.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
-        ##### step 4a make a PypeIt file
+        ##### step 5a make a PypeIt file
         #lbl_step4a = tk.Label(self.frame_apermap, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
         ##lbl_smash = tk.Label(self.frame_apermap, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
@@ -876,7 +879,7 @@ class IFUM_AperMap_Maker:
         #self.btn_make_pypeit = tk.Button(self.frame_apermap, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
         #self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=2, pady=1)
 
-        #### step 4b run PypeIt
+        #### step 5b run PypeIt
         #lbl_step4b = tk.Label(self.frame_apermap, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
         lbl_step4b = ctk.CTkLabel(self.frame_apermap, text="Choose a side to make:")
         lbl_step4b.grid(row=rows[1], column=1, columnspan=3, sticky="w")
@@ -895,7 +898,7 @@ class IFUM_AperMap_Maker:
         self.btn_run_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text='Make', command=self.run_trace, state='disabled')
         self.btn_run_pypeit.grid(row=rows[1], column=9, sticky='ew', padx=2, pady=1)
 
-        #### step 4c save the AperMap
+        #### step 5c save the AperMap
         #lbl_save = tk.Label(self.frame_apermap, text="4c. Save the AperMap file")
         #lbl_save.grid(row=rows[1], column=1, columnspan=4, sticky="w")
         #self.lbl_slitnum = tk.Label(self.frame_apermap, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
@@ -1022,8 +1025,8 @@ class IFUM_AperMap_Maker:
         self.ent_param_offset_X0_r.bind('<Return>', lambda event: self.update_offset(event, 'r'))
         self.ent_param_offset_X0_r.bind('<KP_Enter>', lambda event: self.update_offset(event, 'r')) # unique for macOS
 
-        self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
-        self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
+        # self.ent_folder_trace.bind('<Return>', self.refresh_folder_trace)
+        # self.ent_folder_trace.bind('<KP_Enter>', self.refresh_folder_trace) # unique for macOS
 
         #self.ent_smash_range.bind('<Return>', self.refresh_smash_range)
         #self.ent_smash_range.bind('<KP_Enter>', self.refresh_smash_range) # unique for macOS
@@ -1207,7 +1210,7 @@ class IFUM_AperMap_Maker:
 
     def run_trace(self):
         shoe = self.shoe.get()
-        dirname = self.ent_folder_trace.get()
+        dirname = self.folder_trace # self.ent_folder_trace.get()
         filename = shoe + self.lbl_file_pypeit.cget("text")
         coef_temp = self.get_curve_params(shoe)
 
@@ -1260,7 +1263,7 @@ class IFUM_AperMap_Maker:
         hdr_map['CURVE_X1'] = (coef_temp[3], 'starting X position of edges')
         hdr_map['CURVE_DX'] = (coef_temp[4], 'length of edges along X axis')
 
-        dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+        dir_aperMap = self.folder_trace #os.path.join(self.ent_folder_trace.get(),'aperMap')
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
 
@@ -1295,8 +1298,8 @@ class IFUM_AperMap_Maker:
         np.savetxt(path_coefs, trace_coefs, fmt='%.6e', delimiter=',', header='# a b c', comments='# aper_half_width = %d\n'%aper_half_width)
 
         #### show info
-        info_temp = '%s-side AperMap file made!\n\n Saved to %s'%(shoe, path_aperMap)
-        self.popup_showinfo('AperMap', info_temp)
+        info_temp = '%s-side AperMap file made!\n\n Location:\n %s'%(shoe, path_aperMap)
+        self.popup_showinfo('AperMap Saved', info_temp)
 
         #### show apermap
         fname = filename.split('_')[0]+'_apermap'
@@ -1308,7 +1311,7 @@ class IFUM_AperMap_Maker:
         self.window.focus_force()
 
     def make_file_pypeit(self):
-        dirname = self.ent_folder_trace.get()
+        dirname = self.folder_trace # self.ent_folder_trace.get()
         filename = self.lbl_file_pypeit.cget("text")
         smash_range = self.ent_smash_range.get()
         write_pypeit_file(dirname, 'b'+filename, self.pca.get(), smash_range)
@@ -1334,7 +1337,7 @@ class IFUM_AperMap_Maker:
 
     def run_pypeit(self):
         shoe = self.shoe.get()
-        dirname = self.ent_folder_trace.get()
+        dirname = self.folder_trace # self.ent_folder_trace.get()
         filename = shoe + self.lbl_file_pypeit.cget("text")
 
         #### run PypeIt
@@ -1483,7 +1486,7 @@ class IFUM_AperMap_Maker:
         hdr_map['BINNING'] = ('1x1', 'binning')
         #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-        dir_aperMap = self.ent_folder_trace.get()
+        dir_aperMap = self.folder_trace # self.ent_folder_trace.get()
         if not os.path.exists(dir_aperMap):
             os.mkdir(dir_aperMap)
         
@@ -1628,7 +1631,7 @@ class IFUM_AperMap_Maker:
     #     hdr_map['BINNING'] = ('1x1', 'binning')
     #     #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
     
-    #     dir_aperMap = self.ent_folder_trace.get()
+    #     dir_aperMap = self.folder_trace # self.ent_folder_trace.get()
     #     if not os.path.exists(dir_aperMap):
     #         os.mkdir(dir_aperMap)
     
@@ -1984,7 +1987,7 @@ class IFUM_AperMap_Maker:
     #     hdr_map['BINNING'] = ('1x1', 'binning')
     #     #hdu_map = fits.PrimaryHDU(map_ap, header=hdr_map)
 
-    #     dir_aperMap = os.path.join(self.ent_folder_trace.get(),'aperMap')
+    #     dir_aperMap = self.folder_trace # os.path.join(self.ent_folder_trace.get(),'aperMap')
     #     if not os.path.exists(dir_aperMap):
     #         os.mkdir(dir_aperMap)
 
@@ -2260,8 +2263,15 @@ class IFUM_AperMap_Maker:
             self.btn_make_trace.configure(state='normal')
             self.frame_trace.configure(fg_color=STEP_BG_HIGHLIGHT)
 
+            #### Implicitly specify a folder to save Trimmed-Trace files and AperMap files
+            today_temp = datetime.today().strftime("%y%m%d")
+            folder_temp = 'apmap_%s_%s'%(today_temp, label)
+            self.folder_trace = os.path.join(self.folder_trace, folder_temp) 
+            if not os.path.exists(self.folder_trace):
+                os.mkdir(self.folder_trace)
+
     def open_fits_trace(self):
-        self.folder_trace = self.ent_folder_trace.get()
+        # self.folder_trace = self.ent_folder_trace.get()
         path_tmp = filedialog.askopenfilename(initialdir=self.folder_trace)
         self.load_fits_trace(path_tmp)
 
@@ -2280,8 +2290,8 @@ class IFUM_AperMap_Maker:
 
             #### update trace folder
             self.folder_trace = os.path.dirname(pathname)
-            self.ent_folder_trace.delete(0, tk.END)
-            self.ent_folder_trace.insert(tk.END, self.folder_trace)
+            # self.ent_folder_trace.delete(0, tk.END)
+            # self.ent_folder_trace.insert(tk.END, self.folder_trace)
 
             #### update trace file
             self.filename_trace = os.path.basename(pathname)
@@ -2311,8 +2321,9 @@ class IFUM_AperMap_Maker:
         self.window.focus_force()
 
     def open_fits_apermap2(self):
-        self.folder_trace = self.ent_folder_trace.get()
-        pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace,'aperMap'))
+        # self.folder_trace = self.ent_folder_trace.get()
+        # pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace,'aperMap'))
+        pathname = filedialog.askopenfilename(initialdir=self.folder_trace)
         dirname, filename = os.path.split(pathname)
         if os.path.isfile(pathname) and filename.endswith(".fits") and filename.startswith('ap'):
             #hdul_temp = cached_fits_open(filename)
@@ -2355,8 +2366,9 @@ class IFUM_AperMap_Maker:
         self.window.focus_force()
 
     def open_fits_apermap(self):
-        self.folder_trace = self.ent_folder_trace.get()
-        pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace, 'aperMap'))
+        # self.folder_trace = self.ent_folder_trace.get()
+        # pathname = filedialog.askopenfilename(initialdir=os.path.join(self.folder_trace, 'aperMap'))
+        pathname = filedialog.askopenfilename(initialdir=self.folder_trace)
         dirname, filename = os.path.split(pathname)
 
         if os.path.isfile(pathname) and filename.startswith("ap") and filename.endswith(".fits"):
@@ -2372,8 +2384,8 @@ class IFUM_AperMap_Maker:
 
             #### update paths and file names
             self.folder_trace = dirname
-            self.ent_folder_trace.delete(0, tk.END)
-            self.ent_folder_trace.insert(tk.END, self.folder_trace)
+            # self.ent_folder_trace.delete(0, tk.END)
+            # self.ent_folder_trace.insert(tk.END, self.folder_trace)
 
             self.filename_trace = filename
             file_temp = "ap%s_%s"%(fnum_temp, str_temp[4].split('.')[0])
@@ -2948,7 +2960,7 @@ class IFUM_AperMap_Maker:
                     self.param_edges_r = np.sort(self.param_edges_r)
                     self.param_edges_r = np.append(self.param_edges_r, self.param_edges_r[1]-self.param_edges_r[0])
 
-                self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
+                # self.param_edges_offset = self.param_edges_r[0]-self.param_edges_b[0]
                 self.renew_param_edges()
 
                 #### plot the edges
@@ -3018,8 +3030,8 @@ class IFUM_AperMap_Maker:
         #self.ent_smash_range['state'] = state
         # self.ent_labelname_mono.configure(state=state)
 
-        self.ent_folder_trace.configure(state=state)
-        self.btn_folder_trace.configure(state=state)
+        # self.ent_folder_trace.configure(state=state)
+        # self.btn_folder_trace.configure(state=state)
 
         if state == 'disabled': 
             self.cbtn_edge_lock_r.configure(state=state)
@@ -3075,7 +3087,7 @@ class IFUM_AperMap_Maker:
         self.plot_edges(shoe='both')
 
         #### write the fits file
-        self.folder_trace = self.ent_folder_trace.get()
+        # self.folder_trace = self.ent_folder_trace.get()
         path_trace_b = write_trace_file(self.data_full, self.hdr_c1_b, self.folder_trace, 'b'+self.file_current)
         path_trace_r = write_trace_file(self.data_full2, self.hdr_c1_r, self.folder_trace, 'r'+self.file_current)
 
@@ -3086,8 +3098,8 @@ class IFUM_AperMap_Maker:
         self.save_curve_file()
 
         #### show info
-        info_temp = "Trace files made!\n\n Go straightly to Step 4"
-        self.popup_showinfo("Trace file saved", info_temp)
+        info_temp = "Trimmed-Trace files are made!\n\n Go directly to Step 5."
+        self.popup_showinfo("Trimmed-Trace Files Saved", info_temp)
 
         #### load the newly saved trace file
         self.load_fits_trace(path_trace_r)
