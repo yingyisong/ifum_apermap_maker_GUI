@@ -84,6 +84,9 @@ BADGE_NEUTRAL = ('gray80', 'gray30')     # neutral resting state
 
 DEFAULT_FG_DISABLED = ("gray50", "gray50") 
 
+# Define a subtle yellow/gold background that supports both light and dark mode
+STEP_BG_HIGHLIGHT = ("#FFF9C4", "#3E3B27")
+
 
 class ToolTip:
     """Creates a hover tooltip for a given widget."""
@@ -168,7 +171,7 @@ class IFUM_AperMap_Maker:
         self.frame1.pack(fill="both", expand=True, padx=6, pady=6)
 
         # Column weight so entry fields expand
-        for c in range(1, 7):
+        for c in range(1, 9):
             self.frame1.columnconfigure(c, weight=1)
 
         # Image frames inside their dedicated windows
@@ -264,7 +267,7 @@ class IFUM_AperMap_Maker:
         self.create_widgets_offset(line_start=8, line_num=2) # step 2
         self.create_widgets_edges(line_start=10, line_num=4)  # step 3
         self.create_widgets_trace(line_start=14, line_num=3)  # step 4
-        self.create_widgets_pypeit(line_start=17, line_num=2) # step 5
+        self.create_widgets_apermap(line_start=17, line_num=2) # step 5
         # self.create_widgets_mono(line_start=19, line_num=4)   # addtion 1 (optional)
         # self.create_widgets_add_slits(line_start=23, line_num=4)   # addition 2 (obsolete)
         self.bind_widgets()
@@ -292,26 +295,44 @@ class IFUM_AperMap_Maker:
     # WIDGET CREATION METHODS
     # =========================================================================
 
-    def _step_label(self, row, tag, desc):
+    def _step_label(self, parent, row, tag, desc):
         """Helper: place a coloured step header across frame1."""
-        lbl_tag = ctk.CTkLabel(self.frame1, text=tag, text_color=STEP_LABEL_COLOR,
+        lbl_tag = ctk.CTkLabel(parent, text=tag, text_color=STEP_LABEL_COLOR,
                                font=ctk.CTkFont(weight="bold"))
         lbl_tag.grid(row=row, column=0, sticky="w", padx=(6, 2), pady=2)
         
-        lbl_desc = ctk.CTkLabel(self.frame1, text=desc, text_color=STEP_LABEL_COLOR,
+        lbl_desc = ctk.CTkLabel(parent, text=desc, text_color=STEP_LABEL_COLOR,
                                 font=ctk.CTkFont(weight="bold"))
         lbl_desc.grid(row=row, column=1, columnspan=7, sticky="w", padx=2, pady=2)
         
         return lbl_tag, lbl_desc # Return the labels so we can attach events
 
-    def _file_badge(self, row, col, text="0000", colspan=1):
+    def _file_badge(self, parent, row, col, text="0000", colspan=1):
         """Helper: sunken file-name badge using a rounded CTkLabel."""
-        lbl = ctk.CTkLabel(self.frame1, text=text,
+        lbl = ctk.CTkLabel(parent, text=text,
                            fg_color=BADGE_NEUTRAL, corner_radius=4,
-                           padx=6, pady=2)
+                           padx=6, pady=2, width=80)
         lbl.grid(row=row, column=col, columnspan=colspan,
                  sticky="ew", padx=4, pady=2)
         return lbl
+
+    def _align_grid_columns(self, sub_frame):
+        """
+        Forces identical column spacing for any sub-frame passed to it.
+        We have 10 columns total (0 through 9).
+        """
+        # Column 0: Step Tags ("Step 1:") - Fixed width
+        sub_frame.columnconfigure(0, weight=0) #, minsize=75)
+        
+        # Columns 1 through 7: Flexible middle space.
+        # The 'uniform' parameter forces them to act as a linked group 
+        # so they scale equally across identically-sized frames.
+        for c in range(1, 8):
+            sub_frame.columnconfigure(c, weight=1) #, uniform="flexible_mid")
+            
+        # Columns 8 & 9: Badges and Action Buttons - Fixed width
+        sub_frame.columnconfigure(8, weight=0, minsize=80)
+        sub_frame.columnconfigure(9, weight=0, minsize=80)
 
     def load_curve_file(self):
         '''  load a curve file and update param_curve '''
@@ -380,31 +401,41 @@ class IFUM_AperMap_Maker:
 
     def create_widgets_files(self, line_start, line_num):
         """ step 0 select raw data files """
-        start, lines = line_start, line_num
-        rows = np.arange(start, start+lines)
+        # start, lines = line_start, line_num
+        # rows = np.arange(start, start+lines)
+
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_files = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_files.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
         
-        self._step_label(rows[0], "Prep. :",
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_files)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
+        
+        self._step_label(self.frame_files, rows[0], "Prep. :",
                          "\u2139\ufe0f Select files in")
 
         #### folder
-        # lbl_folder = ctk.CTkLabel(self.frame1, text="Folder")
+        # lbl_folder = ctk.CTkLabel(self.frame_files, text="Folder")
         # lbl_folder.grid(row=rows[1], column=1, sticky="w", padx=(5, 2), pady=1)
 
-        self.ent_folder = ctk.CTkEntry(self.frame1, textvariable=ctk.StringVar(value=[self.folder_rawdata]))
+        self.ent_folder = ctk.CTkEntry(self.frame_files, textvariable=ctk.StringVar(value=[self.folder_rawdata]))
         self.ent_folder.grid(row=rows[0], column=3, columnspan=5, sticky="ew", padx=2, pady=1)
 
-        self.btn_folder = ctk.CTkButton(self.frame1, width=80, text="Folder", command=self.open_folder)
+        self.btn_folder = ctk.CTkButton(self.frame_files, width=80, text="Folder", command=self.open_folder)
         self.btn_folder.grid(row=rows[0], column=8, sticky="ew", padx=2, pady=1)
 
-        self.btn_refresh = ctk.CTkButton(self.frame1, width=80, text="Refresh", command=self.refresh_folder)
+        self.btn_refresh = ctk.CTkButton(self.frame_files, width=80, text="Refresh", command=self.refresh_folder)
         self.btn_refresh.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         #### file list
-        #lbl_files = ctk.CTkLabel(self.frame1, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_files = ctk.CTkLabel(self.frame_files, text="Files:", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_files.grid(row=rows[2], column=0, sticky="w", padx=(5, 2), pady=1)
 
         # Using standard Tkinter Listbox because CustomTkinter doesn't have a native Listbox widget
-        # self.box_files = tk.Listbox(self.frame1, listvariable=self.fit_files, height=5, 
+        # self.box_files = tk.Listbox(self.frame_files, listvariable=self.fit_files, height=5, 
         #                             bg="gray20", fg="white", selectbackground="#1f538d")
         # self.box_files.grid(row=rows[1], column=0, columnspan=8, sticky="nsew", padx=5, pady=1)
         _mode_idx = 1 if ctk.get_appearance_mode() == "Dark" else 0
@@ -413,11 +444,11 @@ class IFUM_AperMap_Maker:
         _text_col  = ctk.ThemeManager.theme["CTkLabel"]["text_color"][_mode_idx]
         _sel_col   = ctk.ThemeManager.theme["CTkButton"]["fg_color"][_mode_idx]
         self.box_files = tk.Listbox(
-            self.frame1, listvariable=self.fit_files, height=5,
+            self.frame_files, listvariable=self.fit_files, height=5,
             bg=_entry_fg, fg=_text_col,
             selectbackground=_sel_col, selectforeground="white",
             relief="flat", borderwidth=0, highlightthickness=0)
-        self.box_files.grid(row=rows[1], column=1, columnspan=5, rowspan=3,
+        self.box_files.grid(row=rows[1], column=1, columnspan=3, rowspan=3,
                             sticky="nsew", padx=6, pady=2)
 
         # # scroll bar style
@@ -427,37 +458,49 @@ class IFUM_AperMap_Maker:
         #         background=BG_COLOR, darkcolor=LABEL_COLOR, lightcolor=LABEL_COLOR,
         #         troughcolor="gray", bordercolor=BG_COLOR, arrowcolor="gray")
 
-        # box_scrollbar = ttk.Scrollbar(self.frame1, orient="vertical")
+        # box_scrollbar = ttk.Scrollbar(self.frame_files, orient="vertical")
         # box_scrollbar.grid(row=rows[1], column=7, sticky='nse')
-        box_scrollbar = ctk.CTkScrollbar(self.frame1, orientation="vertical", command=self.box_files.yview, height=60)
-        box_scrollbar.grid(row=rows[1], column=5, rowspan=3, sticky='nse', padx=(0, 5), pady=1)
+        box_scrollbar = ctk.CTkScrollbar(self.frame_files, orientation="vertical", command=self.box_files.yview, height=60)
+        box_scrollbar.grid(row=rows[1], column=3, rowspan=3, sticky='nse', padx=(0, 5), pady=1)
 
         self.box_files.config(yscrollcommand=box_scrollbar.set)
         # box_scrollbar.config(command=self.box_files.yview) 
 
         # File assign section
         # File 1
-        ctk.CTkLabel(self.frame1, text="Curve File (File 1):").grid(row=rows[1], column=7, sticky="w")
-        self.lbl_file1 = self._file_badge(rows[1], col=8, text="0000")
-        self.btn_set_file1 = ctk.CTkButton(self.frame1, width=60, text="Assign", command=self.assign_file1)
+        ctk.CTkLabel(self.frame_files, text="Curve File (File 1):").grid(row=rows[1], column=7, sticky="w")
+        self.lbl_file1 = self._file_badge(self.frame_files, rows[1], col=8, text="0000")
+        self.btn_set_file1 = ctk.CTkButton(self.frame_files, width=80, text="Assign", command=self.assign_file1)
         self.btn_set_file1.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
 
         # File 2
-        ctk.CTkLabel(self.frame1, text="Edges File (File 2):").grid(row=rows[2], column=7, sticky="w")
-        self.lbl_file2 = self._file_badge(rows[2], col=8, text="0000")
-        self.btn_set_file2 = ctk.CTkButton(self.frame1, width=60, text="Assign", command=self.assign_file2)
+        ctk.CTkLabel(self.frame_files, text="Edges File (File 2):").grid(row=rows[2], column=7, sticky="w")
+        self.lbl_file2 = self._file_badge(self.frame_files, rows[2], col=8, text="0000")
+        self.btn_set_file2 = ctk.CTkButton(self.frame_files, width=80, text="Assign", command=self.assign_file2)
         self.btn_set_file2.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
 
         # File 3
-        ctk.CTkLabel(self.frame1, text="Trace File (File 3):").grid(row=rows[3], column=7, sticky="w")
-        self.lbl_file3 = self._file_badge(rows[3], col=8, text="0000")
-        self.btn_set_file3 = ctk.CTkButton(self.frame1, width=60, text="Assign", command=self.assign_file3)
+        ctk.CTkLabel(self.frame_files, text="Trace File (File 3):").grid(row=rows[3], column=7, sticky="w")
+        self.lbl_file3 = self._file_badge(self.frame_files, rows[3], col=8, text="0000")
+        self.btn_set_file3 = ctk.CTkButton(self.frame_files, width=80, text="Assign", command=self.assign_file3)
         self.btn_set_file3.grid(row=rows[3], column=9, sticky="ew", padx=2, pady=1)
+
+        self.frame_files.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def create_widgets_curve(self, line_start, line_num):
         """ step 1 fit curvature using an arc or twilight file """
-        start, lines = line_start, line_num
-        rows = np.arange(start, start+lines)
+        # start, lines = line_start, line_num
+        # rows = np.arange(start, start+lines)
+
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_curve = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_curve.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
+        
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_curve)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
 
         # lbl_step1 = ctk.CTkLabel(self.frame1, text="Step 1:")
         # lbl_step1.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
@@ -468,7 +511,7 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_curve.grid(row=rows[0], column=6, sticky="e", padx=2)
 
         # Fit the CURVATURE of the aperture dispersion (load an ARC/solar file)
-        lbl_step_tag, lbl_step_desc = self._step_label(rows[0], "Step 1:",
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_curve, rows[0], "Step 1:",
                          "\u2139\ufe0f Fit CURVATURE (select 7 points on each side)") 
 
         help_msg = '''Use the Curve File (File 1) to fit the curvature of the same wavelength using the assigned CURVE file (File 1).
@@ -478,70 +521,70 @@ class IFUM_AperMap_Maker:
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
-        self.lbl_file_curve = self._file_badge(rows[0], col=8, text="0000")
+        self.lbl_file_curve = self._file_badge(self.frame_curve, rows[0], col=8, text="0000")
 
-        self.btn_load_curve = ctk.CTkButton(self.frame1, width=60, text="Load File 1", command=self.load_4fits_curve)
+        self.btn_load_curve = ctk.CTkButton(self.frame_curve, width=80, text="Load File 1", command=self.load_4fits_curve)
         self.btn_load_curve.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         #### pick points
-        # lbl_note_curve = ctk.CTkLabel(self.frame1, text="Hint: Select 7 points to fit func: x-C = A*(y-B)^2")
+        # lbl_note_curve = ctk.CTkLabel(self.frame_curve, text="Hint: Select 7 points to fit func: x-C = A*(y-B)^2")
         # lbl_note_curve.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_curve_r = ctk.CTkButton(
-            self.frame1, width=60, text="Select (r)", 
+            self.frame_curve, width=80, text="Select (r)", 
             command=lambda: self.pick_points('r'), state='disabled')
         self.btn_select_curve_r.grid(row=rows[1], column=8, sticky="ew", padx=2, pady=1)
 
         self.btn_select_curve_b = ctk.CTkButton(
-            self.frame1, width=60, text="Select (b)", 
+            self.frame_curve, width=80, text="Select (b)", 
             command=lambda: self.pick_points('b'), state='disabled')
         self.btn_select_curve_b.grid(row=rows[2], column=8, sticky="ew", padx=2, pady=1)
 
         #### curve parameters (r-side)
-        lbl_param_curve_A_r = ctk.CTkLabel(self.frame1, text="r-side: ")
+        lbl_param_curve_A_r = ctk.CTkLabel(self.frame_curve, text="r-side: ")
         lbl_param_curve_A_r.grid(row=rows[1], column=1, sticky="w", padx=2)
 
-        lbl_param_curve_A_r = ctk.CTkLabel(self.frame1, text="A =")
+        lbl_param_curve_A_r = ctk.CTkLabel(self.frame_curve, text="A =")
         lbl_param_curve_A_r.grid(row=rows[1], column=2, sticky="e", padx=2)
-        self.ent_param_curve_A_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_A_r)
+        self.ent_param_curve_A_r = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_A_r)
         self.ent_param_curve_A_r.grid(row=rows[1], column=3, sticky="ew", padx=1)
 
-        lbl_param_curve_B_r = ctk.CTkLabel(self.frame1, text="B =")
+        lbl_param_curve_B_r = ctk.CTkLabel(self.frame_curve, text="B =")
         lbl_param_curve_B_r.grid(row=rows[1], column=4, sticky="e", padx=2)
-        self.ent_param_curve_B_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_B_r)
+        self.ent_param_curve_B_r = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_B_r)
         self.ent_param_curve_B_r.grid(row=rows[1], column=5, sticky="ew", padx=1)
 
-        lbl_param_curve_C_r = ctk.CTkLabel(self.frame1, text="C =")
+        lbl_param_curve_C_r = ctk.CTkLabel(self.frame_curve, text="C =")
         lbl_param_curve_C_r.grid(row=rows[1], column=6, sticky="e", padx=2)
-        self.ent_param_curve_C_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_C_r)
+        self.ent_param_curve_C_r = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_C_r)
         self.ent_param_curve_C_r.grid(row=rows[1], column=7, sticky="ew", padx=1)
 
         self.btn_plot_curve_r = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (r)', 
+            self.frame_curve, width=80, text='Plot (r)', 
             command=lambda: self.update_curve(None, 'r'))
         self.btn_plot_curve_r.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
 
         #### curve parameters (b-side)
-        lbl_param_curve_A_b = ctk.CTkLabel(self.frame1, text="b-side:")
+        lbl_param_curve_A_b = ctk.CTkLabel(self.frame_curve, text="b-side:")
         lbl_param_curve_A_b.grid(row=rows[2], column=1, sticky="w", padx=2)
 
-        lbl_param_curve_A_b = ctk.CTkLabel(self.frame1, text="A =")
+        lbl_param_curve_A_b = ctk.CTkLabel(self.frame_curve, text="A =")
         lbl_param_curve_A_b.grid(row=rows[2], column=2, sticky="e", padx=2)
-        self.ent_param_curve_A_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_A_b)
+        self.ent_param_curve_A_b = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_A_b)
         self.ent_param_curve_A_b.grid(row=rows[2], column=3, sticky="ew", padx=1)
 
-        lbl_param_curve_B_b = ctk.CTkLabel(self.frame1, text="B =")
+        lbl_param_curve_B_b = ctk.CTkLabel(self.frame_curve, text="B =")
         lbl_param_curve_B_b.grid(row=rows[2], column=4, sticky="e", padx=2)
-        self.ent_param_curve_B_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_B_b)
+        self.ent_param_curve_B_b = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_B_b)
         self.ent_param_curve_B_b.grid(row=rows[2], column=5, sticky="ew", padx=1)
 
-        lbl_param_curve_C_b = ctk.CTkLabel(self.frame1, text="C =")
+        lbl_param_curve_C_b = ctk.CTkLabel(self.frame_curve, text="C =")
         lbl_param_curve_C_b.grid(row=rows[2], column=6, sticky="e", padx=2)
-        self.ent_param_curve_C_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_curve_C_b)
+        self.ent_param_curve_C_b = ctk.CTkEntry(self.frame_curve, width=80, textvariable=self.txt_param_curve_C_b)
         self.ent_param_curve_C_b.grid(row=rows[2], column=7, sticky="ew", padx=1)
 
         self.btn_plot_curve_b = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (b)', 
+            self.frame_curve, width=80, text='Plot (b)', 
             command=lambda: self.update_curve(None, 'b'))
         self.btn_plot_curve_b.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
 
@@ -550,8 +593,18 @@ class IFUM_AperMap_Maker:
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_offset = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_offset.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
+        
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_offset)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
+
          # Measure the PIXEL OFFSET between r and b sides (load a solar/SCI file)
-        lbl_step_tag, lbl_step_desc = self._step_label(rows[0], "Step 2:",
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_offset, rows[0], "Step 2:",
                          "\u2139\ufe0f Measure OFFSET (select 1 point on each side)")
 
         help_msg = '''Use the Edges File (File 2) to measure the pixel offset between r and b sides.
@@ -561,46 +614,56 @@ class IFUM_AperMap_Maker:
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
-        self.lbl_file_offset = self._file_badge(rows[0], col=8, text="0000")
+        self.lbl_file_offset = self._file_badge(self.frame_offset, rows[0], col=8, text="0000")
 
-        self.btn_load_offset = ctk.CTkButton(self.frame1, width=60, text="Load File 1", command=self.load_4fits_offset, state='normal')
+        self.btn_load_offset = ctk.CTkButton(self.frame_offset, width=80, text="Load File 1", command=self.load_4fits_offset, state='normal')
         self.btn_load_offset.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         #### offset parameters
-        lbl_param_edges_offset = ctk.CTkLabel(self.frame1, text="dX(r-b) =")
+        lbl_param_edges_offset = ctk.CTkLabel(self.frame_offset, text="dX(r-b) =")
         lbl_param_edges_offset.grid(row=rows[1], column=1, columnspan=2, sticky="e", padx=2)
         self.ent_param_edges_offset = ctk.CTkEntry(
-            self.frame1, width=80, textvariable=self.txt_param_edges_offset)
+            self.frame_offset, width=80, textvariable=self.txt_param_edges_offset)
         self.ent_param_edges_offset.grid(row=rows[1], column=3, sticky="ew", padx=1)
 
-        lbl_param_offset_X0_r = ctk.CTkLabel(self.frame1, text="Xr =")
+        lbl_param_offset_X0_r = ctk.CTkLabel(self.frame_offset, text="Xr =")
         lbl_param_offset_X0_r.grid(row=rows[1], column=4, sticky="e", padx=2)
-        self.ent_param_offset_X0_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_offset_X0_r)
+        self.ent_param_offset_X0_r = ctk.CTkEntry(self.frame_offset, width=80, textvariable=self.txt_param_offset_X0_r)
         self.ent_param_offset_X0_r.grid(row=rows[1], column=5, sticky="ew", padx=1)
 
-        lbl_param_offset_X0_b = ctk.CTkLabel(self.frame1, text="Xb =")
+        lbl_param_offset_X0_b = ctk.CTkLabel(self.frame_offset, text="Xb =")
         lbl_param_offset_X0_b.grid(row=rows[1], column=6, sticky="e", padx=2)
-        self.ent_param_offset_X0_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_offset_X0_b)
+        self.ent_param_offset_X0_b = ctk.CTkEntry(self.frame_offset, width=80, textvariable=self.txt_param_offset_X0_b)
         self.ent_param_offset_X0_b.grid(row=rows[1], column=7, sticky="ew", padx=1)
 
         #### pick offset 
-        # lbl_note_edges = ctk.CTkLabel(self.frame1, text="Hint: Select 2 points along y-axis middle line")
+        # lbl_note_edges = ctk.CTkLabel(self.frame_offset, text="Hint: Select 2 points along y-axis middle line")
         # lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_offset_r = ctk.CTkButton(
-            self.frame1, width=60, text="Select (r)", 
+            self.frame_offset, width=80, text="Select (r)", 
             command=lambda: self.pick_offset('r'), state='disabled')
         self.btn_select_offset_r.grid(row=rows[1], column=8, sticky="ew", padx=2, pady=1)
 
         self.btn_select_offset_b = ctk.CTkButton(
-            self.frame1, width=60, text="Select (b)", 
+            self.frame_offset, width=80, text="Select (b)", 
             command=lambda: self.pick_offset('b'), state='disabled')
         self.btn_select_offset_b.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
 
     def create_widgets_edges(self, line_start, line_num):
         """ step 3 select edges using a science or twilight file """
-        start, lines = line_start, line_num
-        rows = np.arange(start, start+lines)
+        # start, lines = line_start, line_num
+        # rows = np.arange(start, start+lines)
+
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_edges = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_edges.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
+        
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_edges)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
 
         # lbl_step2 = ctk.CTkLabel(self.frame1, text="Step 2:")
         # lbl_step2.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
@@ -611,7 +674,7 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_edges.grid(row=rows[0], column=6, sticky="e", padx=2)
 
          # Determine the left and right EDGES of the spectral region (load a solar/SCI file)
-        lbl_step_tag, lbl_step_desc = self._step_label(rows[0], "Step 3:",
+        lbl_step_tag, lbl_step_desc = self._step_label(self.frame_edges, rows[0], "Step 3:",
                          "\u2139\ufe0f Determine EDGES (select 2 points on either side)")
 
         help_msg = '''Use the Edges File (File 2) to determine the full spectral range.
@@ -624,105 +687,115 @@ class IFUM_AperMap_Maker:
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
 
-        self.lbl_file_edges = self._file_badge(rows[0], col=8, text="0000")
+        self.lbl_file_edges = self._file_badge(self.frame_edges, rows[0], col=8, text="0000")
 
-        self.btn_load_edges = ctk.CTkButton(self.frame1, width=60, text="Load File 2", command=self.load_4fits_edges, state='normal')
+        self.btn_load_edges = ctk.CTkButton(self.frame_edges, width=80, text="Load File 2", command=self.load_4fits_edges, state='normal')
         self.btn_load_edges.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         #### lock on one side of the edges
-        lbl_edge_lock = ctk.CTkLabel(self.frame1, text="Fix the OFFSET (in Step 2) to:")
+        lbl_edge_lock = ctk.CTkLabel(self.frame_edges, text="Fix the OFFSET (in Step 2) to:")
         lbl_edge_lock.grid(row=rows[1], column=1, columnspan=4, sticky="w", padx=2)
-        self.cbtn_edge_lock_r = ctk.CTkCheckBox(self.frame1, text='r-side', 
+        self.cbtn_edge_lock_r = ctk.CTkCheckBox(self.frame_edges, text='r-side', 
                 variable=self.state_edge_lock_r, onvalue=1, offvalue=0, 
                 command=lambda: self.lock_edge('r'), text_color='red')
         self.cbtn_edge_lock_r.grid(row=rows[1], column=5, columnspan=2, sticky="e", padx=2)
         
-        self.cbtn_edge_lock_b = ctk.CTkCheckBox(self.frame1, text='b-side', 
+        self.cbtn_edge_lock_b = ctk.CTkCheckBox(self.frame_edges, text='b-side', 
                 variable=self.state_edge_lock_b, onvalue=1, offvalue=0, 
                 command=lambda: self.lock_edge('b'), text_color='cyan')
         self.cbtn_edge_lock_b.grid(row=rows[1], column=7, columnspan=2, sticky="w", padx=2)
 
         #### button to load the curve profile
         self.btn_load_all_param = ctk.CTkButton(
-            self.frame1, width=120, text="Load saved profile", 
+            self.frame_edges, width=120, text="Load saved profile", 
             command=self.load_curve_file, state='normal')
         self.btn_load_all_param.grid(row=rows[1], 
                                      column=8, columnspan=2,
                                      sticky="e", padx=2, pady=1)
 
         #### pick edges
-        # lbl_note_edges = ctk.CTkLabel(self.frame1, text="Hint: Select 2 points along y-axis middle line")
+        # lbl_note_edges = ctk.CTkLabel(self.frame_edges, text="Hint: Select 2 points along y-axis middle line")
         # lbl_note_edges.grid(row=rows[1], column=1, columnspan=5, sticky="w")
 
         self.btn_select_edges_r = ctk.CTkButton(
-            self.frame1, width=60, text="Select (r)", 
+            self.frame_edges, width=80, text="Select (r)", 
             command=lambda: self.pick_edges('r'), state='disabled')
         self.btn_select_edges_r.grid(row=rows[2], column=8, sticky="ew", padx=2, pady=1)
 
         self.btn_select_edges_b = ctk.CTkButton(
-            self.frame1, width=60, text="Select (b)", 
+            self.frame_edges, width=80, text="Select (b)", 
             command=lambda: self.pick_edges('b'), state='disabled')
         self.btn_select_edges_b.grid(row=rows[3], column=8, sticky="ew", padx=2, pady=1)
 
         #### edge parameters (r-side)
-        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="r-side:")
+        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame_edges, text="r-side:")
         lbl_param_edges_X1_r.grid(row=rows[2], column=1, sticky="w", padx=2)
 
-        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame1, text="X1 =")
+        lbl_param_edges_X1_r = ctk.CTkLabel(self.frame_edges, text="X1 =")
         lbl_param_edges_X1_r.grid(row=rows[2], column=2, sticky="e", padx=2)
-        self.ent_param_edges_X1_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X1_r = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_X1_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_X1_r.grid(row=rows[2], column=3, sticky="ew", padx=1)
 
-        lbl_param_edges_X2_r = ctk.CTkLabel(self.frame1, text="X2 =")
+        lbl_param_edges_X2_r = ctk.CTkLabel(self.frame_edges, text="X2 =")
         lbl_param_edges_X2_r.grid(row=rows[2], column=4, sticky="e", padx=2)
-        self.ent_param_edges_X2_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X2_r = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_X2_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_X2_r.grid(row=rows[2], column=5, sticky="ew", padx=1)
 
-        lbl_param_edges_dX_r = ctk.CTkLabel(self.frame1, text="dX =")
+        lbl_param_edges_dX_r = ctk.CTkLabel(self.frame_edges, text="dX =")
         lbl_param_edges_dX_r.grid(row=rows[2], column=6, sticky="e", padx=2)
-        self.ent_param_edges_dX_r = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_dX_r = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_dX_r, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_dX_r.grid(row=rows[2], column=7, sticky="ew", padx=1)
 
         self.btn_plot_edges_r = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (r)', 
+            self.frame_edges, width=80, text='Plot (r)', 
             command=lambda: self.update_edges(None, 'r'))
         self.btn_plot_edges_r.grid(row=rows[2], column=9, sticky="ew", padx=2, pady=1)
 
         #### edge parameters (b-side)
-        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="b-side:")
+        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame_edges, text="b-side:")
         lbl_param_edges_X1_b.grid(row=rows[3], column=1, sticky="w", padx=2)
 
-        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame1, text="X1 =")
+        lbl_param_edges_X1_b = ctk.CTkLabel(self.frame_edges, text="X1 =")
         lbl_param_edges_X1_b.grid(row=rows[3], column=2, sticky="e", padx=2)
-        self.ent_param_edges_X1_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X1_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X1_b = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_X1_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_X1_b.grid(row=rows[3], column=3, sticky="ew", padx=1)
 
-        lbl_param_edges_X2_b = ctk.CTkLabel(self.frame1, text="X2 =")
+        lbl_param_edges_X2_b = ctk.CTkLabel(self.frame_edges, text="X2 =")
         lbl_param_edges_X2_b.grid(row=rows[3], column=4, sticky="e", padx=2)
-        self.ent_param_edges_X2_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_X2_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_X2_b = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_X2_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_X2_b.grid(row=rows[3], column=5, sticky="ew", padx=1)
 
-        lbl_param_edges_dX_b = ctk.CTkLabel(self.frame1, text="dX =")
+        lbl_param_edges_dX_b = ctk.CTkLabel(self.frame_edges, text="dX =")
         lbl_param_edges_dX_b.grid(row=rows[3], column=6, sticky="e", padx=2)
-        self.ent_param_edges_dX_b = ctk.CTkEntry(self.frame1, width=80, textvariable=self.txt_param_edges_dX_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
+        self.ent_param_edges_dX_b = ctk.CTkEntry(self.frame_edges, width=80, textvariable=self.txt_param_edges_dX_b, state='disabled', text_color=DEFAULT_FG_DISABLED)
         self.ent_param_edges_dX_b.grid(row=rows[3], column=7, sticky="ew", padx=1)
 
         self.btn_plot_edges_b = ctk.CTkButton(
-            self.frame1, width=60, text='Plot (b)', 
+            self.frame_edges, width=80, text='Plot (b)', 
             command=lambda: self.update_edges(None, 'b'))
         self.btn_plot_edges_b.grid(row=rows[3], column=9, sticky="ew", padx=2, pady=1)
 
         # #### offset parameters
-        # lbl_param_edges_offset = ctk.CTkLabel(self.frame1, text="dX1 (r - b) =")
+        # lbl_param_edges_offset = ctk.CTkLabel(self.frame_edges, text="dX1 (r - b) =")
         # lbl_param_edges_offset.grid(row=rows[4], column=1, sticky="e", padx=2)
         # self.ent_param_edges_offset = ctk.CTkEntry(
-        #     self.frame1, width=80, textvariable=self.txt_param_edges_offset)
+        #     self.frame_edges, width=80, textvariable=self.txt_param_edges_offset)
         # self.ent_param_edges_offset.grid(row=rows[4], column=2, sticky="ew", padx=1)
 
     def create_widgets_trace(self, line_start, line_num):
         """ step 4 check and make a masked LED fits file for tracing """
-        start, lines = line_start, line_num
-        rows = np.arange(start, start+lines)
+        # start, lines = line_start, line_num
+        # rows = np.arange(start, start+lines)
+
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_trace = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_trace.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
+        
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_trace)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
 
         # lbl_step3 = ctk.CTkLabel(self.frame1, text="Step 3:")
         # lbl_step3.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
@@ -733,30 +806,40 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_trace.grid(row=rows[0], column=6, sticky="e", padx=2)
 
         #  Make TRACE files (load an LED file)
-        self._step_label(rows[0], "Step 4:", "\u2139\ufe0f Make Trimmed-Trace files")
-        self.lbl_file_trace = self._file_badge(rows[0], col=8, text="0000")
+        self._step_label(self.frame_trace, rows[0], "Step 4:", "\u2139\ufe0f Make Trimmed-Trace files")
+        self.lbl_file_trace = self._file_badge(self.frame_trace, rows[0], col=8, text="0000")
 
-        self.btn_load_trace = ctk.CTkButton(self.frame1, width=60, text="Load File 3", command=self.load_4fits_trace, state='normal')
+        self.btn_load_trace = ctk.CTkButton(self.frame_trace, width=80, text="Load File 3", command=self.load_4fits_trace, state='normal')
         self.btn_load_trace.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         ####
-        self.ent_folder_trace = ctk.CTkEntry(self.frame1, textvariable=self.txt_folder_trace, state='normal')
-        self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=5, sticky="ew", padx=2)
+        self.ent_folder_trace = ctk.CTkEntry(self.frame_trace, textvariable=self.txt_folder_trace, state='normal')
+        self.ent_folder_trace.grid(row=rows[1], column=1, columnspan=7, sticky="ew", padx=2)
 
-        self.btn_folder_trace = ctk.CTkButton(self.frame1, width=80, text="Output Folder", command=self.open_folder_trace, state='normal')
+        self.btn_folder_trace = ctk.CTkButton(self.frame_trace, width=80, text="Folder", command=self.open_folder_trace, state='normal')
         self.btn_folder_trace.grid(row=rows[1], column=8, sticky="ew", pady=1)
 
-        self.btn_make_trace = ctk.CTkButton(self.frame1, width=60, text="Make", command=self.make_file_trace, state='disabled')
+        self.btn_make_trace = ctk.CTkButton(self.frame_trace, width=80, text="Make", command=self.make_file_trace, state='disabled')
         self.btn_make_trace.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
 
         # add a bottom dashed line to this widget
-        lbl_line = ctk.CTkLabel(self.frame1, text="-"*100, text_color='gray')
+        lbl_line = ctk.CTkLabel(self.frame_trace, text="-"*100, text_color='gray')
         lbl_line.grid(row=rows[2], column=0, columnspan=10, sticky="w", padx=5)
 
-    def create_widgets_pypeit(self, line_start, line_num):
-        """ step 5 run pypeit for tracing and making the AperMap """
-        start, lines = line_start, line_num
-        rows = np.arange(start, start+lines)
+    def create_widgets_apermap(self, line_start, line_num):
+        """ step 5 run the tracing algorithm to make the AperMap """
+        # start, lines = line_start, line_num
+        # rows = np.arange(start, start+lines)
+
+        # 1. Create a sub-frame for the entire step to handle background highlighting
+        self.frame_apermap = ctk.CTkFrame(self.frame1, fg_color="transparent", corner_radius=6)
+        self.frame_apermap.grid(row=line_start, column=0, columnspan=10, sticky="nsew", pady=0, padx=0)
+        
+        # 2. Replicate the column weighting so widgets align perfectly with the main frame
+        self._align_grid_columns(self.frame_apermap)
+
+        # 3. Use local row indices for the sub-frame (0 to line_num-1)
+        rows = np.arange(line_num)
 
         # lbl_step4 = ctk.CTkLabel(self.frame1, text="Step 4:")
         # lbl_step4.grid(row=rows[0], column=0, sticky="w", padx=(5, 2), pady=1)
@@ -767,65 +850,65 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_pypeit.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
 
          #  Make AperMap files (open a TRACE file)
-        self._step_label(rows[0], "Step 5:", "\u2139\ufe0f Make AperMap files")
-        self.lbl_file_pypeit = self._file_badge(rows[0], col=7, text="0000_trace",
+        self._step_label(self.frame_apermap, rows[0], "Step 5:", "\u2139\ufe0f Make AperMap files")
+        self.lbl_file_pypeit = self._file_badge(self.frame_apermap, rows[0], col=7, text="0000_trace",
                                                 colspan=2)
-        self.btn_load_pypeit = ctk.CTkButton(self.frame1, width=60, text="Open TRACE", command=self.open_fits_trace, state='normal')
+        self.btn_load_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text="Open TRACE", command=self.open_fits_trace, state='normal')
         self.btn_load_pypeit.grid(row=rows[0], column=9, sticky="ew", padx=2, pady=1)
 
         ##### step 4a make a PypeIt file
-        #lbl_step4a = tk.Label(self.frame1, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_step4a = tk.Label(self.frame_apermap, text="4a. Make PypeIt files", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_step4a.grid(row=rows[1], column=1, columnspan=2, sticky="w")
-        ##lbl_smash = tk.Label(self.frame1, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
+        ##lbl_smash = tk.Label(self.frame_apermap, text="smash range =", fg=LABEL_COLOR, bg=BG_COLOR)
         ##lbl_smash.grid(row=rows[1], column=4, columnspan=2, sticky="e")
 
-        #lbl_pca = tk.Label(self.frame1, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_pca = tk.Label(self.frame_apermap, text="PCA:", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_pca.grid(row=rows[1], column=4, sticky="w")
 
-        #self.pca1 = tk.Radiobutton(self.frame1, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca1 = tk.Radiobutton(self.frame_apermap, text='off', variable=self.pca, value='off', fg=LABEL_COLOR, bg=BG_COLOR)
         #self.pca1.grid(row=rows[1], column=4, sticky='e')
-        #self.pca2 = tk.Radiobutton(self.frame1, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
+        #self.pca2 = tk.Radiobutton(self.frame_apermap, text='on', variable=self.pca, value='on', fg=LABEL_COLOR, bg=BG_COLOR)
         #self.pca2.grid(row=rows[1], column=5, sticky='w')
 
-        #self.ent_smash_range = tk.Entry(self.frame1, width=6, textvariable=self.txt_smash_range, state='normal')
+        #self.ent_smash_range = tk.Entry(self.frame_apermap, width=6, textvariable=self.txt_smash_range, state='normal')
         #self.ent_smash_range.grid(row=rows[1], column=6, sticky="ew")
 
-        #self.btn_make_pypeit = tk.Button(self.frame1, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
+        #self.btn_make_pypeit = tk.Button(self.frame_apermap, width=6, text='Make', command=self.make_file_pypeit, state='disabled', highlightbackground=BG_COLOR)
         #self.btn_make_pypeit.grid(row=rows[1], column=7, sticky='e', padx=2, pady=1)
 
         #### step 4b run PypeIt
-        #lbl_step4b = tk.Label(self.frame1, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
-        lbl_step4b = ctk.CTkLabel(self.frame1, text="Choose a side to make:")
+        #lbl_step4b = tk.Label(self.frame_apermap, text="4b. Run PypeIt to trace slits", fg=LABEL_COLOR, bg=BG_COLOR)
+        lbl_step4b = ctk.CTkLabel(self.frame_apermap, text="Choose a side to make:")
         lbl_step4b.grid(row=rows[1], column=1, columnspan=3, sticky="w")
 
 
         #### select shoe side
-        #lbl_shoe = tk.Label(self.frame1, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
+        #lbl_shoe = tk.Label(self.frame_apermap, text="Shoe:", fg=LABEL_COLOR, bg=BG_COLOR)
         #lbl_shoe.grid(row=rows[2], column=4, sticky="w")
 
-        self.shoe2 = ctk.CTkRadioButton(self.frame1, text='r-side', variable=self.shoe, value='r', text_color="red")
+        self.shoe2 = ctk.CTkRadioButton(self.frame_apermap, text='r-side', variable=self.shoe, value='r', text_color="red")
         self.shoe2.grid(row=rows[1], column=5, columnspan=2, sticky='e', padx=2)
 
-        self.shoe1 = ctk.CTkRadioButton(self.frame1, text='b-side', variable=self.shoe, value='b', text_color="cyan")
+        self.shoe1 = ctk.CTkRadioButton(self.frame_apermap, text='b-side', variable=self.shoe, value='b', text_color="cyan")
         self.shoe1.grid(row=rows[1], column=7, columnspan=2, sticky='w', padx=2)
 
-        self.btn_run_pypeit = ctk.CTkButton(self.frame1, width=60, text='Make', command=self.run_trace, state='disabled')
+        self.btn_run_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text='Make', command=self.run_trace, state='disabled')
         self.btn_run_pypeit.grid(row=rows[1], column=9, sticky='ew', padx=2, pady=1)
 
         #### step 4c save the AperMap
-        #lbl_save = tk.Label(self.frame1, text="4c. Save the AperMap file")
+        #lbl_save = tk.Label(self.frame_apermap, text="4c. Save the AperMap file")
         #lbl_save.grid(row=rows[1], column=1, columnspan=4, sticky="w")
-        #self.lbl_slitnum = tk.Label(self.frame1, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
+        #self.lbl_slitnum = tk.Label(self.frame_apermap, relief=tk.SUNKEN, text="N_slits = 000", fg=LABEL_COLOR)
         #self.lbl_slitnum.grid(row=rows[3], column=5, columnspan=2, sticky="e")
 
         # add a bottom divider line to this widget
-        # lbl_line = tk.Label(self.frame1, text=" "*80, fg='gray', bg=BG_COLOR)
+        # lbl_line = tk.Label(self.frame_apermap, text=" "*80, fg='gray', bg=BG_COLOR)
         # lbl_line.grid(row=rows[3], column=0, columnspan=8, sticky="w")
-        # self.divider = ctk.CTkFrame(self.frame1, height=2, fg_color='gray')
+        # self.divider = ctk.CTkFrame(self.frame_apermap, height=2, fg_color='gray')
         # self.divider.grid(row=rows[3], column=0, columnspan=10, sticky="ew", padx=5, pady=5)
 
     def create_widgets_add_slits(self, line_start, line_num):
-        """ step 5 add bad/missing slits """
+        """ Add. 2 add bad/missing slits """
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
@@ -837,12 +920,12 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_apermap = ctk.CTkLabel(self.frame1, text="apx0000_0000", corner_radius=4, fg_color=("gray80", "gray20"))
         # self.lbl_file_apermap.grid(row=rows[0], column=5, columnspan=2, sticky="e", padx=2)
 
-        self._step_label(rows[0], "Add. 2:",
+        self._step_label(self.frame1, rows[0], "Add. 2:",
                          "(obsolete) Add missing slits to an AperMap")
-        self.lbl_file_apermap = self._file_badge(rows[0], col=5,
+        self.lbl_file_apermap = self._file_badge(self.frame1, rows[0], col=5,
                                                  text="apx0000_0000", colspan=2)
 
-        self.btn_load_apermap = ctk.CTkButton(self.frame1, width=60, text="Open", command=self.open_fits_apermap, state='normal')
+        self.btn_load_apermap = ctk.CTkButton(self.frame1, width=80, text="Open", command=self.open_fits_apermap, state='normal')
         self.btn_load_apermap.grid(row=rows[0], column=7, sticky="ew", padx=2, pady=1)
 
         #### Notes
@@ -853,24 +936,24 @@ class IFUM_AperMap_Maker:
         lbl_bundles_note = ctk.CTkLabel(self.frame1, text='Opt. A: By bundle centers (pick 5, 6 or 8 points)')
         lbl_bundles_note.grid(row=rows[2], column=1, columnspan=5, sticky='w')
 
-        self.btn_select_bundles = ctk.CTkButton(self.frame1, width=60, text="Select", command=self.pick_bundles, state='disabled')
+        self.btn_select_bundles = ctk.CTkButton(self.frame1, width=80, text="Select", command=self.pick_bundles, state='disabled')
         self.btn_select_bundles.grid(row=rows[2], column=6, sticky="ew", padx=2, pady=1)
 
-        self.btn_make_apermap_bundles = ctk.CTkButton(self.frame1, width=60, text='Run', command=self.make_file_apermap_fix2_v2, state='disabled')
+        self.btn_make_apermap_bundles = ctk.CTkButton(self.frame1, width=80, text='Run', command=self.make_file_apermap_fix2_v2, state='disabled')
         self.btn_make_apermap_bundles.grid(row=rows[2], column=7, sticky='ew', padx=2, pady=1)
 
         #### select y positions of all missing slits
         lbl_slits_note = ctk.CTkLabel(self.frame1, text='Opt. B: By exact slit positions (pick N missing points)')
         lbl_slits_note.grid(row=rows[3], column=1, columnspan=5, sticky='w')
 
-        self.btn_select_slits = ctk.CTkButton(self.frame1, width=60, text="Select", command=self.pick_slits, state='disabled')
+        self.btn_select_slits = ctk.CTkButton(self.frame1, width=80, text="Select", command=self.pick_slits, state='disabled')
         self.btn_select_slits.grid(row=rows[3], column=6, sticky="ew", padx=2, pady=1)
 
-        self.btn_make_apermap_slits = ctk.CTkButton(self.frame1, width=60, text='Run', command=self.make_file_apermap_slits_v2, state='disabled')
+        self.btn_make_apermap_slits = ctk.CTkButton(self.frame1, width=80, text='Run', command=self.make_file_apermap_slits_v2, state='disabled')
         self.btn_make_apermap_slits.grid(row=rows[3], column=7, sticky='ew', padx=2, pady=1)
 
     def create_widgets_mono(self, line_start, line_num):
-        """ step 6 make monochromatic apermap """
+        """ Add. 1 make monochromatic apermap """
         start, lines = line_start, line_num
         rows = np.arange(start, start+lines)
 
@@ -879,7 +962,7 @@ class IFUM_AperMap_Maker:
         # lbl_step6_desc = ctk.CTkLabel(self.frame1, text="(optional) Make monochromatic / narrow-band AperMap files")
         # lbl_step6_desc.grid(row=rows[0], column=1, columnspan=6, sticky="w")
 
-        self._step_label(rows[0], "Add. 1:",
+        self._step_label(self.frame1, rows[0], "Add. 1:",
                          "(optional) Make monochromatic / narrow-band AperMap files")
 
         #### step 6a
@@ -893,7 +976,7 @@ class IFUM_AperMap_Maker:
         self.lbl_file_mono = ctk.CTkLabel(self.frame1, text="XXX_0000", corner_radius=4, fg_color=("gray80", "gray20"))
         self.lbl_file_mono.grid(row=rows[2], column=4, columnspan=3, sticky="e", padx=2)
 
-        self.btn_load_mono = ctk.CTkButton(self.frame1, width=60, text="Open", command=self.open_fits_apermap2, state='normal')
+        self.btn_load_mono = ctk.CTkButton(self.frame1, width=80, text="Open", command=self.open_fits_apermap2, state='normal')
         self.btn_load_mono.grid(row=rows[2], column=7, sticky="ew", padx=2, pady=1)
 
         #### step 6c
@@ -903,7 +986,7 @@ class IFUM_AperMap_Maker:
         self.ent_labelname_mono = ctk.CTkEntry(self.frame1, textvariable=self.txt_labelname_mono, state='normal')
         self.ent_labelname_mono.grid(row=rows[3], column=3, columnspan=4, sticky="ew", padx=2)
 
-        self.btn_make_apermap_mono = ctk.CTkButton(self.frame1, width=60, text="Make", command=self.make_file_apermap_mono, state='disabled')
+        self.btn_make_apermap_mono = ctk.CTkButton(self.frame1, width=80, text="Make", command=self.make_file_apermap_mono, state='disabled')
         self.btn_make_apermap_mono.grid(row=rows[3], column=7, sticky="ew", padx=2, pady=1)
 
     def bind_widgets(self):
@@ -1942,6 +2025,8 @@ class IFUM_AperMap_Maker:
             self.file1_name = self.box_files.get(idxs[0])
             self.lbl_file1.configure(text=self.file1_name, fg_color='yellow', text_color='black')
         label = self.assign_4fits()
+        self.gray_all_lbl_file()
+        self.frame_files.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def assign_file2(self):
         idxs = self.box_files.curselection()
@@ -1949,6 +2034,8 @@ class IFUM_AperMap_Maker:
             self.file2_name = self.box_files.get(idxs[0])
             self.lbl_file2.configure(text=self.file2_name, fg_color='yellow', text_color='black')
         label = self.assign_4fits()
+        self.gray_all_lbl_file()
+        self.frame_files.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def assign_file3(self):
         idxs = self.box_files.curselection()
@@ -1956,6 +2043,8 @@ class IFUM_AperMap_Maker:
             self.file3_name = self.box_files.get(idxs[0])
             self.lbl_file3.configure(text=self.file3_name, fg_color='yellow', text_color='black')
         label = self.assign_4fits()
+        self.gray_all_lbl_file()
+        self.frame_files.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def open_folder(self):
         """Open a folder using the Browse button."""
@@ -2112,6 +2201,19 @@ class IFUM_AperMap_Maker:
         # self.lbl_file_apermap.configure(fg_color=bg_color, text_color=("black", "white"))
         # self.lbl_file_mono.configure(fg_color=bg_color, text_color=("black", "white"))
 
+        if hasattr(self, 'frame_files'):
+            self.frame_files.configure(fg_color="transparent")
+        if hasattr(self, 'frame_curve'):
+            self.frame_curve.configure(fg_color="transparent")
+        if hasattr(self, 'frame_offset'):
+            self.frame_offset.configure(fg_color="transparent")
+        if hasattr(self, 'frame_edges'):
+            self.frame_edges.configure(fg_color="transparent")
+        if hasattr(self, 'frame_trace'):
+            self.frame_trace.configure(fg_color="transparent")
+        if hasattr(self, 'frame_apermap'):
+            self.frame_apermap.configure(fg_color="transparent")
+
     def load_4fits_curve(self):
         label = self.load_specific_4fits(self.file1_name)
         if label!='0000':
@@ -2121,6 +2223,7 @@ class IFUM_AperMap_Maker:
             self.disable_dependent_btns()
             self.btn_select_curve_b.configure(state='normal')
             self.btn_select_curve_r.configure(state='normal')
+            self.frame_curve.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def load_4fits_offset(self):
         label = self.load_specific_4fits(self.file1_name)
@@ -2131,6 +2234,7 @@ class IFUM_AperMap_Maker:
             self.disable_dependent_btns()
             self.btn_select_offset_b.configure(state='normal')
             self.btn_select_offset_r.configure(state='normal')
+            self.frame_offset.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def load_4fits_edges(self):
         label = self.load_specific_4fits(self.file2_name)
@@ -2143,6 +2247,7 @@ class IFUM_AperMap_Maker:
             self.cbtn_edge_lock_b.configure(state='normal')
             # self.btn_select_edges_b.configure(state='normal')
             # self.btn_select_edges_r.configure(state='normal')
+            self.frame_edges.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def load_4fits_trace(self):
         label = self.load_specific_4fits(self.file3_name)
@@ -2153,6 +2258,7 @@ class IFUM_AperMap_Maker:
             self.lbl_file_trace.configure(fg_color='yellow', text_color='black')
             self.disable_dependent_btns()
             self.btn_make_trace.configure(state='normal')
+            self.frame_trace.configure(fg_color=STEP_BG_HIGHLIGHT)
 
     def open_fits_trace(self):
         self.folder_trace = self.ent_folder_trace.get()
@@ -2193,6 +2299,7 @@ class IFUM_AperMap_Maker:
             #### show the fits image
             self.clear_image()
             self.update_image()
+            self.frame_apermap.configure(fg_color=STEP_BG_HIGHLIGHT)
         else:
             self.data_full = np.ones((4048, 4048), dtype=np.int32)
             self.filename_trace = "0000_trace.fits"
@@ -2756,7 +2863,7 @@ class IFUM_AperMap_Maker:
                     self.param_curve_r = popt
 
                 #### plot the fitted curve
-                self.clear_image(shoe=shoe)
+                # self.clear_image(shoe=shoe)
                 self.plot_curve(shoe=shoe)
 
                 #### enable other functions
@@ -2799,7 +2906,7 @@ class IFUM_AperMap_Maker:
                 self.renew_param_offset()
 
                 #### plot
-                self.clear_image(shoe=shoe)
+                # self.clear_image(shoe=shoe)
                 self.plot_offset(shoe=shoe)
 
                 #### enable other functions
@@ -2845,7 +2952,7 @@ class IFUM_AperMap_Maker:
                 self.renew_param_edges()
 
                 #### plot the edges
-                self.clear_image(shoe=shoe)
+                # self.clear_image(shoe=shoe)
                 self.plot_edges(shoe=shoe)
 
                 #### enable other functions
