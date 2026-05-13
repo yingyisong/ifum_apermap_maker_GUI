@@ -1,3 +1,4 @@
 ccdproc>=2.5.1
 matplotlib>=3.10.3
 specutils>=2.0.0
+customtkinter>=5.2.2
