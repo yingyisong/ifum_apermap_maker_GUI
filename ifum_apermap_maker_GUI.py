@@ -851,7 +851,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace.grid(row=rows[1], column=9, sticky="ew", padx=2, pady=1)
 
         # add a bottom dashed line to this widget
-        lbl_line = ctk.CTkLabel(self.frame_trace, text="-"*100, text_color='gray')
+        lbl_line = ctk.CTkLabel(self.frame_trace, text="-"*120, text_color='gray')
         lbl_line.grid(row=rows[2], column=0, columnspan=10, sticky="w", padx=5)
 
     def create_widgets_apermap(self, line_start, line_num):
@@ -882,9 +882,9 @@ class IFUM_AperMap_Maker:
         help_msg = (
             "Use the Trimmed-Trace files (made in Step 4) to generate the AperMap files.\n\n"
             "This step should typically ready to perform immediately after Step 4.\n"
-            "To redo the step (or can skip Steps 1-4), use 'Load Curve File' and 'Open Trimmed' buttons.\n\n"
-            "The outputs are saved to the same folder as the Trimmed-Trace files.\n\n"
-            "The files are made for r and b side, respectively.\n"
+            "To resume the step (i.e. skip Steps 1-4), use 'Open Curve File' and 'Open Trimmed' buttons.\n\n"
+            "All outputs are saved to the same folder as the Trimmed-Trace files.\n\n"
+            "The AperMap files are made for r and b side, respectively.\n"
             "For each side, two figures will be shown iteratively for removing any BAD/POOR-found peaks:\n"
             "1. Figure of the found central points (i.e. peaks) in the first aperture.\n"
             "2. Figure of all found peaks in all apertures."
@@ -945,9 +945,16 @@ class IFUM_AperMap_Maker:
         # self.divider = ctk.CTkFrame(self.frame_apermap, height=2, fg_color='gray')
         # self.divider.grid(row=rows[3], column=0, columnspan=10, sticky="ew", padx=5, pady=5)
 
+        #### 
+        # lbl_temp = ctk.CTkLabel(self.frame_apermap, text="(Resume) ")
+        # lbl_temp.grid(row=rows[2], column=0, sticky="e")
+
+        lbl_temp = ctk.CTkLabel(self.frame_apermap, text="(Shortcut) Load existing Curve & Trimmed files to skip Steps 1-4:")
+        lbl_temp.grid(row=rows[2], column=1, columnspan=6, sticky="w")
+
         #### button to load the curve profile
         self.btn_load_all_param = ctk.CTkButton(
-            self.frame_apermap, width=120, text="Load Curve File", 
+            self.frame_apermap, width=120, text="Open Curve File", 
             command=self.load_curve_file, state='normal')
         self.btn_load_all_param.grid(row=rows[2], 
                                      column=7, columnspan=2,
