@@ -726,36 +726,40 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     """
     plot the first peaks
     """
-    excluded_columns = []   # stores indices of selected (right-clicked) points
-    selecting_mode = [False]  # toggled with 's' / 'Esc'
+    excluded_columns = []   # stores indices of selected (RIGHT-CLICKed) points
+    selecting_mode = [True] # [False]  # toggled with 's' / 'Esc'
 
     fig = plt.figure(figsize=(12,6))
     fig.clf()
     ax = fig.add_subplot(111)
     ax.set_title((
-        "Figure of the peaks in the first aperture." 
-        "Exclude any BAD/POOR-found peaks if necessary.\n"
-        "Hint: Press 'Shift+S' to enter SELECTING mode\n"
-        "CLOSE the window to continue"
+        "Figure of all found peaks in the first aperture. " 
+        "Exclude any BAD/POOR found peaks if necessary."
+        #"Hint: Press 'Shift+S' to enter SELECTING mode\n"
+        #"CLOSE the window to continue"
     )) # \n 'Esc' to quit SELECTING mode
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
 
     xx = np.arange(len(peaks1))
-    ax.plot(xx[peaks1>0], peaks1[peaks1>0], 'k+', label="All first peaks")
+    #ax.plot(xx[peaks1>0], peaks1[peaks1>0], 'k+', label="All first peaks")
+    ax.plot(xx[mask_good], peaks1[mask_good], 'r+', label="Found peaks")
     ax.plot(xx[peaks1<0], -peaks1[peaks1<0], 'g+', label="Failed peaks")
-    ax.plot(xx[mask_good], peaks1[mask_good], 'r+', label="Selected (good) peaks")
 
     ax.axvline(x=col_num, color='gray', linestyle='--')
 
     # Scatter for highlighted (selected) points – starts empty
     highlight = ax.scatter([], [], s=60, facecolors="none", edgecolors="red",
-                           linewidths=2, zorder=5, label="Excluded peaks")
+                           linewidths=2, zorder=5, label="Selected peaks")
+
+    ax.text(0.01, 0.97, "RIGHT-CLICK to select or unselect a peak to remove\nCLOSE the window to continue",
+            transform=ax.transAxes, va="top",
+            fontsize=10, color="red")
 
     # Status text in the top-left corner
-    status_text = ax.text(0.01, 0.97, "Mode: NORMAL",
-                          transform=ax.transAxes, va="top",
-                          fontsize=10, color="grey")
+    # status_text = ax.text(0.01, 0.97, "Mode: NORMAL",
+    #                       transform=ax.transAxes, va="top",
+    #                       fontsize=10, color="grey")
     
     def _refresh_highlight():
         """Redraw the red circles on every currently selected point."""
@@ -766,20 +770,20 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
             highlight.set_offsets(np.empty((0, 2)))
         fig.canvas.draw_idle()
 
-    def on_key(event):
-        if event.key == "S":
-            selecting_mode[0] = True
-            status_text.set_text("Mode: SELECTING  (right-click to pick, Esc to exit)")
-            status_text.set_color("red")
-            fig.canvas.draw_idle()
-        elif event.key == "escape":
-            selecting_mode[0] = False
-            status_text.set_text("Mode: NORMAL")
-            status_text.set_color("grey")
-            fig.canvas.draw_idle()
+    # def on_key(event):
+    #     if event.key == "S":
+    #         selecting_mode[0] = True
+    #         status_text.set_text("Mode: SELECTING  (RIGHT-CLICK to pick, Esc to exit)")
+    #         status_text.set_color("red")
+    #         fig.canvas.draw_idle()
+    #     elif event.key == "escape":
+    #         selecting_mode[0] = False
+    #         status_text.set_text("Mode: NORMAL")
+    #         status_text.set_color("grey")
+    #         fig.canvas.draw_idle()
 
     def on_click(event):
-        """Right-click in selecting mode → find nearest point and toggle selection."""
+        """RIGHT-CLICK in selecting mode → find nearest point and toggle selection."""
         if not selecting_mode[0]:
             return
         if event.button != 3:          # 3 = right mouse button
@@ -802,7 +806,7 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
         print(f"excluded_columns = {excluded_columns}")
         _refresh_highlight()
 
-    cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
+    # cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
     ax.legend(loc="lower right")
@@ -817,17 +821,18 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
     plot peaks_array for all columns
     """
 
-    excluded_columns = []   # stores indices of selected (right-clicked) points
-    selecting_mode = [False]  # toggled with 's' / 'Esc'
+    excluded_columns = []   # stores indices of selected (RIGHT-CLICKed) points
+    selecting_mode = [True] # [False]  # toggled with 's' / 'Esc'
     vlines = {} # to store vertical line artists for easy updating
 
     fig = plt.figure(6, figsize=(10,10))
     fig.clf()
     ax = fig.add_subplot(111)
     ax.set_title((
-        "Figure of all found peaks in all the apertures. Exclude any BAD/POOR columns if necessary.\n"
-        "Hint: Press 'Shift+S' to enter SELECTING mode\n"
-        "CLOSE the window to continue"
+        "Figure of all found peaks in all the apertures. "
+        "Remove any BAD/POOR columns if necessary."
+        #"Hint: Press 'Shift+S' to enter SELECTING mode\n"
+        #"CLOSE the window to continue"
     )) #\n 'Esc' to quit SELECTING mode
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
@@ -839,25 +844,28 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
             
     ax.axvline(x=col_num, color='gray', linestyle='--', label='Middle Column')
 
+    ax.text(0.01, 0.97, "RIGHT-CLICK to select or unselect a column to remove\nCLOSE the window to continue",
+            transform=ax.transAxes, va="top",
+            fontsize=10, color="red")
     # Status text in the top-left corner
-    status_text = ax.text(0.01, 0.97, "Mode: NORMAL",
-                          transform=ax.transAxes, va="top",
-                          fontsize=10, color="grey")
+    # status_text = ax.text(0.01, 0.97, "Mode: NORMAL",
+    #                       transform=ax.transAxes, va="top",
+    #                       fontsize=10, color="grey")
     
-    def on_key(event):
-        if event.key == "S":
-            selecting_mode[0] = True
-            status_text.set_text("Mode: SELECTING  (right-click to pick, Esc to exit)")
-            status_text.set_color("red")
-            fig.canvas.draw_idle()
-        elif event.key == "escape":
-            selecting_mode[0] = False
-            status_text.set_text("Mode: NORMAL")
-            status_text.set_color("grey")
-            fig.canvas.draw_idle()
+    # def on_key(event):
+    #     if event.key == "S":
+    #         selecting_mode[0] = True
+    #         status_text.set_text("Mode: SELECTING  (RIGHT-CLICK to pick, Esc to exit)")
+    #         status_text.set_color("red")
+    #         fig.canvas.draw_idle()
+    #     elif event.key == "escape":
+    #         selecting_mode[0] = False
+    #         status_text.set_text("Mode: NORMAL")
+    #         status_text.set_color("grey")
+    #         fig.canvas.draw_idle()
 
     def on_click(event):
-        """Right-click in selecting mode → find nearest point and toggle selection."""
+        """RIGHT-CLICK in selecting mode → find nearest point and toggle selection."""
         if not selecting_mode[0]:
             return
         if event.button != 3:          # 3 = right mouse button
@@ -886,7 +894,7 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
         print(f"excluded_columns = {excluded_columns}")
         fig.canvas.draw_idle()
 
-    cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
+    # cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
     ax.legend(loc="lower right")

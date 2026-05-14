@@ -531,7 +531,7 @@ class IFUM_AperMap_Maker:
             "Hint:\n"
             "1. On each side, select 7 points to fit a porabola function: x-C = A*(y-B)^2\n"
             "2. The points should be selected along the same line feature across different apertures.\n"
-            "3. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "3. In the point-selection mode, RIGHT-CLICK to select a point; Esc to quit and cancel the selection process.\n"
             "4. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
         )
         ToolTip(lbl_step_tag, help_msg)
@@ -628,7 +628,7 @@ class IFUM_AperMap_Maker:
             "Hint:\n"
             "1. On each side, select 1 point (Xr or Xb) along the y-axis middle line (green).\n" 
             "2. Xr and Xb should be selected at the same line feature.\n"   
-            "3. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "3. In the point-selection mode, RIGHT-CLICK to select a point; Esc to quit and cancel the selection process.\n"
             "4. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
         )
         ToolTip(lbl_step_tag, help_msg)
@@ -706,7 +706,7 @@ class IFUM_AperMap_Maker:
             "3. Make sure that X1 and X2 cover the widest possible spectral range.\n"
             "4. Do NOT include other spectral order.\n"
             "5. Values turn RED when the selected edges lay beyond the data region.\n"
-            "6. In the point-selection mode, right-click to select a point; Esc to quit and cancel the selection process.\n"
+            "6. In the point-selection mode, RIGHT-CLICK to select a point; Esc to quit and cancel the selection process.\n"
             "7. Use the toolbar (in the bottom of the image windows) to ZOOM, MOVE or RESET."
         )
         ToolTip(lbl_step_tag, help_msg)
@@ -2657,14 +2657,14 @@ class IFUM_AperMap_Maker:
 
     def add_instructions_on_image(self, shoe='both'):
         if shoe=='b' or shoe=='both':
-            self.ax.text(0.04, 0.02, 'Right Click to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax.transAxes,
+            self.ax.text(0.04, 0.02, 'RIGHT-CLICK to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax.transAxes,
                      fontsize=10, color='white', ha='left', va='bottom',
                      bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
             self.ax.text(0.04, 0.98, 'Press ESC to quit without saving', transform=self.ax.transAxes,
                      fontsize=10, color='white', ha='left', va='top',
                      bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
         if shoe=='r' or shoe=='both':
-            self.ax2.text(0.04, 0.02, 'Right Click to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax2.transAxes,
+            self.ax2.text(0.04, 0.02, 'RIGHT-CLICK to select a point;\nUse Toolbar\'s Zoom to zoom in', transform=self.ax2.transAxes,
                      fontsize=10, color='white', ha='left', va='bottom',
                      bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
             self.ax2.text(0.04, 0.98, 'Press ESC to quit without saving', transform=self.ax2.transAxes,
@@ -2698,7 +2698,7 @@ class IFUM_AperMap_Maker:
         # # show info
         # info_temp = \
         #     'Select 7 points on the %s-side image:\n\n'%(shoe) \
-        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- RIGHT-CLICK to select a point\n' \
         #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
         #     + '  -- Press ESC to quit without saving'
         # self.popup_left_aligned('Pick points', info_temp)
@@ -2742,7 +2742,7 @@ class IFUM_AperMap_Maker:
         # # show info
         # info_temp = \
         #     'Select 1 point on the green line on the %s-side image:\n\n'%(shoe) \
-        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- RIGHT-CLICK to select a point\n' \
         #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
         #     + '  -- Press ESC to quit without saving'
         # self.popup_left_aligned('Pick points', info_temp)
@@ -2786,7 +2786,7 @@ class IFUM_AperMap_Maker:
         # # show info
         # info_temp = \
         #     'Select 2 points on the green line on the %s-side image:\n\n'%(shoe) \
-        #     + '  -- Right Click to select a point\n' \
+        #     + '  -- RIGHT-CLICK to select a point\n' \
         #     + '  -- Use Toolbar\'s Zoom to zoom in\n' \
         #     + '  -- Press ESC to quit without saving'
         # self.popup_left_aligned('Pick points', info_temp)
