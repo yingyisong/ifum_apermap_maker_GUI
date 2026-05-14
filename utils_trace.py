@@ -1134,8 +1134,16 @@ def do_trace_v3(trace, curve_params,
 
     # Step 1: get the columnspec array from the trace data
     if trace_params is None:
-        trace_step=20 
-        n_lines=11
+        n_col_trace = np.shape(trace)[1]
+        n_col_columnspec = 30
+        trace_step = int(n_col_trace/n_col_columnspec) 
+
+        n_lines = trace_step // 2
+        if n_lines % 2 == 0:
+            n_lines += 1
+
+        # trace_step=70 #20 
+        #n_lines=35 #11
     else:
         trace_step = trace_params['trace_step']
         n_lines = trace_params['n_lines']
@@ -1168,9 +1176,10 @@ def do_trace_v3(trace, curve_params,
     peaks1 = _find_all_first_peaks(columnspec_array, med_dif_pos_model)
 
     ## mask out bad first peaks based on the difference between the peaks
-    d1_peaks1 = np.append(0, np.diff(peaks1))
-    d2_peaks1 = np.append(0, np.diff(peaks1[::-1]))[::-1]
-    mask_good = (np.abs(d1_peaks1) < 2.0/bin_y) | (np.abs(d2_peaks1) < 2.0/bin_y)
+    # d1_peaks1 = np.append(0, np.diff(peaks1))
+    # d2_peaks1 = np.append(0, np.diff(peaks1[::-1]))[::-1]
+    # mask_good = (np.abs(d1_peaks1) < 2.0/bin_y) | (np.abs(d2_peaks1) < 2.0/bin_y)
+    mask_good = np.ones(len(peaks1), dtype=bool)
     mask_good[0] = False # first peak always bad
     mask_good[-1] = False # last peak always bad
     # mask_good[:16] = False # first 16 fibers always bad
