@@ -829,7 +829,7 @@ def _plot_first_peaks(peaks1, mask_good, col_num, columnspec_array):
     # cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
-    ax.set_ylim([0, np.max(peaks1)+50])
+    ax.set_ylim([0, np.nanmax(peaks1)+50])
     ax.legend(loc="lower right")
     plt.tight_layout()
     plt.show()
