@@ -396,6 +396,18 @@ class IFUM_AperMap_Maker:
             self.param_edges_r[0], self.param_edges_r[2]))
         file.close()
 
+        #### save the file to the trace folder as well
+        pathname = os.path.join(self.folder_trace, filename)
+        file = open(pathname, 'w')
+        file.write("#side A B C X1 dX\n")
+        file.write("b %.3e %.1f %.1f %.0f %.0f\n"%(
+            self.param_curve_b[0], self.param_curve_b[1], self.param_curve_b[2], 
+            self.param_edges_b[0], self.param_edges_b[2]))
+        file.write("r %.3e %.1f %.1f %.0f %.0f\n"%(
+            self.param_curve_r[0], self.param_curve_r[1], self.param_curve_r[2], 
+            self.param_edges_r[0], self.param_edges_r[2]))
+        file.close()
+
         #### show message
         info_temp = 'Steps 1-3 parameters are saved!\n\n Location:\n %s'%pathname
         self.popup_showinfo('Param File Saved', info_temp)
