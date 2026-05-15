@@ -160,8 +160,8 @@ class IFUM_AperMap_Maker:
         self.menubar = tk.Menu(self.window)
         self.window.config(menu=self.menubar)
         self.menu_file = tk.Menu(self.menubar, tearoff=0)
-        self.menu_file.add_command(label="Load Curve", command=self.load_curve_file)
-        self.menu_file.add_command(label="Save Curve", command=self.save_curve_file)
+        self.menu_file.add_command(label="Load Param File", command=self.load_param_file)
+        self.menu_file.add_command(label="Save Param File", command=self.save_param_file)
         #self.menu_file.add_command(label="Save as", command=self.save_file_as)
         self.menu_file.add_command(label="Exit", command=self._on_main_close)
         self.menubar.add_cascade(label="File", menu=self.menu_file)
@@ -334,8 +334,8 @@ class IFUM_AperMap_Maker:
         sub_frame.columnconfigure(8, weight=0, minsize=80)
         sub_frame.columnconfigure(9, weight=0, minsize=80)
 
-    def load_curve_file(self):
-        '''  load a curve file and update param_curve '''
+    def load_param_file(self):
+        '''  load a param file and update param_curve '''
 
         #### open a txt file containing the curve parameters
         pathname = filedialog.askopenfilename(initialdir=self.folder_curve, title="Select file", filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
@@ -369,11 +369,11 @@ class IFUM_AperMap_Maker:
 
             #### show message
             info_temp = 'Steps 1-3 parameters loaded!\n\n Location:\n %s'%(pathname)
-            self.popup_showinfo('Curve File Loaded', info_temp) 
+            self.popup_showinfo('Param File Loaded', info_temp) 
 
         self.window.focus_force()
 
-    def save_curve_file(self):
+    def save_param_file(self):
         '''  save the curve parameters '''
 
         today_temp = datetime.today().strftime('%y%m%d')
@@ -398,7 +398,7 @@ class IFUM_AperMap_Maker:
 
         #### show message
         info_temp = 'Steps 1-3 parameters are saved!\n\n Location:\n %s'%pathname
-        self.popup_showinfo('Curve File Saved', info_temp)
+        self.popup_showinfo('Param File Saved', info_temp)
 
         self.window.focus_force()
 
@@ -641,7 +641,7 @@ class IFUM_AperMap_Maker:
 
         #### offset parameters
         lbl_param_edges_offset = ctk.CTkLabel(self.frame_offset, text="dX(r-b) =")
-        lbl_param_edges_offset.grid(row=rows[1], column=1, columnspan=2, sticky="e", padx=2)
+        lbl_param_edges_offset.grid(row=rows[1], column=2, columnspan=1, sticky="e", padx=2)
         self.ent_param_edges_offset = ctk.CTkEntry(
             self.frame_offset, width=80, textvariable=self.txt_param_edges_offset)
         self.ent_param_edges_offset.grid(row=rows[1], column=3, sticky="ew", padx=1)
@@ -720,10 +720,11 @@ class IFUM_AperMap_Maker:
         #### lock on one side of the edges
         lbl_edge_lock = ctk.CTkLabel(self.frame_edges, text="Fix the OFFSET (in Step 2) to:")
         lbl_edge_lock.grid(row=rows[1], column=1, columnspan=4, sticky="w", padx=2)
+
         self.cbtn_edge_lock_r = ctk.CTkCheckBox(self.frame_edges, text='r-side', 
                 variable=self.state_edge_lock_r, onvalue=1, offvalue=0, 
                 command=lambda: self.lock_edge('r'), text_color='red')
-        self.cbtn_edge_lock_r.grid(row=rows[1], column=5, columnspan=2, sticky="e", padx=2)
+        self.cbtn_edge_lock_r.grid(row=rows[1], column=5, columnspan=2, sticky="w", padx=2)
         
         self.cbtn_edge_lock_b = ctk.CTkCheckBox(self.frame_edges, text='b-side', 
                 variable=self.state_edge_lock_b, onvalue=1, offvalue=0, 
@@ -830,7 +831,7 @@ class IFUM_AperMap_Maker:
             "The outputs after clicking the Make button include:\n"
             "1. A folder named as 'apermap_YYDDMM_XXXX' (XXXX is the four-digit file number of the File 3)\n"
             "2. A pair of Trimmed-Trace files saved to the above folder\n"
-            "3. A Curve File recording all parameters in Steps 1-3 and saved to the 'curve_files' folder"
+            "3. A Parameter File recording all parameters in Steps 1-3 and saved to the 'curve_files' folder"
         )
         ToolTip(lbl_step_tag, help_msg)
         ToolTip(lbl_step_desc, help_msg)
@@ -882,7 +883,7 @@ class IFUM_AperMap_Maker:
         help_msg = (
             "Use the Trimmed-Trace files (made in Step 4) to generate the AperMap files.\n\n"
             "This step should typically ready to perform immediately after Step 4.\n"
-            "To resume the step (i.e. skip Steps 1-4), use 'Open Curve File' and 'Open Trimmed' buttons.\n\n"
+            "To resume the step (i.e. skip Steps 1-4), use 'Open Param' and 'Open Trimmed' buttons.\n\n"
             "All outputs are saved to the same folder as the Trimmed-Trace files.\n\n"
             "The AperMap files are made for r and b side, respectively.\n"
             "For each side, two figures will be shown iteratively for removing any BAD/POOR-found peaks:\n"
@@ -925,10 +926,10 @@ class IFUM_AperMap_Maker:
         #lbl_shoe.grid(row=rows[2], column=4, sticky="w")
 
         self.shoe2 = ctk.CTkRadioButton(self.frame_apermap, text='r-side', variable=self.shoe, value='r', text_color="red")
-        self.shoe2.grid(row=rows[1], column=5, columnspan=2, sticky='e', padx=2)
+        self.shoe2.grid(row=rows[1], column=4, columnspan=2, sticky='e', padx=2)
 
         self.shoe1 = ctk.CTkRadioButton(self.frame_apermap, text='b-side', variable=self.shoe, value='b', text_color="cyan")
-        self.shoe1.grid(row=rows[1], column=7, columnspan=2, sticky='w', padx=2)
+        self.shoe1.grid(row=rows[1], column=6, columnspan=2, sticky='w', padx=2)
 
         self.btn_run_pypeit = ctk.CTkButton(self.frame_apermap, width=80, text='Make', command=self.run_trace, state='disabled')
         self.btn_run_pypeit.grid(row=rows[1], column=9, sticky='ew', padx=2, pady=1)
@@ -949,15 +950,15 @@ class IFUM_AperMap_Maker:
         # lbl_temp = ctk.CTkLabel(self.frame_apermap, text="(Resume) ")
         # lbl_temp.grid(row=rows[2], column=0, sticky="e")
 
-        lbl_temp = ctk.CTkLabel(self.frame_apermap, text="(Shortcut) Load existing Curve & Trimmed files to skip Steps 1-4:")
+        lbl_temp = ctk.CTkLabel(self.frame_apermap, text="(Shortcut) Load existing Param & Trimmed files to skip Steps 1-4:")
         lbl_temp.grid(row=rows[2], column=1, columnspan=6, sticky="w")
 
         #### button to load the curve profile
         self.btn_load_all_param = ctk.CTkButton(
-            self.frame_apermap, width=120, text="Open Curve File", 
-            command=self.load_curve_file, state='normal')
+            self.frame_apermap, width=120, text="Open Param", 
+            command=self.load_param_file, state='normal')
         self.btn_load_all_param.grid(row=rows[2], 
-                                     column=7, columnspan=2,
+                                     column=8, columnspan=1,
                                      sticky="e", padx=2, pady=1)
 
         #### button to open saved Trimmed-Trace files
@@ -3150,7 +3151,7 @@ class IFUM_AperMap_Maker:
         self.btn_make_trace.configure(state='disabled')
 
         #### save the curve profile
-        self.save_curve_file()
+        self.save_param_file()
 
         #### show info
         info_temp = "Trimmed-Trace files are made!\n\n Go directly to Step 5."
