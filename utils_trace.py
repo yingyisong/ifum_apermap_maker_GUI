@@ -722,13 +722,23 @@ def _plot_spec_window(spec, rel_height, col_num, flag_success,
     plt.show()
 
 
-def _plot_first_peaks(peaks1, mask_good, col_num):
+def _plot_first_peaks(peaks1, mask_good, col_num, columnspec_array):
     """
     plot the first peaks
     """
     excluded_columns = []   # stores indices of selected (RIGHT-CLICKed) points
     selecting_mode = [True] # [False]  # toggled with 's' / 'Esc'
 
+    #### convert columnspec_array to image_data
+    specs = [np.log10(cs.spec) for cs in columnspec_array]
+    image_data = np.column_stack(specs)
+
+    x_min = -0.5 
+    x_max = len(columnspec_array) - 0.5
+    y_min = columnspec_array[0].pixel.value[0] - 0.5
+    y_max = columnspec_array[0].pixel.value[-1] - 0.5
+
+    #### plot
     fig = plt.figure(figsize=(12,6))
     fig.clf()
     ax = fig.add_subplot(111)
@@ -741,6 +751,16 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
 
+    # show an image of columnspec_array
+    ax.imshow(
+        image_data, 
+        origin='lower', 
+        aspect='auto', 
+        cmap='gray', # 'viridis' or 'gray', depending on preference
+        extent=[x_min, x_max, y_min, y_max]
+    )
+
+    # plot peaks
     xx = np.arange(len(peaks1))
     #ax.plot(xx[peaks1>0], peaks1[peaks1>0], 'k+', label="All first peaks")
     ax.plot(xx[mask_good], peaks1[mask_good], 'r+', label="Found peaks")
@@ -809,6 +829,7 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     # cid_key   = fig.canvas.mpl_connect("key_press_event", on_key)
     cid_click = fig.canvas.mpl_connect("button_press_event", on_click)
 
+    ax.set_ylim([0, np.max(peaks1)+50])
     ax.legend(loc="lower right")
     plt.tight_layout()
     plt.show()
@@ -816,7 +837,7 @@ def _plot_first_peaks(peaks1, mask_good, col_num):
     return excluded_columns
 
 
-def _plot_peaks_array(peaks_array, mask_good, col_num):
+def _plot_peaks_array(peaks_array, mask_good, col_num, columnspec_array):
     """ 
     plot peaks_array for all columns
     """
@@ -825,6 +846,16 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
     selecting_mode = [True] # [False]  # toggled with 's' / 'Esc'
     vlines = {} # to store vertical line artists for easy updating
 
+    #### convert columnspec_array to image_data
+    specs = [np.log10(cs.spec) for cs in columnspec_array]
+    image_data = np.column_stack(specs)
+
+    x_min = -0.5 
+    x_max = len(columnspec_array) - 0.5
+    y_min = columnspec_array[0].pixel.value[0] - 0.5
+    y_max = columnspec_array[0].pixel.value[-1] - 0.5
+
+    #### plot
     fig = plt.figure(6, figsize=(10,10))
     fig.clf()
     ax = fig.add_subplot(111)
@@ -837,6 +868,16 @@ def _plot_peaks_array(peaks_array, mask_good, col_num):
     ax.set_xlabel('Column Number')
     ax.set_ylabel('Pixel Position')
 
+    # show an image of columnarray_spec
+    ax.imshow(
+        image_data, 
+        origin='lower', 
+        aspect='auto', 
+        cmap='gray', # 'viridis' or 'gray', depending on preference
+        extent=[x_min, x_max, y_min, y_max]
+    )
+
+    # plot peaks
     for col in range(len(peaks_array)):
         if mask_good[col]:
             ax.plot(np.zeros(len(peaks_array[col]))+col, peaks_array[col], 
@@ -1193,7 +1234,7 @@ def do_trace_v3(trace, curve_params,
     # mask_good[:16] = False # first 16 fibers always bad
     print("---- Automatic selection of first peaks:", np.sum(mask_good), "out of", len(peaks1))
 
-    excluded_columns = _plot_first_peaks(peaks1, mask_good, col_num)
+    excluded_columns = _plot_first_peaks(peaks1, mask_good, col_num, columnspec_array)
     mask_good[excluded_columns] = False
     print("---- Manually excluded columns:", excluded_columns)
     print("---- Final selection of first peaks:", np.sum(mask_good), "out of", len(peaks1))
@@ -1251,7 +1292,7 @@ def do_trace_v3(trace, curve_params,
             else:
                 print("No good previous column found for column:", col)
 
-    excluded_columns = _plot_peaks_array(peaks_array, mask_good, col_num)
+    excluded_columns = _plot_peaks_array(peaks_array, mask_good, col_num, columnspec_array)
     mask_good[excluded_columns] = False
     peaks_array[~mask_good] = np.nan
     print("---- Manually excluded columns after checking peaks array:", excluded_columns)
